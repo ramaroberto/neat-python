@@ -96,6 +96,36 @@ def test_run_nn_recurrent():
 
     stats.save()
 
+def eval_dummy_genomes_nn_automatic(genomes, config):
+    for genome_id, genome in genomes:
+        net = neat.nn.create(genome, config)
+        genome.fitness = 1.0
+
+def test_run_nn_automatic(feed_forward=True):
+    # Load configuration.
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, 'test_configuration')
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_path)
+    config.feed_forward = feed_forward
+
+    # Create the population, which is the top-level object for a NEAT run.
+    p = neat.Population(config)
+
+    # Add a stdout reporter to show progress in the terminal.
+    p.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+    p.add_reporter(neat.Checkpointer(1, 5))
+
+    # Run for up to 30 generations.
+    p.run(eval_dummy_genomes_nn_automatic, 30)
+
+    stats.save()
+
+def test_run_nn_automatic_recurrent():
+    test_run_nn_automatic(False)
 
 def eval_dummy_genomes_ctrnn(genomes, config):
     for genome_id, genome in genomes:

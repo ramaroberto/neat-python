@@ -137,6 +137,9 @@ class DefaultGenome(object):
 
         # Fitness results.
         self.fitness = None
+        # Should FeedForwardNetwork NOT be used for this genome?
+        # Direct cycle determination would be better given connection removal, but this is faster and simpler.
+        self.maybe_recurrent = False
 
     def configure_new(self, config):
         """Configure a new genome based on the given configuration."""
@@ -208,6 +211,8 @@ class DefaultGenome(object):
             else:
                 # Homologous gene: combine genes from both parents.
                 self.connections[key] = cg1.crossover(cg2)
+
+        self.maybe_recurrent = parent1.maybe_recurrent
 
         # Inherit node genes
         parent1_set = parent1.nodes
@@ -296,13 +301,16 @@ class DefaultGenome(object):
         if in_node in config.output_keys and out_node in config.output_keys:
             return
 
-        # Don't allow connections between two input nodes
-        if in_node in config.input_keys and out_node in config.input_keys:
-            return
+        # Should be no need for the equivalent of the above check for input nodes -
+        # possible_outputs does not include them.
 
         # For feed-forward networks, avoid creating cycles.
-        if config.feed_forward and creates_cycle(list(iterkeys(self.connections)), key):
-            return
+        if config.feed_forward:
+            if creates_cycle(list(iterkeys(self.connections)), key):
+                return
+        elif not self.maybe_recurrent:
+            if creates_cycle(list(iterkeys(self.connections)), key):
+                self.maybe_recurrent = True
 
         cg = self.create_connection(config, in_node, out_node)
         self.connections[cg.key] = cg
@@ -316,7 +324,7 @@ class DefaultGenome(object):
         del_key = choice(available_nodes)
 
         connections_to_delete = set()
-        for k, v in iteritems(self.connections):
+        for k, v in iteritems(self.connections): # TODO: Why not just do iterkeys?
             if del_key in v.key:
                 connections_to_delete.add(v.key)
 
@@ -458,12 +466,16 @@ class DefaultGenome(object):
         """ Create a fully-connected genome (except without direct input-output unless no hidden nodes). """
         for input_id, output_id in self.compute_full_connections(config, False):
             connection = self.create_connection(config, input_id, output_id)
+            if input_id == output_id:
+                self.maybe_recurrent = True
             self.connections[connection.key] = connection
 
     def connect_full_direct(self, config):
         """ Create a fully-connected genome, including direct input-output connections. """
         for input_id, output_id in self.compute_full_connections(config, True):
             connection = self.create_connection(config, input_id, output_id)
+            if input_id == output_id:
+                self.maybe_recurrent = True
             self.connections[connection.key] = connection
 
     def connect_partial_nodirect(self, config):
@@ -474,6 +486,8 @@ class DefaultGenome(object):
         num_to_add = int(round(len(all_connections) * config.connection_fraction))
         for input_id, output_id in all_connections[:num_to_add]:
             connection = self.create_connection(config, input_id, output_id)
+            if input_id == output_id:
+                self.maybe_recurrent = True
             self.connections[connection.key] = connection
 
     def connect_partial_direct(self, config):
@@ -484,4 +498,6 @@ class DefaultGenome(object):
         num_to_add = int(round(len(all_connections) * config.connection_fraction))
         for input_id, output_id in all_connections[:num_to_add]:
             connection = self.create_connection(config, input_id, output_id)
+            if input_id == output_id:
+                self.maybe_recurrent = True
             self.connections[connection.key] = connection
