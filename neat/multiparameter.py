@@ -2,8 +2,8 @@
 Enables the use of activation and aggregation functions
 with multiple evolvable numeric parameters.
 """
+import functools
 import types
-import weakref
 
 from neat.attributes import FloatAttribute
 from neat.six_util import iteritems
@@ -63,6 +63,9 @@ class MultiParameterFunctionInstance(object):
             other.current_param_values[n] = self.current_param_values[n]
         other.instance_name = self.instance_name
         return other
+
+    def get_func(self):
+        return functools.partial(self.user_func, self.current_param_values)
         
 
 class MultiParameterFunction(object):
@@ -97,14 +100,8 @@ class MultiParameterFunction(object):
     def init_instance(self):
         return MultiParameterFunctionInstance(self.orig_name, self)
 
-class InvalidFunction(TypeError):
+class InvalidFunctionError(TypeError):
     pass
-
-def user_func_maker(user_func, *params):
-    def func_instance(x):
-        return user_func(x, params)
-
-    return func_instance
 
 class MultiParameterSet(object):
     """
@@ -112,8 +109,9 @@ class MultiParameterSet(object):
     and contains methods for dealing with them.
     """
     def __init__(self, *which_types):
-        for which_type in which_types:
-            self.weak_dict[which_type] = weakref.WeakKeyDictionary()
+        self.norm_func_dict = {}
+        self.multiparam_func_dict = {}
+        for which_type in list(which_types):
             self.norm_func_dict[which_type] = {}
             self.multiparam_func_dict[which_type] = {}
 
@@ -122,8 +120,8 @@ class MultiParameterSet(object):
             return True
         if name in self.norm_func_dict[which_type]:
             return True
-        if (name.index('(') > -1) or (name.index(')') > -1) or (name.index(',') > -1):
-            raise InvalidFunction("Called with uncertain name '{!s}'".format(name))
+        if ('(' in name) or (')' in name) or (',' in name):
+            raise InvalidFunctionError("Called with uncertain name '{!s}'".format(name))
         return False
 
     def is_multiparameter(self, name, which_type):
@@ -145,15 +143,7 @@ class MultiParameterSet(object):
             return func_dict[name]
 
         if hasattr(name, '__class__') and (name.__class__ == 'MultiParameterFunctionInstance'):
-            weak_dict = self.weak_dict[which_type]
-            try:
-                return weak_dict[name.instance_name]
-            except LookupError:
-                weak_dict[name.instance_name] = user_func_maker(name.user_func,
-                                                                [name.current_param_values[n]
-                                                                 for n in
-                                                                 name.evolved_param_names])
-                return weak_dict[name.instance_name]
+            return name.get_func()
 
         if name in self.multiparam_func_dict[which_type]:
             func_dict = self.multiparam_func_dict[which_type]
@@ -163,7 +153,7 @@ class MultiParameterSet(object):
             raise LookupError("Unknown function {!r} - no end )".
                               format(name))
 
-        param_start = name.index('(')
+        param_start = name.find('(')
         if param_start < 0:
             raise LookupError("Unknown function {!r} - no start (".
                               format(name))
@@ -173,15 +163,7 @@ class MultiParameterSet(object):
             raise LookupError("Unknown function {!r} (from {!r})".
                               format(func_name,name))
 
-        try:
-            weak_dict = self.weak_dict[which_type]
-            return weak_dict[name]
-        except LookupError:
-            func_dict = self.multiparam_func_dict[which_type]
-            multiparam_func = func_dict[func_name]
-            params = name[(param_start+1):(len(name)-2)].split(',')
-            self.weak_dict[name] = user_func_maker(multiparam_func.user_func, params)
-            return self.weak_dict[name]
+        return functools.partial(multiparam_func.user_func, params)
 
     def add_func(self, name, user_func, which_type, **kwargs):
         """Adds a new activation/aggregation function, potentially multiparameter."""
@@ -189,30 +171,30 @@ class MultiParameterSet(object):
                           (types.BuiltinFunctionType,
                            types.FunctionType,
                            types.LambdaType)):
-            raise InvalidFunction("A function object is required.")
+            raise InvalidFunctionError("A function object is required.")
         
         func_code = user_func.__code__
         if func_code.co_argcount != (len(kwargs)+1):
-            raise InvalidFunction("Function {0!r} ({1!s})".format(user_func,name) +
-                                  " requires {0!s} args".format(func_code.co_argcount) +
-                                  " but was given {0!s} kwargs ({1!r})".format(len(kwargs),
-                                                                               kwargs))
+            raise InvalidFunctionError("Function {0!r} ({1!s})".format(user_func,name) +
+                                       " requires {0!s} args".format(func_code.co_argcount) +
+                                       " but was given {0!s} kwargs ({1!r})".format(len(kwargs),
+                                                                                    kwargs))
 
-        if (name.index('(') > -1) or (name.index(')') > -1) or (name.index(',') > -1):
-            raise InvalidFunction("Invalid function name '{!s}' for {!r}".format(name,
-                                                                                 user_func)
-                                  + " - cannot have '(', ')', or ','")
+        if ('(' in name) or (')' in name) or (',' in name):
+            raise InvalidFunctionError("Invalid function name '{!s}' for {!r}".format(name,
+                                                                                      user_func)
+                                       + " - cannot have '(', ')', or ','")
 
         if func_code.co_argcount == 1:
             func_dict = self.norm_func_dict[which_type]
             func_dict[name] = user_func
             return
 
-        first_aname = func_code.co_varnames[0]
-        if first_aname in kwargs:
-            raise InvalidFunction("First argument '{0!s}' of function {1!r}".format(first_aname,
-                                                                                    user_func)
-                                  + " ({0!s}) may not be in kwargs {1!r}".format(name,kwargs))
+        first_an = func_code.co_varnames[0]
+        if first_an in kwargs:
+            raise InvalidFunctionError("First argument '{0!s}' of function {1!r}".format(first_an,
+                                                                                         user_func)
+                                       + " ({0!s}) may not be in kwargs {1!r}".format(name,kwargs))
 
         evolved_param_names = func_code.co_varnames[1:func_code.co_argcount]
         func_names_set = set(evolved_param_names)
@@ -220,15 +202,15 @@ class MultiParameterSet(object):
         
         missing1 = func_names_set - kwargs_names_set
         if missing1:
-            raise InvalidFunction("Function {0!r} ({1!s}) has arguments '".format(user_func,
-                                                                                  name)
-                                  + "{0!r}' not in kwargs {1!r}".format(missing1,
-                                                                        kwargs_names_set))
+            raise InvalidFunctionError("Function {0!r} ({1!s}) has arguments '".format(user_func,
+                                                                                       name)
+                                       + "{0!r}' not in kwargs {1!r}".format(missing1,
+                                                                             kwargs_names_set))
         missing2 = kwargs_names_set - func_names_set
         if missing2:
-            raise InvalidFunction("Function {0!r} ({1!s}) lacks arguments '".format(user_func,
-                                                                                    name)
-                                  + "{0!r}' in kwargs {1!r}".format(missing2,kwargs))
+            raise InvalidFunctionError("Function {0!r} ({1!s}) lacks arguments '".format(user_func,
+                                                                                         name)
+                                       + "{0!r}' in kwargs {1!r}".format(missing2,kwargs))
 
         func_dict = self.multiparam_func_dict[which_type]
         func_dict[name] = MultiParameterFunction(name=name, which_type=which_type,

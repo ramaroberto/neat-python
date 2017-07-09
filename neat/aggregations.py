@@ -38,7 +38,7 @@ class AggregationFunctionSet(object):
         self.add('maxabs', maxabs_aggregation)
 
     def add(self, name, function, **kwargs):
-        self.multiparameterset.add_func(name, function, 'aggregation', kwargs)
+        self.multiparameterset.add_func(name, function, 'aggregation', **kwargs)
 
     def get(self, name):
         return self.multiparameterset.get_func(name, 'aggregation')

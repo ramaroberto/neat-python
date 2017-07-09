@@ -21,7 +21,7 @@ class DefaultGenomeConfig(object):
 
     def __init__(self, params):
         # Enables functions with evolved parameters
-        self.multiparameterset = MultiParameterSet(['activation', 'aggregation'])
+        self.multiparameterset = MultiParameterSet('activation', 'aggregation')
         # Create full set of available activation functions.
         self.activation_defs = ActivationFunctionSet(self.multiparameterset)
         # ditto for aggregation functions - name difference for backward compatibility

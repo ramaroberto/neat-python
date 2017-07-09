@@ -1,4 +1,4 @@
-from neat import aggregations
+from neat import aggregations, multiparameter
 
 
 # TODO: These tests are just smoke tests to make sure nothing has become badly broken.  Expand
@@ -42,14 +42,16 @@ def minabs_aggregation(x):
     return min(x, key=abs)
 
 def test_add_minabs():
-    s = aggregations.AggregationFunctionSet()
+    m = multiparameter.MultiParameterSet('aggregation')
+    s = aggregations.AggregationFunctionSet(m)
     s.add('minabs', minabs_aggregation)
     assert s.get('minabs') is not None
     assert s.is_valid('minabs')
 
 
 def test_function_set():
-    s = aggregations.AggregationFunctionSet()
+    m = multiparameter.MultiParameterSet('aggregation')
+    s = aggregations.AggregationFunctionSet(m)
     assert s.get('sum') is not None
     assert s.get('product') is not None
     assert s.get('max') is not None

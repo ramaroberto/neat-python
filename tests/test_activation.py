@@ -1,4 +1,4 @@
-from neat import activations
+from neat import activations, multiparameter
 
 
 # TODO: These tests are just smoke tests to make sure nothing has become badly broken.  Expand
@@ -98,7 +98,8 @@ def test_cube():
 
 
 def test_function_set():
-    s = activations.ActivationFunctionSet()
+    m = multiparameter.MultiParameterSet('activation')
+    s = activations.ActivationFunctionSet(m)
     assert s.get('sigmoid') is not None
     assert s.get('tanh') is not None
     assert s.get('sin') is not None

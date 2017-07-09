@@ -100,7 +100,7 @@ class ActivationFunctionSet(object):
         self.add('cube', cube_activation)
 
     def add(self, name, function, **kwargs):
-        self.multiparameterset.add_func(name, function, 'activation', kwargs)
+        self.multiparameterset.add_func(name, function, 'activation', **kwargs)
 
     def get(self, name):
         return self.multiparameterset.get_func(name, 'activation')
