@@ -1,4 +1,4 @@
-'''Commonly used functions not available in the Python2 standard library.'''
+"""Commonly used functions not available in the Python2 standard library."""
 from __future__ import division
 
 from math import sqrt, exp
@@ -28,7 +28,8 @@ def stdev(values):
 def softmax(values):
     """
     Compute the softmax of the given value set, v_i = exp(v_i) / s,
-    where s = sum(exp(v_0), exp(v_1), ..)."""
+    where s = sum(exp(v_0), exp(v_1), ..).
+    """
     e_values = map(exp, values)
     s = sum(e_values)
     inv_s = 1.0 / s

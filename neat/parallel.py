@@ -1,12 +1,16 @@
-"""Runs evaluation functions in parallel subprocesses in order to evaluate multiple genomes at once."""
+"""
+Runs evaluation functions in parallel subprocesses,
+in order to evaluate multiple genomes at once.
+"""
 from multiprocessing import Pool
 
 class ParallelEvaluator(object):
     def __init__(self, num_workers, eval_function, timeout=None):
-        '''
-        eval_function should take one argument (a genome object) and return
-        a single float (the genome's fitness).
-        '''
+        """
+        eval_function should take one argument
+        (a tuple of a genome object and a config object) and return
+        a single float (the fitness of the genome).
+        """
         self.num_workers = num_workers
         self.eval_function = eval_function
         self.timeout = timeout

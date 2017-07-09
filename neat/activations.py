@@ -1,8 +1,11 @@
-"""Has the built-in activation functions, code for using them, and code for adding new user-defined ones"""
+"""
+Has the built-in activation functions, methods for using them,
+and methods for adding new user-defined ones.
+"""
 from __future__ import division
-import math
-import types
 
+import math
+import warnings
 
 def sigmoid_activation(z):
     z = max(-60.0, min(60.0, 5.0 * z))
@@ -76,24 +79,10 @@ def cube_activation(z):
     return z ** 3
 
 
-class InvalidActivationFunction(TypeError):
-    pass
-
-
-def validate_activation(function):
-    if not isinstance(function,
-                      (types.BuiltinFunctionType,
-                       types.FunctionType,
-                       types.LambdaType)):
-        raise InvalidActivationFunction("A function object is required.")
-
-    if function.__code__.co_argcount != 1: # avoid deprecated use of `inspect`
-        raise InvalidActivationFunction("A single-argument function is required.")
-
-
 class ActivationFunctionSet(object):
-    def __init__(self):
-        self.functions = {}
+    """Contains activation functions and methods to add and retrieve them."""
+    def __init__(self, multiparameterset):
+        self.multiparameterset = multiparameterset
         self.add('sigmoid', sigmoid_activation)
         self.add('tanh', tanh_activation)
         self.add('sin', sin_activation)
@@ -110,16 +99,16 @@ class ActivationFunctionSet(object):
         self.add('square', square_activation)
         self.add('cube', cube_activation)
 
-    def add(self, name, function):
-        validate_activation(function)
-        self.functions[name] = function
+    def add(self, name, function, **kwargs):
+        self.multiparameterset.add_func(name, function, 'activation', kwargs)
 
     def get(self, name):
-        f = self.functions.get(name)
-        if f is None:
-            raise InvalidActivationFunction("No such activation function: {0!r}".format(name))
+        return self.multiparameterset.get_func(name, 'activation')
 
-        return f
+    def __getitem__(self, index):
+        warnings.warn("Use get, not indexing ([{!r}]), for activation functions".format(index),
+                      DeprecationWarning)
+        return self.get(index)
 
     def is_valid(self, name):
-        return name in self.functions
+        return self.multiparameterset.is_valid_func(name, 'activation')

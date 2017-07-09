@@ -20,7 +20,8 @@ class BaseAttribute(object):
     def get_config_params(self):
         return [ConfigParameter(self.config_item_name(n),
                                 self.__config_items__[n][0],
-                                self.__config_items__[n][1]) for n in iterkeys(self.__config_items__)]
+                                self.__config_items__[n][1])
+                for n in iterkeys(self.__config_items__)]
 
 class FloatAttribute(BaseAttribute):
     __config_items__ = {"init_mean": [float, None],
@@ -52,10 +53,13 @@ class FloatAttribute(BaseAttribute):
                             (mean+(2*stdev)))
             return uniform(min_value, max_value)
 
-        raise RuntimeError("Unknown init_type {!r} for {!s}".format(getattr(config, self.init_type_name), self.init_type_name))
+        raise RuntimeError("Unknown init_type {!r} for {!s}".format(getattr(config,
+                                                                            self.init_type_name),
+                                                                    self.init_type_name))
 
     def mutate_value(self, value, config):
-         # mutate_rate is usually no lower than replace_rate, and frequently higher - so put first for efficiency
+         # mutate_rate is usually no lower than replace_rate,
+         # and frequently higher - so put first for efficiency
         mutate_rate = getattr(config, self.mutate_rate_name)
 
         r = random()
@@ -131,3 +135,43 @@ class StringAttribute(BaseAttribute):
 
     def validate(self, config):
         pass
+
+class FuncAttribute(StringAttribute):
+    """
+    Handle attributes that may be simple strings
+    or may be functions needing multiparameter handling.
+    """
+    def init_value(self, config):
+        default = getattr(config, self.default_name)
+
+        if default in (None, 'random'):
+            options = getattr(config, self.options_name)
+            default = choice(options)
+
+        if hasattr(default, 'init_value'):
+            default.init_value(self, config)
+        elif hasattr(config, 'multiparameterset'):
+            multiparam = config.multiparameterset
+
+            if multiparam.is_multiparameter(default, self.name):
+                default = multiparam.init_multiparameter(default, self, config)
+
+        return default
+
+    def mutate_value(self, value, config):
+        mutate_rate = getattr(config, self.mutate_rate_name)
+
+        if mutate_rate > 0:
+            r = random()
+            if r < mutate_rate:
+                options = getattr(config, self.options_name)
+                value = choice(options)
+
+        if hasattr(value, 'mutate_value'):
+            value.mutate_value(self, config)
+        elif hasattr(config, 'multiparameterset'):
+            multiparam = config.multiparameterset
+            if multiparam.is_multiparameter(value, self.name):
+                value = multiparam.init_multiparameter(value, self, config)
+
+        return value

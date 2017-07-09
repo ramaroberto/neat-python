@@ -6,9 +6,9 @@ import sys
 import warnings
 
 try:
-    from configparser import ConfigParser
+    from configparser import ConfigParser, Error
 except ImportError:
-    from ConfigParser import SafeConfigParser as ConfigParser
+    from ConfigParser import Error, SafeConfigParser as ConfigParser
 
 
 class ConfigParameter(object):
@@ -96,7 +96,7 @@ class DefaultClassConfig(object):
 
 
 class Config(object):
-    ''' A simple container for user-configurable parameters of NEAT. '''
+    """A simple container for user-configurable parameters of NEAT."""
 
     __params = [ConfigParameter('pop_size', int),
                 ConfigParameter('fitness_criterion', str),
@@ -136,8 +136,11 @@ class Config(object):
             else:
                 try:
                     setattr(self, p.name, p.parse('NEAT', parameters))
-                except Exception:
+                    if getattr(self, p.name) is None:
+                        setattr(self, p.name, p.default)
+                except (Error, RuntimeError):
                     setattr(self, p.name, p.default)
+
 
         # Parse type sections.
         genome_dict = dict(parameters.items(genome_type.__name__))

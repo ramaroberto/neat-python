@@ -1,5 +1,6 @@
+"""Handles genes coding for node and connection attributes."""
 from random import random
-from neat.attributes import FloatAttribute, BoolAttribute, StringAttribute
+from neat.attributes import FloatAttribute, BoolAttribute, FuncAttribute
 
 # TODO: There is probably a lot of room for simplification of these classes using metaprogramming.
 # TODO: Evaluate using __slots__ for performance/memory usage improvement.
@@ -40,7 +41,10 @@ class BaseGene(object):
     def copy(self):
         new_gene = self.__class__(self.key)
         for a in self.__gene_attributes__:
-            setattr(new_gene, a.name, getattr(self, a.name))
+            if hasattr(a, 'copy'):
+                setattr(new_gene, a.name, a.copy())
+            else:
+                setattr(new_gene, a.name, getattr(self, a.name))
 
         return new_gene
 
@@ -53,9 +57,16 @@ class BaseGene(object):
         new_gene = self.__class__(self.key)
         for a in self.__gene_attributes__:
             if random() > 0.5:
-                setattr(new_gene, a.name, getattr(self, a.name))
+                if hasattr(a, 'copy'):
+                    setattr(new_gene, a.name, a.copy())
+                else:
+                    setattr(new_gene, a.name, getattr(self, a.name))
             else:
-                setattr(new_gene, a.name, getattr(gene2, a.name))
+                gene2_attr = getattr(gene2, a.name)
+                if hasattr(gene2_attr, 'copy'):
+                    setattr(new_gene, a.name, gene2_attr.copy())
+                else:
+                    setattr(new_gene, a.name, gene2_attr)
 
         return new_gene
 
@@ -66,15 +77,22 @@ class BaseGene(object):
 class DefaultNodeGene(BaseGene):
     __gene_attributes__ = [FloatAttribute('bias'),
                            FloatAttribute('response'),
-                           StringAttribute('activation', options='sigmoid'),
-                           StringAttribute('aggregation', options='sum')]
+                           FuncAttribute('activation', options='sigmoid'),
+                           FuncAttribute('aggregation', options='sum')]
 
     def distance(self, other, config):
+        """Returns the genetic distance between two node genes."""
         d = abs(self.bias - other.bias) + abs(self.response - other.response)
-        if self.activation != other.activation:
+        if hasattr(self.activation, 'distance'):
+            d += self.activation.distance(other.activation)
+        elif self.activation != other.activation:
             d += 1.0
-        if self.aggregation != other.aggregation:
+
+        if hasattr(self.aggregation, 'distance'):
+            d += self.aggregation.distance(other.aggregation)
+        elif self.aggregation != other.aggregation:
             d += 1.0
+        
         return d * config.compatibility_weight_coefficient
 
 
@@ -86,6 +104,7 @@ class DefaultConnectionGene(BaseGene):
                            BoolAttribute('enabled')]
 
     def distance(self, other, config):
+        """Returns the genetic distance between two connection genes."""
         d = abs(self.weight - other.weight)
         if self.enabled != other.enabled:
             d += 1.0

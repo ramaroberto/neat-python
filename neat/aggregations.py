@@ -1,10 +1,8 @@
 """
-Has the built-in aggregation functions, code for using them,
-and code for adding new user-defined ones.
+Has the built-in aggregation functions, methods for using them,
+and methods for adding new user-defined ones.
 """
-
 import sys
-import types
 import warnings
 
 from operator import mul
@@ -27,39 +25,23 @@ def min_aggregation(x):
 def maxabs_aggregation(x):
     return max(x, key=abs)
 
-class InvalidAggregationFunction(TypeError):
-    pass
-
-
-def validate_aggregation(function): # TODO: Recognize when need `reduce`
-    if not isinstance(function,
-                      (types.BuiltinFunctionType,
-                       types.FunctionType,
-                       types.LambdaType)):
-        raise InvalidAggregationFunction("A function object is required.")
-
 
 class AggregationFunctionSet(object):
     """Contains aggregation functions and methods to add and retrieve them."""
     
-    def __init__(self):
-        self.functions = {}
+    def __init__(self, multiparameterset):
+        self.multiparameterset = multiparameterset
         self.add('product', product_aggregation)
         self.add('sum', sum_aggregation)
         self.add('max', max_aggregation)
         self.add('min', min_aggregation)
         self.add('maxabs', maxabs_aggregation)
 
-    def add(self, name, function):
-        validate_aggregation(function)
-        self.functions[name] = function
+    def add(self, name, function, **kwargs):
+        self.multiparameterset.add_func(name, function, 'aggregation', kwargs)
 
     def get(self, name):
-        f = self.functions.get(name)
-        if f is None:
-            raise InvalidAggregationFunction("No such aggregation function: {0!r}".format(name))
-
-        return f
+        return self.multiparameterset.get_func(name, 'aggregation')
 
     def __getitem__(self, index):
         warnings.warn("Use get, not indexing ([{!r}]), for aggregation functions".format(index),
@@ -67,4 +49,5 @@ class AggregationFunctionSet(object):
         return self.get(index)
 
     def is_valid(self, name):
-        return name in self.functions
+        return self.multiparameterset.is_valid_func(name, 'aggregation')
+
