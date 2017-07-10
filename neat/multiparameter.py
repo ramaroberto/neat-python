@@ -5,7 +5,7 @@ with multiple evolvable numeric parameters.
 from __future__ import print_function
 
 import functools
-import sys
+##import sys
 import types
 
 from neat.attributes import FloatAttribute
@@ -233,8 +233,8 @@ class MultiParameterSet(object):
                                                                                          name)
                                        + "{0!r} in kwargs {1!r}".format(missing2,kwargs))
 
-        ##print("Adding function {0!r} ({1!s}) with kwargs {2!r} ({3!s})".format(user_func,name,
-##                                                                               kwargs,type(kwargs)),
+##print("Adding function {0!r} ({1!s}) with kwargs {2!r} ({3!s})".format(user_func,name,
+##                                                                  kwargs,type(kwargs)),
 ##              file=sys.stderr)
 
         func_dict = self.multiparam_func_dict[which_type]
