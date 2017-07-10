@@ -25,6 +25,10 @@ class FeedForwardNetwork(object):
 
         return [self.values[i] for i in self.output_nodes]
 
+    def reset(self):
+        """Method in case using instead of recurrent due to genome phenotype being feed-forward"""
+        pass
+
     @staticmethod
     def create(genome, config):
         """ Receives a genome and returns its phenotype (a FeedForwardNetwork). """
