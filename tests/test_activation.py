@@ -96,6 +96,7 @@ def test_cube():
     assert activations.cube_activation(0.5) == 0.125
     assert activations.cube_activation(1.0) == 1.0
 
+
 def test_multiparam_relu():
     assert activations.multiparam_relu_activation(1.0,1.0) == 1.0
     assert activations.multiparam_relu_activation(0.0,1.0) == 0.0
@@ -106,6 +107,37 @@ def test_multiparam_relu():
     assert activations.multiparam_relu_activation(1.0,-1.0) == 1.0
     assert activations.multiparam_relu_activation(0.0,-1.0) == 0.0
     assert activations.multiparam_relu_activation(-1.0,-1.0) == 1.0
+
+
+def test_clamped_tanh_step():
+    assert activations.clamped_tanh_step_activation(2.0,1.0) == 1.0 # clamped
+    assert activations.clamped_tanh_step_activation(2.0,-1.0) == 1.0 # step
+    assert activations.clamped_tanh_step_activation(1.0,1.0) == 1.0 # clamped
+    assert activations.clamped_tanh_step_activation(1.0,-1.0) == 1.0 # step
+    assert activations.clamped_tanh_step_activation(0.0,1.0) == 0.0 # clamped
+    assert activations.clamped_tanh_step_activation(0.0,0.0) == 0.0 # tanh
+    assert activations.clamped_tanh_step_activation(-1.0,1.0) == -1.0 # clamped
+    assert activations.clamped_tanh_step_activation(-1.0,-1.0) == -1.0 # step
+    assert activations.clamped_tanh_step_activation(-2.0,1.0) == -1.0 # clamped
+    assert activations.clamped_tanh_step_activation(-2.0,-1.0) == -1.0 # step
+    assert activations.clamped_tanh_step_activation(0.5,-1.0) == 1.0 # step
+    assert activations.clamped_tanh_step_activation(-0.5,-1.0) == -1.0 # step
+
+
+def test_multiparam_sigmoid():
+    assert activations.multiparam_sigmoid_activation(2.0,1.0) == 1.0
+    assert activations.multiparam_sigmoid_activation(2.0,-1.0) == 1.0
+    assert activations.multiparam_sigmoid_activation(1.0,1.0) == 1.0
+    assert activations.multiparam_sigmoid_activation(1.0,-1.0) == 1.0
+    assert activations.multiparam_sigmoid_activation(0.0,1.0) == 0.5
+    assert activations.multiparam_sigmoid_activation(0.0,0.0) == 0.5
+    assert activations.multiparam_sigmoid_activation(-1.0,1.0) == 0.0
+    assert activations.multiparam_sigmoid_activation(-1.0,-1.0) == 0.0
+    assert activations.multiparam_sigmoid_activation(-2.0,1.0) == 0.0
+    assert activations.multiparam_sigmoid_activation(-2.0,-1.0) == 0.0
+    assert activations.multiparam_sigmoid_activation(0.5,-1.0) == 1.0
+    assert activations.multiparam_sigmoid_activation(-0.5,-1.0) == 0.0
+
 
 def test_function_set():
     m = multiparameter.MultiParameterSet('activation')
@@ -125,6 +157,8 @@ def test_function_set():
     assert s.get('square') is not None
     assert s.get('cube') is not None
     assert s.get('multiparam_relu') is not None
+    assert s.get('clamped_tanh_step') is not None
+    assert s.get('multiparam_sigmoid') is not None
 
     assert s.is_valid('sigmoid')
     assert s.is_valid('tanh')
@@ -141,6 +175,8 @@ def test_function_set():
     assert s.is_valid('square')
     assert s.is_valid('cube')
     assert s.is_valid('multiparam_relu')
+    assert s.is_valid('clamped_tanh_step')
+    assert s.is_valid('multiparam_sigmoid')
 
     assert not s.is_valid('foo')
 
@@ -161,4 +197,6 @@ if __name__ == '__main__':
     test_square()
     test_cube()
     test_multiparam_relu()
+    test_clamped_tanh_step()
+    test_multiparam_sigmoid()
 

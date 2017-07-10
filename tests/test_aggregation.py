@@ -36,9 +36,15 @@ def test_maxabs():
     assert aggregations.maxabs_aggregation([0.0,1.0,2.0]) == 2.0
     assert aggregations.maxabs_aggregation([0.0,-1.0,-2.0]) == -2.0
 
+def test_min_max():
+    assert aggregations.min_max_aggregation([0.0,1.0,2.0],1.0) == 2.0
+    assert aggregations.min_max_aggregation([0.0,-1.0,-2.0],1.0) == 0.0
+    assert aggregations.min_max_aggregation([0.0,1.0,2.0],0.0) == 0.0
+    assert aggregations.min_max_aggregation([0.0,-1.0,-2.0],0.0) == -2.0
+
 
 def minabs_aggregation(x):
-    """ Not particularly useful - just a check. """
+    """Not particularly useful - just a check that can load in from a non-library file."""
     return min(x, key=abs)
 
 def test_add_minabs():
@@ -57,12 +63,14 @@ def test_function_set():
     assert s.get('max') is not None
     assert s.get('min') is not None
     assert s.get('maxabs') is not None
+    assert s.get('min_max') is not None
 
     assert s.is_valid('sum')
     assert s.is_valid('product')
     assert s.is_valid('max')
     assert s.is_valid('min')
     assert s.is_valid('maxabs')
+    assert s.is_valid('min_max')
 
     assert not s.is_valid('foo')
 
@@ -73,5 +81,6 @@ if __name__ == '__main__':
     test_max()
     test_min()
     test_maxabs()
+    test_min_max()
     test_add_minabs()
     test_function_set()

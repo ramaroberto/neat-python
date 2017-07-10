@@ -2,13 +2,18 @@ from __future__ import print_function
 import os
 import neat
 
-def test_xor_example_uniform():
-    test_xor_example(uniform=True)
-
 def test_xor_example_multiparam_relu():
-    test_xor_example(activation='multiparam_relu')
+    test_xor_example(activation_default='multiparam_relu')
 
-def test_xor_example(uniform=False, activation=None):
+def test_xor_example_multiparam_sigmoid_or_relu():
+    test_xor_example(uniform_weights=True,
+                     activation_default='random',
+                     activation_options=['multiparam_sigmoid','relu'])
+
+def test_xor_example_uniform_weights():
+    test_xor_example(uniform_weights=True)
+
+def test_xor_example(uniform_weights=False, activation_default=None, activation_options=None):
     # 2-input XOR inputs and expected outputs.
     xor_inputs = [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]
     xor_outputs = [(0.0,), (1.0,), (1.0,), (0.0,)]
@@ -32,12 +37,18 @@ def test_xor_example(uniform=False, activation=None):
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    if uniform:
+    if uniform_weights:
         config.genome_config.weight_init_type = 'uniform'
 
-    if activation is not None:
-        config.genome_config.activation_default = activation
-        config.genome_config.activation_options = [activation]
+    if activation_default is not None:
+        config.genome_config.activation_default = activation_default
+        if activation_options is None:
+            config.genome_config.activation_options = [activation_default]
+
+    if activation_options is not None:
+        config.genome_config.activation_options = activation_options
+        if len(activation_options) > 1:
+            config.genome_config.activation_mutate_rate = 0.1
 
     # Create the population, which is the top-level object for a NEAT run.
     p = neat.Population(config)
@@ -55,7 +66,7 @@ def test_xor_example(uniform=False, activation=None):
         pass
 
     if winner:
-        if uniform:
+        if uniform_weights:
             print('\nUsing uniform weight initialization:')
         # Display the winning genome.
         print('\nBest genome:\n{!s}'.format(winner))
@@ -70,5 +81,7 @@ def test_xor_example(uniform=False, activation=None):
 
 if __name__ == '__main__':
     test_xor_example()
-    test_xor_example_uniform()
+    test_xor_example_uniform_weights()
     test_xor_example_multiparam_relu()
+    test_xor_example_multiparam_sigmoid_or_relu()
+

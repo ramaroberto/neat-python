@@ -26,7 +26,9 @@ def maxabs_aggregation(x):
     return max(x, key=abs)
 
 def min_max_aggregation(x, a):
-    return ((1-a)*min(x))+(a*max(x))
+    assert a <= 1.0
+    assert a >= 0.0
+    return ((1.0-a)*min(x))+(a*max(x))
 
 
 class AggregationFunctionSet(object):

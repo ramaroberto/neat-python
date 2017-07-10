@@ -48,9 +48,9 @@ class FloatAttribute(BaseAttribute):
 
         if init_type == 'uniform':
             min_value = max(getattr(config, self.min_value_name),
-                            (mean-(2*stdev)))
+                            (mean-(2.0*stdev)))
             max_value = min(getattr(config, self.max_value_name),
-                            (mean+(2*stdev)))
+                            (mean+(2.0*stdev)))
             return uniform(min_value, max_value)
 
         raise RuntimeError("Unknown init_type {!r} for {!s}".format(getattr(config,

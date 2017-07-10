@@ -51,7 +51,7 @@ class MultiParameterFunctionInstance(object):
         if self.name != other.name:
             return 1
 
-        total_diff = 0
+        total_diff = 0.0
         for n in self.evolved_param_names:
             diff = abs(self.current_param_values[n] -
                        other.current_param_values[n])
@@ -86,17 +86,17 @@ class MultiParameterFunction(object):
             self.evolved_param_dicts[n].setdefault('init_type','uniform')
             param_dict = self.evolved_param_dicts[n]
             middle = (param_dict['max_value'] +
-                      param_dict['min_value'])/2
+                      param_dict['min_value'])/2.0
             self.evolved_param_dicts[n].setdefault('init_mean', middle)
             for_stdev = min(abs(param_dict['max_value'] -
                                 param_dict['init_mean']),
                             abs(param_dict['min_value'] -
-                                param_dict['init_mean']))/2
+                                param_dict['init_mean']))/2.0
             self.evolved_param_dicts[n].setdefault('init_stdev', for_stdev)
             # below here is mainly intended for users wanting to use built-in
             # multiparameter functions without too much initialization worries
             self.evolved_param_dicts[n].setdefault('replace_rate', 0.1)
-            mutate_rate = min((1-param_dict['replace_rate']),(param_dict['replace_rate']*5))
+            mutate_rate = min((1-param_dict['replace_rate']),(param_dict['replace_rate']*5.0))
             self.evolved_param_dicts[n].setdefault('mutate_rate', mutate_rate)
             # actual standard deviation of uniform distribution is width/sqrt(12) -
             # use of 1/4 range in the uniform distribution FloatAttribute setup
@@ -104,7 +104,7 @@ class MultiParameterFunction(object):
             # get a given initialization range that is not the same as the
             # overall min/max range.
             mutate_power = ((param_dict['replace_rate']/param_dict['mutate_rate'])*
-                            (abs(param_dict['max_value']-param_dict['min_value'])/pow(12,0.5)))
+                            (abs(param_dict['max_value']-param_dict['min_value'])/pow(12.0,0.5)))
             self.evolved_param_dicts[n].setdefault('mutate_power', mutate_power)
             
             tmp_name = "{0}_{1}".format(name,n)
