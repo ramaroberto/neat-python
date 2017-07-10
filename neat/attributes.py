@@ -1,5 +1,8 @@
 """Deals with the attributes (variable parameters) of genes"""
+#from __future__ import print_function
+#from copy import deepcopy
 from random import choice, gauss, random, uniform
+
 from neat.config import ConfigParameter
 from neat.six_util import iterkeys, iteritems
 
@@ -158,6 +161,7 @@ class FuncAttribute(StringAttribute):
 
         return default
 
+
     def mutate_value(self, value, config):
         mutate_rate = getattr(config, self.mutate_rate_name)
 
@@ -168,6 +172,7 @@ class FuncAttribute(StringAttribute):
                 value = choice(options)
 
         if hasattr(value, 'mutate_value'):
+            #print("Accessing mutate_value function of {!r}".format(value))
             value.mutate_value(config)
         elif hasattr(config, 'multiparameterset'):
             multiparam = config.multiparameterset
@@ -175,3 +180,4 @@ class FuncAttribute(StringAttribute):
                 value = multiparam.init_multiparameter(value, self, config)
 
         return value
+

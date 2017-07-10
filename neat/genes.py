@@ -1,5 +1,10 @@
 """Handles genes coding for node and connection attributes."""
+##from __future__ import print_function
+
 from random import random
+##from sys import getrefcount, stderr
+##from types import MethodType
+
 from neat.attributes import FloatAttribute, BoolAttribute, FuncAttribute
 
 # TODO: There is probably a lot of room for simplification of these classes using metaprogramming.
@@ -45,7 +50,6 @@ class BaseGene(object):
                 setattr(new_gene, a.name, a.copy())
             else:
                 setattr(new_gene, a.name, getattr(self, a.name))
-
         return new_gene
 
     def crossover(self, gene2):
@@ -67,7 +71,6 @@ class BaseGene(object):
                     setattr(new_gene, a.name, gene2_attr.copy())
                 else:
                     setattr(new_gene, a.name, gene2_attr)
-
         return new_gene
 
 

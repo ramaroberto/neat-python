@@ -2,7 +2,7 @@
 Enables the use of activation and aggregation functions
 with multiple evolvable numeric parameters.
 """
-from __future__ import print_function
+##from __future__ import print_function
 
 import functools
 ##import sys
@@ -61,11 +61,18 @@ class MultiParameterFunctionInstance(object):
         return total_diff
 
     def copy(self):
+        #print("{0!s}: Copying myself {1!r}".format(self.instance_name,self),file=sys.stderr)
         other = MultiParameterFunctionInstance(self.name, self.multi_param_func)
         for n in self.evolved_param_names:
             other.current_param_values[n] = self.current_param_values[n]
-        other.instance_name = self.instance_name
+        other.instance_name = self.instance_name[:]
         return other
+
+    def __copy__(self):
+        return self.copy()
+
+    def __deepcopy__(self, ignored_dict):
+        return self.copy()
 
     def get_func(self):
         return functools.partial(self.user_func, **self.current_param_values)
@@ -141,6 +148,8 @@ class MultiParameterSet(object):
         return False
 
     def is_multiparameter(self, name, which_type):
+        if name[-1] == ')':
+            raise InvalidFunctionError("Called with uncertain name '{!s}'".format(name))
         return name in self.multiparam_func_dict[which_type]
 
     def init_multiparameter(self, name, instance, ignored_config):
