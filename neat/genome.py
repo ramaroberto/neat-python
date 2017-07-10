@@ -69,11 +69,11 @@ class DefaultGenomeConfig(object):
 
         self.node_indexer = None
 
-    def add_activation(self, name, func):
-        self.activation_defs.add(name, func)
+    def add_activation(self, name, func, **kwargs):
+        self.activation_defs.add(name, func, **kwargs)
 
-    def add_aggregation(self, name, func):
-        self.aggregation_function_defs.add(name, func)
+    def add_aggregation(self, name, func, **kwargs):
+        self.aggregation_function_defs.add(name, func, **kwargs)
 
     def save(self, f):
         if 'partial' in self.initial_connection:

@@ -149,7 +149,7 @@ class FuncAttribute(StringAttribute):
             default = choice(options)
 
         if hasattr(default, 'init_value'):
-            default.init_value(self, config)
+            default.init_value(config)
         elif hasattr(config, 'multiparameterset'):
             multiparam = config.multiparameterset
 
@@ -168,7 +168,7 @@ class FuncAttribute(StringAttribute):
                 value = choice(options)
 
         if hasattr(value, 'mutate_value'):
-            value.mutate_value(self, config)
+            value.mutate_value(config)
         elif hasattr(config, 'multiparameterset'):
             multiparam = config.multiparameterset
             if multiparam.is_multiparameter(value, self.name):

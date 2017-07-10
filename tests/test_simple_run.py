@@ -148,10 +148,10 @@ def test_run_iznn():
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(1, 5))
+    p.add_reporter(neat.Checkpointer(2, 10))
 
     # Run for up to 300 generations.
-    p.run(eval_dummy_genomes_iznn, 30)
+    p.run(eval_dummy_genomes_iznn, 20)
 
     stats.save()
 

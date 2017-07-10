@@ -3,9 +3,12 @@ import os
 import neat
 
 def test_xor_example_uniform():
-    test_xor_example(True)
+    test_xor_example(uniform=True)
 
-def test_xor_example(uniform=False):
+def test_xor_example_multiparam_relu():
+    test_xor_example(activation='multiparam_relu')
+
+def test_xor_example(uniform=False, activation=None):
     # 2-input XOR inputs and expected outputs.
     xor_inputs = [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]
     xor_outputs = [(0.0,), (1.0,), (1.0,), (0.0,)]
@@ -30,7 +33,11 @@ def test_xor_example(uniform=False):
                          config_path)
 
     if uniform:
-        config.weight_init_type = 'uniform'
+        config.genome_config.weight_init_type = 'uniform'
+
+    if activation is not None:
+        config.genome_config.activation_default = activation
+        config.genome_config.activation_options = [activation]
 
     # Create the population, which is the top-level object for a NEAT run.
     p = neat.Population(config)
@@ -43,7 +50,7 @@ def test_xor_example(uniform=False):
     # Run for up to 300 generations, allowing extinction.
     winner = None
     try:
-        winner = p.run(eval_genomes, 50)
+        winner = p.run(eval_genomes, 100)
     except neat.CompleteExtinctionException as e:
         pass
 
@@ -64,3 +71,4 @@ def test_xor_example(uniform=False):
 if __name__ == '__main__':
     test_xor_example()
     test_xor_example_uniform()
+    test_xor_example_multiparam_relu()

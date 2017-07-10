@@ -31,14 +31,14 @@ class MultiParameterFunctionInstance(object):
     def init_value(self, ignored_config=None):
         for n, m in iteritems(self.evolved_param_attributes):
             self.current_param_values[n] = m.init_value(self.multi_param_func)
-        self.instance_name = self.name + '(' + ','.join([self.current_param_values[n]
+        self.instance_name = self.name + '(' + ','.join([str(self.current_param_values[n])
                                                          for n in self.evolved_param_names]) + ')'
 
     def mutate_value(self, ignored_config=None):
         for n, m in iteritems(self.evolved_param_attributes):
             self.current_param_values[n] = m.mutate_value(self.current_param_values[n],
                                                           self.multi_param_func)
-        self.instance_name = self.name + '(' + ','.join([self.current_param_values[n]
+        self.instance_name = self.name + '(' + ','.join([str(self.current_param_values[n])
                                                          for n in self.evolved_param_names]) + ')'
 
     def __str__(self):
@@ -68,7 +68,7 @@ class MultiParameterFunctionInstance(object):
         return other
 
     def get_func(self):
-        return functools.partial(self.user_func, self.current_param_values)
+        return functools.partial(self.user_func, **self.current_param_values)
         
 
 class MultiParameterFunction(object):
@@ -158,12 +158,12 @@ class MultiParameterSet(object):
             func_dict = self.norm_func_dict[which_type]
             return func_dict[name]
 
-        if hasattr(name, '__class__') and (name.__class__ == 'MultiParameterFunctionInstance'):
+        if hasattr(name, 'get_func'):
             return name.get_func()
 
         if name in self.multiparam_func_dict[which_type]:
             func_dict = self.multiparam_func_dict[which_type]
-            return func_dict[name] # XXX
+            return func_dict[name] # Allows for altering configuration
 
         if name[-1] != ')':
             raise LookupError("Unknown function {!r} - no end )".
@@ -180,11 +180,11 @@ class MultiParameterSet(object):
                               format(func_name,name))
         multiparam_func = self.multiparam_func_dict[which_type][func_name]
 
-        param_nums = name[(param_start+1):(len(name)-2)].split(',')
+        param_nums = map(float, name[(param_start+1):(len(name)-2)].split(','))
 
         params = dict(zip(multiparam_func.evolved_param_names, param_nums))
 
-        return functools.partial(multiparam_func.user_func, params)
+        return functools.partial(multiparam_func.user_func, **params)
 
     def add_func(self, name, user_func, which_type, **kwargs):
         """Adds a new activation/aggregation function, potentially multiparameter."""

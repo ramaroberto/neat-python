@@ -25,6 +25,9 @@ def min_aggregation(x):
 def maxabs_aggregation(x):
     return max(x, key=abs)
 
+def min_max_aggregation(x, a):
+    return ((1-a)*min(x))+(a*max(x))
+
 
 class AggregationFunctionSet(object):
     """Contains aggregation functions and methods to add and retrieve them."""
@@ -36,6 +39,8 @@ class AggregationFunctionSet(object):
         self.add('max', max_aggregation)
         self.add('min', min_aggregation)
         self.add('maxabs', maxabs_aggregation)
+        self.add('min_max', min_max_aggregation,
+                 a={'min_value':0.0, 'max_value':1.0})
 
     def add(self, name, function, **kwargs):
         self.multiparameterset.add_func(name, function, 'aggregation', **kwargs)
