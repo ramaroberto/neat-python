@@ -90,6 +90,19 @@ class MultiParameterFunction(object):
                             abs(param_dict['min_value'] -
                                 param_dict['init_mean']))/2
             self.evolved_param_dicts[n].setdefault('init_stdev', for_stdev)
+            # below here is mainly intended for users wanting to use built-in
+            # multiparameter functions without too much initialization worries
+            self.evolved_param_dicts[n].setdefault('replace_rate', 0.1)
+            mutate_rate = min((1-param_dict['replace_rate']),(param_dict['replace_rate']*5))
+            self.evolved_param_dicts[n].setdefault('mutate_rate', mutate_rate)
+            # actual standard deviation of uniform distribution is width/sqrt(12) -
+            # use of 1/4 range in the uniform distribution FloatAttribute setup
+            # (and thus the above) is to make it easier to figure out how to
+            # get a given initialization range that is not the same as the
+            # overall min/max range.
+            mutate_power = ((param_dict['replace_rate']/param_dict['mutate_rate'])*
+                            (abs(param_dict['max_value']-param_dict['min_value'])/pow(12,0.5)))
+            self.evolved_param_dicts[n].setdefault('mutate_power', mutate_power)
             
             tmp_name = "{0}_{1}".format(name,n)
             self.evolved_param_attributes[n] = FloatAttribute(name=tmp_name,
@@ -120,7 +133,7 @@ class MultiParameterSet(object):
             return True
         if name in self.norm_func_dict[which_type]:
             return True
-        if ('(' in name) or (')' in name) or (',' in name):
+        if name[-1] == ')':
             raise InvalidFunctionError("Called with uncertain name '{!s}'".format(name))
         return False
 
@@ -162,6 +175,11 @@ class MultiParameterSet(object):
         if not func_name in self.multiparam_func_dict[which_type]:
             raise LookupError("Unknown function {!r} (from {!r})".
                               format(func_name,name))
+        multiparam_func = self.multiparam_func_dict[which_type][func_name]
+
+        param_nums = name[(param_start+1):(len(name)-2)].split(',')
+
+        params = dict(zip(multiparam_func.evolved_param_names, param_nums))
 
         return functools.partial(multiparam_func.user_func, params)
 
@@ -180,15 +198,15 @@ class MultiParameterSet(object):
                                        " but was given {0!s} kwargs ({1!r})".format(len(kwargs),
                                                                                     kwargs))
 
-        if ('(' in name) or (')' in name) or (',' in name):
-            raise InvalidFunctionError("Invalid function name '{!s}' for {!r}".format(name,
-                                                                                      user_func)
-                                       + " - cannot have '(', ')', or ','")
-
         if func_code.co_argcount == 1:
             func_dict = self.norm_func_dict[which_type]
             func_dict[name] = user_func
             return
+
+        if ('(' in name) or (')' in name) or (',' in name):
+            raise InvalidFunctionError("Invalid function name '{!s}' for {!r}".format(name,
+                                                                                      user_func)
+                                       + " - multiparam function cannot have '(', ')', or ','")
 
         first_an = func_code.co_varnames[0]
         if first_an in kwargs:
@@ -202,15 +220,15 @@ class MultiParameterSet(object):
         
         missing1 = func_names_set - kwargs_names_set
         if missing1:
-            raise InvalidFunctionError("Function {0!r} ({1!s}) has arguments '".format(user_func,
+            raise InvalidFunctionError("Function {0!r} ({1!s}) has arguments ".format(user_func,
                                                                                        name)
-                                       + "{0!r}' not in kwargs {1!r}".format(missing1,
+                                       + "{0!r} not in kwargs {1!r}".format(missing1,
                                                                              kwargs_names_set))
         missing2 = kwargs_names_set - func_names_set
         if missing2:
-            raise InvalidFunctionError("Function {0!r} ({1!s}) lacks arguments '".format(user_func,
+            raise InvalidFunctionError("Function {0!r} ({1!s}) lacks arguments ".format(user_func,
                                                                                          name)
-                                       + "{0!r}' in kwargs {1!r}".format(missing2,kwargs))
+                                       + "{0!r} in kwargs {1!r}".format(missing2,kwargs))
 
         func_dict = self.multiparam_func_dict[which_type]
         func_dict[name] = MultiParameterFunction(name=name, which_type=which_type,
