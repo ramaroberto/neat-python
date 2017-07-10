@@ -78,6 +78,8 @@ def square_activation(z):
 def cube_activation(z):
     return z ** 3
 
+def multiparam_relu_activation(z, a):
+    return max(z, (z*a))
 
 class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""
@@ -98,6 +100,7 @@ class ActivationFunctionSet(object):
         self.add('hat', hat_activation)
         self.add('square', square_activation)
         self.add('cube', cube_activation)
+        self.add('multiparam_relu', multiparam_relu_activation, a={'min_value':-1, 'max_value':1})
 
     def add(self, name, function, **kwargs):
         self.multiparameterset.add_func(name, function, 'activation', **kwargs)

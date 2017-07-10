@@ -2,7 +2,10 @@
 Enables the use of activation and aggregation functions
 with multiple evolvable numeric parameters.
 """
+from __future__ import print_function
+
 import functools
+import sys
 import types
 
 from neat.attributes import FloatAttribute
@@ -106,7 +109,7 @@ class MultiParameterFunction(object):
             
             tmp_name = "{0}_{1}".format(name,n)
             self.evolved_param_attributes[n] = FloatAttribute(name=tmp_name,
-                                                              default_dict=param_dict)
+                                                              **param_dict)
             for x, y in iteritems(param_dict):
                 setattr(self, self.evolved_param_attributes[n].config_item_name(x), y)
 
@@ -230,9 +233,13 @@ class MultiParameterSet(object):
                                                                                          name)
                                        + "{0!r} in kwargs {1!r}".format(missing2,kwargs))
 
+        ##print("Adding function {0!r} ({1!s}) with kwargs {2!r} ({3!s})".format(user_func,name,
+##                                                                               kwargs,type(kwargs)),
+##              file=sys.stderr)
+
         func_dict = self.multiparam_func_dict[which_type]
         func_dict[name] = MultiParameterFunction(name=name, which_type=which_type,
                                                  user_func=user_func,
                                                  evolved_param_names=evolved_param_names,
-                                                 evolved_param_dicts=kwargs)
+                                                 **kwargs)
 
