@@ -117,8 +117,9 @@ class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""
     def __init__(self, multiparameterset=None):
         if multiparameterset is None:
-            warnings.warn("Activation init called without multiparameterset:"+
-                          " may cause multiple instances of it")
+            warn_string = ("Activation init called without multiparameterset:" +
+                           " may cause multiple instances of it")
+            warnings.warn(warn_string)
             multiparameterset = MultiParameterSet('activation')
         self.multiparameterset = multiparameterset
         self.add('sigmoid', sigmoid_activation)

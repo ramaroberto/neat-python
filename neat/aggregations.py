@@ -38,8 +38,9 @@ class AggregationFunctionSet(object):
     
     def __init__(self, multiparameterset=None):
         if multiparameterset is None:
-            warnings.warn("Aggregation init called without multiparameterset:"+
-                          " may cause multiple instances of it")
+            warn_string = ("Aggregation init called without multiparameterset:" +
+                           " may cause multiple instances of it")
+            warnings.warn(warn_string)
             multiparameterset = MultiParameterSet('aggregation')
         self.multiparameterset = multiparameterset
         self.add('product', product_aggregation)
