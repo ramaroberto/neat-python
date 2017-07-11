@@ -6,6 +6,7 @@ from __future__ import division
 
 import math
 import warnings
+from neat.multiparameter import MultiParameterSet
 
 def sigmoid_activation(z):
     z = max(-60.0, min(60.0, 5.0 * z))
@@ -111,9 +112,14 @@ def multiparam_sigmoid_activation(z, a):
     """Conversion of clamped_tanh_step_activation to a 0-1 output range"""
     return max(0.0,min(1.0,((clamped_tanh_step_activation(z, a)+1.0)/2.0)))
 
+
 class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""
-    def __init__(self, multiparameterset):
+    def __init__(self, multiparameterset=None):
+        if multiparameterset is None:
+            warnings.warn("Activation init called without multiparameterset:"+
+                          " may cause multiple instances of it")
+            multiparameterset = MultiParameterSet('activation')
         self.multiparameterset = multiparameterset
         self.add('sigmoid', sigmoid_activation)
         self.add('tanh', tanh_activation)

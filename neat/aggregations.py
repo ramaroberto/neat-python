@@ -7,6 +7,8 @@ import warnings
 
 from operator import mul
 
+from neat.multiparameter import MultiParameterSet
+
 if sys.version_info[0] > 2:
     from functools import reduce
 
@@ -34,7 +36,11 @@ def min_max_aggregation(x, a):
 class AggregationFunctionSet(object):
     """Contains aggregation functions and methods to add and retrieve them."""
     
-    def __init__(self, multiparameterset):
+    def __init__(self, multiparameterset=None):
+        if multiparameterset is None:
+            warnings.warn("Aggregation init called without multiparameterset:"+
+                          " may cause multiple instances of it")
+            multiparameterset = MultiParameterSet('aggregation')
         self.multiparameterset = multiparameterset
         self.add('product', product_aggregation)
         self.add('sum', sum_aggregation)
