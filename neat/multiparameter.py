@@ -56,8 +56,7 @@ class MultiParameterFunctionInstance(object):
             diff = abs(self.current_param_values[n] -
                        other.current_param_values[n])
             param_dict = self.evolved_param_dicts[n]
-            total_diff += diff / abs(param_dict['max_value'] -
-                                     param_dict['min_value'])
+            total_diff += diff / abs(param_dict['max_value'] - param_dict['min_value'])
         return total_diff
 
     def copy(self):
@@ -143,12 +142,12 @@ class MultiParameterSet(object):
             return True
         if name in self.norm_func_dict[which_type]:
             return True
-        if name[-1] == ')':
+        if name.endswith(')'):
             raise InvalidFunctionError("Called with uncertain name '{!s}'".format(name))
         return False
 
     def is_multiparameter(self, name, which_type):
-        if name[-1] == ')':
+        if name.endswith(')'):
             raise InvalidFunctionError("Called with uncertain name '{!s}'".format(name))
         return name in self.multiparam_func_dict[which_type]
 
@@ -174,7 +173,7 @@ class MultiParameterSet(object):
             func_dict = self.multiparam_func_dict[which_type]
             return func_dict[name] # Allows for altering configuration
 
-        if name[-1] != ')':
+        if not name.endswith(')'):
             raise LookupError("Unknown function {!r} - no end )".
                               format(name))
 
@@ -215,10 +214,10 @@ class MultiParameterSet(object):
             func_dict[name] = user_func
             return
 
-        if ('(' in name) or (')' in name) or (',' in name):
+        if ('(' in name) or (')' in name):
             raise InvalidFunctionError("Invalid function name '{!s}' for {!r}".format(name,
                                                                                       user_func)
-                                       + " - multiparam function cannot have '(', ')', or ','")
+                                       + " - multiparam function cannot have '(' or ')'")
 
         first_an = func_code.co_varnames[0]
         if first_an in kwargs:
