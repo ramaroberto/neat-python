@@ -52,6 +52,7 @@
 <span class="kn">from</span> <span class="nn">neat.genes</span> <span class="k">import</span> <span class="n">DefaultConnectionGene</span><span class="p">,</span> <span class="n">DefaultNodeGene</span>
 <span class="kn">from</span> <span class="nn">neat.graphs</span> <span class="k">import</span> <span class="n">creates_cycle</span>
 <span class="kn">from</span> <span class="nn">neat.indexer</span> <span class="k">import</span> <span class="n">Indexer</span>
+<span class="kn">from</span> <span class="nn">neat.multiparameter</span> <span class="k">import</span> <span class="n">MultiParameterSet</span>
 <span class="kn">from</span> <span class="nn">neat.six_util</span> <span class="k">import</span> <span class="n">iteritems</span><span class="p">,</span> <span class="n">iterkeys</span>
 
 
@@ -62,10 +63,12 @@
                             <span class="s1">&#39;partial_nodirect&#39;</span><span class="p">,</span> <span class="s1">&#39;partial&#39;</span><span class="p">,</span> <span class="s1">&#39;partial_direct&#39;</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="c1"># Enables functions with evolved parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">multiparameterset</span> <span class="o">=</span> <span class="n">MultiParameterSet</span><span class="p">(</span><span class="s1">&#39;activation&#39;</span><span class="p">,</span> <span class="s1">&#39;aggregation&#39;</span><span class="p">)</span>
         <span class="c1"># Create full set of available activation functions.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">activation_defs</span> <span class="o">=</span> <span class="n">ActivationFunctionSet</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation_defs</span> <span class="o">=</span> <span class="n">ActivationFunctionSet</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">multiparameterset</span><span class="p">)</span>
         <span class="c1"># ditto for aggregation functions - name difference for backward compatibility</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">aggregation_function_defs</span> <span class="o">=</span> <span class="n">AggregationFunctionSet</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregation_function_defs</span> <span class="o">=</span> <span class="n">AggregationFunctionSet</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">multiparameterset</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="p">[</span><span class="n">ConfigParameter</span><span class="p">(</span><span class="s1">&#39;num_inputs&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span>
                         <span class="n">ConfigParameter</span><span class="p">(</span><span class="s1">&#39;num_outputs&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span>
@@ -123,11 +126,11 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">node_indexer</span> <span class="o">=</span> <span class="kc">None</span>
 
-<div class="viewcode-block" id="DefaultGenomeConfig.add_activation"><a class="viewcode-back" href="../module_summaries.html#genome.DefaultGenomeConfig.add_activation">[docs]</a>    <span class="k">def</span> <span class="nf">add_activation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">activation_defs</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span></div>
+<div class="viewcode-block" id="DefaultGenomeConfig.add_activation"><a class="viewcode-back" href="../module_summaries.html#genome.DefaultGenomeConfig.add_activation">[docs]</a>    <span class="k">def</span> <span class="nf">add_activation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation_defs</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">add_aggregation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">aggregation_function_defs</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">add_aggregation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aggregation_function_defs</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="DefaultGenomeConfig.save"><a class="viewcode-back" href="../module_summaries.html#genome.DefaultGenomeConfig.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
         <span class="k">if</span> <span class="s1">&#39;partial&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_connection</span><span class="p">:</span>
@@ -360,10 +363,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">connection</span></div>
 
 <div class="viewcode-block" id="DefaultGenome.mutate_add_connection"><a class="viewcode-back" href="../module_summaries.html#genome.DefaultGenome.mutate_add_connection">[docs]</a>    <span class="k">def</span> <span class="nf">mutate_add_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-        <span class="sd">&#39;&#39;&#39;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Attempt to add a new connection, the only restriction being that the output</span>
 <span class="sd">        node cannot be one of the network input pins.</span>
-<span class="sd">        &#39;&#39;&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">possible_outputs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">iterkeys</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">))</span>
         <span class="n">out_node</span> <span class="o">=</span> <span class="n">choice</span><span class="p">(</span><span class="n">possible_outputs</span><span class="p">)</span>
 
@@ -495,7 +498,8 @@
 
 <div class="viewcode-block" id="DefaultGenome.connect_fs_neat_nohidden"><a class="viewcode-back" href="../module_summaries.html#genome.DefaultGenome.connect_fs_neat_nohidden">[docs]</a>    <span class="k">def</span> <span class="nf">connect_fs_neat_nohidden</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Randomly connect one input to all output nodes (FS-NEAT without connections to hidden, if any).</span>
+<span class="sd">        Randomly connect one input to all output nodes</span>
+<span class="sd">        (FS-NEAT without connections to hidden, if any).</span>
 <span class="sd">        Originally connect_fs_neat.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">input_id</span> <span class="o">=</span> <span class="n">choice</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_keys</span><span class="p">)</span>
@@ -517,8 +521,9 @@
 <div class="viewcode-block" id="DefaultGenome.compute_full_connections"><a class="viewcode-back" href="../module_summaries.html#genome.DefaultGenome.compute_full_connections">[docs]</a>    <span class="k">def</span> <span class="nf">compute_full_connections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">direct</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute connections for a fully-connected feed-forward genome--each</span>
-<span class="sd">        input connected to all hidden nodes (and output nodes if ``direct`` is set or there are no hidden nodes),</span>
-<span class="sd">        each hidden node connected to all output nodes. (Recurrent genomes will also include node self-connections.)</span>
+<span class="sd">        input connected to all hidden nodes (and output nodes if ``direct`` is set or</span>
+<span class="sd">        there are no hidden nodes), each hidden node connected to all output nodes.</span>
+<span class="sd">        (Recurrent genomes will also include node self-connections.)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">hidden</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">iterkeys</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">output_keys</span><span class="p">]</span>
         <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">iterkeys</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">output_keys</span><span class="p">]</span>
@@ -544,19 +549,25 @@
 
 
 <div class="viewcode-block" id="DefaultGenome.connect_full_nodirect"><a class="viewcode-back" href="../module_summaries.html#genome.DefaultGenome.connect_full_nodirect">[docs]</a>    <span class="k">def</span> <span class="nf">connect_full_nodirect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Create a fully-connected genome (except without direct input-output unless no hidden nodes). &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a fully-connected genome</span>
+<span class="sd">        (except without direct input-output unless no hidden nodes).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">input_id</span><span class="p">,</span> <span class="n">output_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_full_connections</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
             <span class="n">connection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_connection</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">input_id</span><span class="p">,</span> <span class="n">output_id</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">[</span><span class="n">connection</span><span class="o">.</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">connection</span></div>
 
 <div class="viewcode-block" id="DefaultGenome.connect_full_direct"><a class="viewcode-back" href="../module_summaries.html#genome.DefaultGenome.connect_full_direct">[docs]</a>    <span class="k">def</span> <span class="nf">connect_full_direct</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Create a fully-connected genome, including direct input-output connections. &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Create a fully-connected genome, including direct input-output connections.&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">input_id</span><span class="p">,</span> <span class="n">output_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_full_connections</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
             <span class="n">connection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_connection</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">input_id</span><span class="p">,</span> <span class="n">output_id</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">[</span><span class="n">connection</span><span class="o">.</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">connection</span></div>
 
 <div class="viewcode-block" id="DefaultGenome.connect_partial_nodirect"><a class="viewcode-back" href="../module_summaries.html#genome.DefaultGenome.connect_partial_nodirect">[docs]</a>    <span class="k">def</span> <span class="nf">connect_partial_nodirect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Create a partially-connected genome, with (unless no hidden nodes) no direct input-output connections. &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a partially-connected genome,</span>
+<span class="sd">        with (unless no hidden nodes) no direct input-output connections.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">config</span><span class="o">.</span><span class="n">connection_fraction</span> <span class="o">&lt;=</span> <span class="mi">1</span>
         <span class="n">all_connections</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_full_connections</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
         <span class="n">shuffle</span><span class="p">(</span><span class="n">all_connections</span><span class="p">)</span>
@@ -566,7 +577,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">[</span><span class="n">connection</span><span class="o">.</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">connection</span></div>
 
 <div class="viewcode-block" id="DefaultGenome.connect_partial_direct"><a class="viewcode-back" href="../module_summaries.html#genome.DefaultGenome.connect_partial_direct">[docs]</a>    <span class="k">def</span> <span class="nf">connect_partial_direct</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Create a partially-connected genome, including (possibly) direct input-output connections. &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a partially-connected genome,</span>
+<span class="sd">        including (possibly) direct input-output connections.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">config</span><span class="o">.</span><span class="n">connection_fraction</span> <span class="o">&lt;=</span> <span class="mi">1</span>
         <span class="n">all_connections</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_full_connections</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
         <span class="n">shuffle</span><span class="p">(</span><span class="n">all_connections</span><span class="p">)</span>
