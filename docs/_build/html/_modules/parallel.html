@@ -49,15 +49,9 @@
 <div class="viewcode-block" id="ParallelEvaluator"><a class="viewcode-back" href="../module_summaries.html#parallel.ParallelEvaluator">[docs]</a><span class="k">class</span> <span class="nc">ParallelEvaluator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_workers</span><span class="p">,</span> <span class="n">eval_function</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</span>
-<span class="sd">        eval_function should take one argument</span>
-<span class="sd">        (a tuple of a genome object and a config object) and return</span>
-<span class="sd">        a single float (the fitness of the genome).</span>
-<span class="sd">=======</span>
 <span class="sd">        eval_function should take one argument, a tuple of</span>
 <span class="sd">        (genome object, config object), and return</span>
 <span class="sd">        a single float (the genome&#39;s fitness).</span>
-<span class="sd">&gt;&gt;&gt;&gt;&gt;&gt;&gt; config_work</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_workers</span> <span class="o">=</span> <span class="n">num_workers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">eval_function</span> <span class="o">=</span> <span class="n">eval_function</span>
