@@ -56,7 +56,7 @@ class MultiParameterFunctionInstance(object):
             diff = abs(self.current_param_values[n] -
                        other.current_param_values[n])
             param_dict = self.evolved_param_dicts[n]
-            total_diff += diff / abs(param_dict['max_value'] - param_dict['min_value'])
+            total_diff += diff / max(1,abs(param_dict['max_value'] - param_dict['min_value']))
         return total_diff
 
     def copy(self):
