@@ -40,7 +40,8 @@ class ConfigParameter(object):
             if self.default is None:
                 raise RuntimeError('Missing configuration item: ' + self.name)
             else:
-                warnings.warn("Using default {!r} for '{!s}'".format(self.default, self.name), DeprecationWarning)
+                warnings.warn("Using default {!r} for '{!s}'".format(self.default, self.name),
+                              DeprecationWarning)
                 value = self.default
 
         try:
@@ -60,7 +61,7 @@ class ConfigParameter(object):
             if list == self.value_type:
                 return value.split(" ")
         except Exception:
-            sys.excepthook(sys.exc_info()) # otherwise, why do the above w/RuntimeError?
+            sys.excepthook(*sys.exc_info()) # otherwise, why do the above w/RuntimeError?
             raise RuntimeError("Error interpreting config item '{}' with value '{}' and type {}".format(
                 self.name, value, self.value_type))
 
