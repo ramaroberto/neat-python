@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>checkpoint &#8212; NEAT-Python 0.91-github documentation</title>
+    <title>checkpoint &#8212; NEAT-Python 0.91-config_work documentation</title>
     
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '0.91-github',
+        VERSION:     '0.91-config_work',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -107,7 +107,7 @@
 
 <div class="viewcode-block" id="Checkpointer.restore_checkpoint"><a class="viewcode-back" href="../module_summaries.html#checkpoint.Checkpointer.restore_checkpoint">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">restore_checkpoint</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Resumes the simulation from a previous saved point.&quot;&quot;&quot;</span>
+        <span class="sd">&#39;&#39;&#39;Resumes the simulation from a previous saved point.&#39;&#39;&#39;</span>
         <span class="k">with</span> <span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">generation</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">population</span><span class="p">,</span> <span class="n">species_set</span><span class="p">,</span> <span class="n">rndstate</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
             <span class="n">random</span><span class="o">.</span><span class="n">setstate</span><span class="p">(</span><span class="n">rndstate</span><span class="p">)</span>
