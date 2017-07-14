@@ -32,6 +32,9 @@ def min_max_aggregation(x, a):
     assert a >= 0.0
     return ((1.0-a)*min(x))+(a*max(x))
 
+    if not (function.__code__.co_argcount >= 1):
+        raise InvalidAggregationFunction("A function taking at least one argument is required")
+
 
 class AggregationFunctionSet(object):
     """Contains aggregation functions and methods to add and retrieve them."""
