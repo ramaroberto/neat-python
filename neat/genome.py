@@ -15,6 +15,7 @@ from neat.six_util import iteritems, iterkeys
 
 
 class DefaultGenomeConfig(object):
+    """Sets up and holds configuration information for the DefaultGenome class."""
     allowed_connectivity = ['unconnected', 'fs_neat_nohidden', 'fs_neat', 'fs_neat_hidden',
                             'full_nodirect', 'full', 'full_direct',
                             'partial_nodirect', 'partial', 'partial_direct']
@@ -503,6 +504,7 @@ class DefaultGenome(object):
                 connections.append((i, i))
 
         return connections
+
 
     def connect_full_nodirect(self, config):
         """
