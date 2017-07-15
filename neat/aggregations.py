@@ -5,6 +5,8 @@ and methods for adding new user-defined ones.
 import sys
 import warnings
 
+from neat.math_util import mean
+
 from operator import mul
 
 from neat.multiparameter import MultiParameterSet
@@ -27,10 +29,25 @@ def min_aggregation(x):
 def maxabs_aggregation(x):
     return max(x, key=abs)
 
+def mean_aggregation(x):
+    return mean(x)
+
 def min_max_aggregation(x, a):
     assert a <= 1.0
     assert a >= 0.0
     return ((1.0-a)*min(x))+(a*max(x))
+
+
+class InvalidAggregationFunction(TypeError):
+    pass
+
+
+def validate_aggregation(function): # TODO: Recognize when need `reduce`
+    if not isinstance(function,
+                      (types.BuiltinFunctionType,
+                       types.FunctionType,
+                       types.LambdaType)):
+        raise InvalidAggregationFunction("A function object is required.")
 
     if not (function.__code__.co_argcount >= 1):
         raise InvalidAggregationFunction("A function taking at least one argument is required")
@@ -51,6 +68,7 @@ class AggregationFunctionSet(object):
         self.add('max', max_aggregation)
         self.add('min', min_aggregation)
         self.add('maxabs', maxabs_aggregation)
+        self.add('mean', mean_aggregation)
         self.add('min_max', min_max_aggregation,
                  a={'min_value':0.0, 'max_value':1.0})
 
