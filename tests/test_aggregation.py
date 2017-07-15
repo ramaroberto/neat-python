@@ -40,12 +40,17 @@ def test_mean():
     assert aggregations.mean_aggregation([0.0,1.0,2.0]) == 1.0
     assert aggregations.mean_aggregation([0.0,-1.0,-2.0]) == -1.0
 
-def test_min_max():
-    assert aggregations.min_max_aggregation([0.0,1.0,2.0],1.0) == 2.0
-    assert aggregations.min_max_aggregation([0.0,-1.0,-2.0],1.0) == 0.0
-    assert aggregations.min_max_aggregation([0.0,1.0,2.0],0.0) == 0.0
-    assert aggregations.min_max_aggregation([0.0,-1.0,-2.0],0.0) == -2.0
+def test_max_min():
+    assert aggregations.max_min_aggregation([0.0,1.0,2.0],1.0) == 2.0
+    assert aggregations.max_min_aggregation([0.0,-1.0,-2.0],1.0) == 0.0
+    assert aggregations.max_min_aggregation([0.0,1.0,2.0],0.0) == 0.0
+    assert aggregations.max_min_aggregation([0.0,-1.0,-2.0],0.0) == -2.0
 
+def test_maxabs_mean():
+    assert aggregations.maxabs_mean_aggregation([0.0,1.0,2.0],1.0) == 2.0
+    assert aggregations.maxabs_mean_aggregation([0.0,-1.0,-2.0],1.0) == -2.0
+    assert aggregations.maxabs_mean_aggregation([0.0,1.0,2.0],0.0) == 1.0
+    assert aggregations.maxabs_mean_aggregation([0.0,-1.0,-2.0],0.0) == -1.0
 
 def minabs_aggregation(x):
     """Not particularly useful - just a check that can load in from a non-library file."""
@@ -68,7 +73,8 @@ def test_function_set():
     assert s.get('min') is not None
     assert s.get('maxabs') is not None
     assert s.get('mean') is not None
-    assert s.get('min_max') is not None
+    assert s.get('max_min') is not None
+    assert s.get('maxabs_mean') is not None
 
     assert s.is_valid('sum')
     assert s.is_valid('product')
@@ -76,7 +82,8 @@ def test_function_set():
     assert s.is_valid('min')
     assert s.is_valid('maxabs')
     assert s.is_valid('mean')
-    assert s.is_valid('min_max')
+    assert s.is_valid('max_min')
+    assert s.is_valid('maxabs_mean')
 
     assert not s.is_valid('foo')
 
@@ -88,6 +95,7 @@ if __name__ == '__main__':
     test_min()
     test_maxabs()
     test_mean()
-    test_min_max()
+    test_max_min()
+    test_maxabs_mean()
     test_add_minabs()
     test_function_set()

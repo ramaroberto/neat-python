@@ -32,11 +32,15 @@ def maxabs_aggregation(x):
 def mean_aggregation(x):
     return mean(x)
 
-def min_max_aggregation(x, a):
+def max_min_aggregation(x, a):
     assert a <= 1.0
     assert a >= 0.0
     return ((1.0-a)*min(x))+(a*max(x))
 
+def maxabs_mean_aggregation(x, a):
+    assert a <= 1.0
+    assert a >= 0.0
+    return ((1.0-a)*mean_aggregation(x))+(a*maxabs_aggregation(x))
 
 class InvalidAggregationFunction(TypeError):
     pass
@@ -69,7 +73,9 @@ class AggregationFunctionSet(object):
         self.add('min', min_aggregation)
         self.add('maxabs', maxabs_aggregation)
         self.add('mean', mean_aggregation)
-        self.add('min_max', min_max_aggregation,
+        self.add('max_min', max_min_aggregation,
+                 a={'min_value':0.0, 'max_value':1.0})
+        self.add('maxabs_mean', maxabs_mean_aggregation,
                  a={'min_value':0.0, 'max_value':1.0})
 
     def add(self, name, function, **kwargs):
