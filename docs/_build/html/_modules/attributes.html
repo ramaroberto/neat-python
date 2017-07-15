@@ -41,10 +41,7 @@
             
   <h1>Source code for attributes</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Deals with the attributes (variable parameters) of genes&quot;&quot;&quot;</span>
-<span class="c1">#from __future__ import print_function</span>
-<span class="c1">#from copy import deepcopy</span>
 <span class="kn">from</span> <span class="nn">random</span> <span class="k">import</span> <span class="n">choice</span><span class="p">,</span> <span class="n">gauss</span><span class="p">,</span> <span class="n">random</span><span class="p">,</span> <span class="n">uniform</span>
-
 <span class="kn">from</span> <span class="nn">neat.config</span> <span class="k">import</span> <span class="n">ConfigParameter</span>
 <span class="kn">from</span> <span class="nn">neat.six_util</span> <span class="k">import</span> <span class="n">iterkeys</span><span class="p">,</span> <span class="n">iteritems</span>
 
@@ -65,8 +62,7 @@
 <div class="viewcode-block" id="BaseAttribute.get_config_params"><a class="viewcode-back" href="../module_summaries.html#attributes.BaseAttribute.get_config_params">[docs]</a>    <span class="k">def</span> <span class="nf">get_config_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">ConfigParameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_item_name</span><span class="p">(</span><span class="n">n</span><span class="p">),</span>
                                 <span class="bp">self</span><span class="o">.</span><span class="n">__config_items__</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
-                                <span class="bp">self</span><span class="o">.</span><span class="n">__config_items__</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
-                <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">iterkeys</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__config_items__</span><span class="p">)]</span></div></div>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">__config_items__</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">iterkeys</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__config_items__</span><span class="p">)]</span></div></div>
 
 <div class="viewcode-block" id="FloatAttribute"><a class="viewcode-back" href="../module_summaries.html#attributes.FloatAttribute">[docs]</a><span class="k">class</span> <span class="nc">FloatAttribute</span><span class="p">(</span><span class="n">BaseAttribute</span><span class="p">):</span>
     <span class="n">__config_items__</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;init_mean&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
@@ -93,9 +89,9 @@
 
         <span class="k">if</span> <span class="n">init_type</span> <span class="o">==</span> <span class="s1">&#39;uniform&#39;</span><span class="p">:</span>
             <span class="n">min_value</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_value_name</span><span class="p">),</span>
-                            <span class="p">(</span><span class="n">mean</span><span class="o">-</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">stdev</span><span class="p">)))</span>
+                            <span class="p">(</span><span class="n">mean</span><span class="o">-</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">stdev</span><span class="p">)))</span>
             <span class="n">max_value</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_value_name</span><span class="p">),</span>
-                            <span class="p">(</span><span class="n">mean</span><span class="o">+</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">stdev</span><span class="p">)))</span>
+                            <span class="p">(</span><span class="n">mean</span><span class="o">+</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">stdev</span><span class="p">)))</span>
             <span class="k">return</span> <span class="n">uniform</span><span class="p">(</span><span class="n">min_value</span><span class="p">,</span> <span class="n">max_value</span><span class="p">)</span>
 
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Unknown init_type </span><span class="si">{!r}</span><span class="s2"> for </span><span class="si">{!s}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span>
@@ -103,8 +99,8 @@
                                                                     <span class="bp">self</span><span class="o">.</span><span class="n">init_type_name</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="FloatAttribute.mutate_value"><a class="viewcode-back" href="../module_summaries.html#attributes.FloatAttribute.mutate_value">[docs]</a>    <span class="k">def</span> <span class="nf">mutate_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-         <span class="c1"># mutate_rate is usually no lower than replace_rate,</span>
-         <span class="c1"># and frequently higher - so put first for efficiency</span>
+        <span class="c1"># mutate_rate is usually no lower than replace_rate, and frequently higher -</span>
+        <span class="c1"># so put first for efficiency</span>
         <span class="n">mutate_rate</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mutate_rate_name</span><span class="p">)</span>
 
         <span class="n">r</span> <span class="o">=</span> <span class="n">random</span><span class="p">()</span>
@@ -187,49 +183,6 @@
 
     <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
         <span class="k">pass</span></div>
-
-<span class="k">class</span> <span class="nc">FuncAttribute</span><span class="p">(</span><span class="n">StringAttribute</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Handle attributes that may be simple strings</span>
-<span class="sd">    or may be functions needing multiparameter handling.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">init_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-        <span class="n">default</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_name</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">default</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;random&#39;</span><span class="p">):</span>
-            <span class="n">options</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">options_name</span><span class="p">)</span>
-            <span class="n">default</span> <span class="o">=</span> <span class="n">choice</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="s1">&#39;init_value&#39;</span><span class="p">):</span>
-            <span class="n">default</span><span class="o">.</span><span class="n">init_value</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s1">&#39;multiparameterset&#39;</span><span class="p">):</span>
-            <span class="n">multiparam</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">multiparameterset</span>
-
-            <span class="k">if</span> <span class="n">multiparam</span><span class="o">.</span><span class="n">is_multiparameter</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
-                <span class="n">default</span> <span class="o">=</span> <span class="n">multiparam</span><span class="o">.</span><span class="n">init_multiparameter</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">default</span>
-
-
-    <span class="k">def</span> <span class="nf">mutate_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-        <span class="n">mutate_rate</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mutate_rate_name</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">mutate_rate</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">r</span> <span class="o">=</span> <span class="n">random</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">r</span> <span class="o">&lt;</span> <span class="n">mutate_rate</span><span class="p">:</span>
-                <span class="n">options</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">options_name</span><span class="p">)</span>
-                <span class="n">value</span> <span class="o">=</span> <span class="n">choice</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;mutate_value&#39;</span><span class="p">):</span>
-            <span class="c1">#print(&quot;Accessing mutate_value function of {!r}&quot;.format(value))</span>
-            <span class="n">value</span><span class="o">.</span><span class="n">mutate_value</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s1">&#39;multiparameterset&#39;</span><span class="p">):</span>
-            <span class="n">multiparam</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">multiparameterset</span>
-            <span class="k">if</span> <span class="n">multiparam</span><span class="o">.</span><span class="n">is_multiparameter</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
-                <span class="n">value</span> <span class="o">=</span> <span class="n">multiparam</span><span class="o">.</span><span class="n">init_multiparameter</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">value</span>
-
 </pre></div>
 
           </div>

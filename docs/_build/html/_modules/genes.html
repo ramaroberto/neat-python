@@ -40,14 +40,8 @@
           <div class="body" role="main">
             
   <h1>Source code for genes</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Handles genes coding for node and connection attributes.&quot;&quot;&quot;</span>
-<span class="c1">##from __future__ import print_function</span>
-
-<span class="kn">from</span> <span class="nn">random</span> <span class="k">import</span> <span class="n">random</span>
-<span class="c1">##from sys import getrefcount, stderr</span>
-<span class="c1">##from types import MethodType</span>
-
-<span class="kn">from</span> <span class="nn">neat.attributes</span> <span class="k">import</span> <span class="n">FloatAttribute</span><span class="p">,</span> <span class="n">BoolAttribute</span><span class="p">,</span> <span class="n">FuncAttribute</span>
+<span></span><span class="kn">from</span> <span class="nn">random</span> <span class="k">import</span> <span class="n">random</span>
+<span class="kn">from</span> <span class="nn">neat.attributes</span> <span class="k">import</span> <span class="n">FloatAttribute</span><span class="p">,</span> <span class="n">BoolAttribute</span><span class="p">,</span> <span class="n">StringAttribute</span>
 
 <span class="c1"># TODO: There is probably a lot of room for simplification of these classes using metaprogramming.</span>
 <span class="c1"># TODO: Evaluate using __slots__ for performance/memory usage improvement.</span>
@@ -88,10 +82,8 @@
 <div class="viewcode-block" id="BaseGene.copy"><a class="viewcode-back" href="../module_summaries.html#genes.BaseGene.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">new_gene</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__gene_attributes__</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s1">&#39;copy&#39;</span><span class="p">):</span>
-                <span class="nb">setattr</span><span class="p">(</span><span class="n">new_gene</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="nb">setattr</span><span class="p">(</span><span class="n">new_gene</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">new_gene</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
         <span class="k">return</span> <span class="n">new_gene</span></div>
 
 <div class="viewcode-block" id="BaseGene.crossover"><a class="viewcode-back" href="../module_summaries.html#genes.BaseGene.crossover">[docs]</a>    <span class="k">def</span> <span class="nf">crossover</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gene2</span><span class="p">):</span>
@@ -103,16 +95,10 @@
         <span class="n">new_gene</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__gene_attributes__</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">random</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s1">&#39;copy&#39;</span><span class="p">):</span>
-                    <span class="nb">setattr</span><span class="p">(</span><span class="n">new_gene</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="nb">setattr</span><span class="p">(</span><span class="n">new_gene</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">new_gene</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">gene2_attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">gene2</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">gene2_attr</span><span class="p">,</span> <span class="s1">&#39;copy&#39;</span><span class="p">):</span>
-                    <span class="nb">setattr</span><span class="p">(</span><span class="n">new_gene</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">gene2_attr</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="nb">setattr</span><span class="p">(</span><span class="n">new_gene</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">gene2_attr</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">new_gene</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">gene2</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
         <span class="k">return</span> <span class="n">new_gene</span></div></div>
 
 
@@ -122,22 +108,15 @@
 <div class="viewcode-block" id="DefaultNodeGene"><a class="viewcode-back" href="../module_summaries.html#genes.DefaultNodeGene">[docs]</a><span class="k">class</span> <span class="nc">DefaultNodeGene</span><span class="p">(</span><span class="n">BaseGene</span><span class="p">):</span>
     <span class="n">__gene_attributes__</span> <span class="o">=</span> <span class="p">[</span><span class="n">FloatAttribute</span><span class="p">(</span><span class="s1">&#39;bias&#39;</span><span class="p">),</span>
                            <span class="n">FloatAttribute</span><span class="p">(</span><span class="s1">&#39;response&#39;</span><span class="p">),</span>
-                           <span class="n">FuncAttribute</span><span class="p">(</span><span class="s1">&#39;activation&#39;</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="s1">&#39;sigmoid&#39;</span><span class="p">),</span>
-                           <span class="n">FuncAttribute</span><span class="p">(</span><span class="s1">&#39;aggregation&#39;</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="s1">&#39;sum&#39;</span><span class="p">)]</span>
+                           <span class="n">StringAttribute</span><span class="p">(</span><span class="s1">&#39;activation&#39;</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="s1">&#39;sigmoid&#39;</span><span class="p">),</span>
+                           <span class="n">StringAttribute</span><span class="p">(</span><span class="s1">&#39;aggregation&#39;</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="s1">&#39;sum&#39;</span><span class="p">)]</span>
 
 <div class="viewcode-block" id="DefaultNodeGene.distance"><a class="viewcode-back" href="../module_summaries.html#genes.DefaultNodeGene.distance">[docs]</a>    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Returns the genetic distance between two node genes.&quot;&quot;&quot;</span>
         <span class="n">d</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">-</span> <span class="n">other</span><span class="o">.</span><span class="n">bias</span><span class="p">)</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">response</span> <span class="o">-</span> <span class="n">other</span><span class="o">.</span><span class="n">response</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">,</span> <span class="s1">&#39;distance&#39;</span><span class="p">):</span>
-            <span class="n">d</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">activation</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">activation</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">activation</span><span class="p">:</span>
             <span class="n">d</span> <span class="o">+=</span> <span class="mf">1.0</span>
-
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aggregation</span><span class="p">,</span> <span class="s1">&#39;distance&#39;</span><span class="p">):</span>
-            <span class="n">d</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aggregation</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">aggregation</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">aggregation</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">aggregation</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">aggregation</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">aggregation</span><span class="p">:</span>
             <span class="n">d</span> <span class="o">+=</span> <span class="mf">1.0</span>
-        
         <span class="k">return</span> <span class="n">d</span> <span class="o">*</span> <span class="n">config</span><span class="o">.</span><span class="n">compatibility_weight_coefficient</span></div></div>
 
 
@@ -149,7 +128,6 @@
                            <span class="n">BoolAttribute</span><span class="p">(</span><span class="s1">&#39;enabled&#39;</span><span class="p">)]</span>
 
 <div class="viewcode-block" id="DefaultConnectionGene.distance"><a class="viewcode-back" href="../module_summaries.html#genes.DefaultConnectionGene.distance">[docs]</a>    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Returns the genetic distance between two connection genes.&quot;&quot;&quot;</span>
         <span class="n">d</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">-</span> <span class="n">other</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
             <span class="n">d</span> <span class="o">+=</span> <span class="mf">1.0</span>

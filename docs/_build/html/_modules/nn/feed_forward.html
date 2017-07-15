@@ -67,6 +67,10 @@
 
         <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_nodes</span><span class="p">]</span></div>
 
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Method in case using instead of recurrent due to genome phenotype being feed-forward&quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
 <div class="viewcode-block" id="FeedForwardNetwork.create"><a class="viewcode-back" href="../../module_summaries.html#nn.feed_forward.FeedForwardNetwork.create">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">genome</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Receives a genome and returns its phenotype (a FeedForwardNetwork). &quot;&quot;&quot;</span>

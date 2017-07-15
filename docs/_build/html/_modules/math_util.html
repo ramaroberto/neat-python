@@ -40,7 +40,7 @@
           <div class="body" role="main">
             
   <h1>Source code for math_util</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Commonly used functions not available in the Python2 standard library.&quot;&quot;&quot;</span>
+<span></span><span class="sd">&#39;&#39;&#39;Commonly used functions not available in the Python2 standard library.&#39;&#39;&#39;</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 
 <span class="kn">from</span> <span class="nn">math</span> <span class="k">import</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">exp</span>
@@ -70,8 +70,7 @@
 <div class="viewcode-block" id="softmax"><a class="viewcode-back" href="../module_summaries.html#math_util.softmax">[docs]</a><span class="k">def</span> <span class="nf">softmax</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute the softmax of the given value set, v_i = exp(v_i) / s,</span>
-<span class="sd">    where s = sum(exp(v_0), exp(v_1), ..).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    where s = sum(exp(v_0), exp(v_1), ..).&quot;&quot;&quot;</span>
     <span class="n">e_values</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">exp</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
     <span class="n">s</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">e_values</span><span class="p">)</span>
     <span class="n">inv_s</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">s</span>
