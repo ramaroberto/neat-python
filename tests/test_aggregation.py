@@ -44,11 +44,13 @@ def test_mean():
     assert aggregations.mean_aggregation([0.0,1.0,2.0]) == 1.0
     assert aggregations.mean_aggregation([0.0,-1.0,-2.0]) == -1.0
 
-def test_max_min():
-    assert aggregations.max_min_aggregation([0.0,1.0,2.0],1.0) == 2.0
-    assert aggregations.max_min_aggregation([0.0,-1.0,-2.0],1.0) == 0.0
-    assert aggregations.max_min_aggregation([0.0,1.0,2.0],0.0) == 0.0
-    assert aggregations.max_min_aggregation([0.0,-1.0,-2.0],0.0) == -2.0
+def test_max_median_min():
+    assert aggregations.max_median_min_aggregation([0.0,1.0,2.0],1.0) == 2.0
+    assert aggregations.max_median_min_aggregation([0.0,-1.0,-2.0],1.0) == 0.0
+    assert aggregations.max_median_min_aggregation([0.0,1.0,2.0],0.0) == 1.0
+    assert aggregations.max_median_min_aggregation([-10.0,1.0,3.0,10.0],0.0) == 2.0
+    assert aggregations.max_median_min_aggregation([0.0,1.0,2.0],-1.0) == 0.0
+    assert aggregations.max_median_min_aggregation([0.0,-1.0,-2.0],-1.0) == -2.0
 
 def test_maxabs_mean():
     assert aggregations.maxabs_mean_aggregation([0.0,1.0,2.0],1.0) == 2.0
@@ -78,7 +80,7 @@ def test_function_set():
     assert s.get('maxabs') is not None
     assert s.get('median') is not None
     assert s.get('mean') is not None
-    assert s.get('max_min') is not None
+    assert s.get('max_median_min') is not None
     assert s.get('maxabs_mean') is not None
 
     assert s.is_valid('sum')
@@ -88,7 +90,7 @@ def test_function_set():
     assert s.is_valid('maxabs')
     assert s.is_valid('median')
     assert s.is_valid('mean')
-    assert s.is_valid('max_min')
+    assert s.is_valid('max_median_min')
     assert s.is_valid('maxabs_mean')
 
     assert not s.is_valid('foo')
@@ -102,7 +104,7 @@ if __name__ == '__main__':
     test_maxabs()
     test_median()
     test_mean()
-    test_max_min()
+    test_max_median_min()
     test_maxabs_mean()
     test_add_minabs()
     test_function_set()
