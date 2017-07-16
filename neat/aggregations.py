@@ -5,7 +5,7 @@ and methods for adding new user-defined ones.
 import sys
 import warnings
 
-from neat.math_util import mean
+from neat.math_util import mean, median2
 
 from operator import mul
 
@@ -28,6 +28,9 @@ def min_aggregation(x):
 
 def maxabs_aggregation(x):
     return max(x, key=abs)
+
+def median_aggregation(x):
+    return median2(x)
 
 def mean_aggregation(x):
     return mean(x)
@@ -72,6 +75,7 @@ class AggregationFunctionSet(object):
         self.add('max', max_aggregation)
         self.add('min', min_aggregation)
         self.add('maxabs', maxabs_aggregation)
+        self.add('median', median_aggregation)
         self.add('mean', mean_aggregation)
         self.add('max_min', max_min_aggregation,
                  a={'min_value':0.0, 'max_value':1.0})
