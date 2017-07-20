@@ -46,10 +46,10 @@ class FloatAttribute(BaseAttribute):
         stdev = getattr(config, self.init_stdev_name)
         init_type = getattr(config, self.init_type_name).lower()
 
-        if ('gauss' in init_type) or (init_type == 'normal'):
+        if ('gauss' in init_type) or ('normal' in init_type):
             return self.clamp(gauss(mean, stdev), config)
 
-        if init_type == 'uniform':
+        if 'uniform' in init_type:
             min_value = max(getattr(config, self.min_value_name),
                             (mean-(2.0*stdev)))
             max_value = min(getattr(config, self.max_value_name),
@@ -69,7 +69,7 @@ class FloatAttribute(BaseAttribute):
         if r < mutate_rate:
             mutate_power = getattr(config, self.mutate_power_name)
             return self.clamp(value + gauss(0.0, mutate_power), config)
-        
+
         replace_rate = getattr(config, self.replace_rate_name)
 
         if r < replace_rate + mutate_rate:

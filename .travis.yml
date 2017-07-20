@@ -1,19 +1,23 @@
+dist: precise
 language: python
 python:
-  - "2.7"
-  - "3.3"
-  - "3.4"
-  - "3.5"
-  - "3.5-dev"
-  - "3.6"
-  - "3.6-dev"
-  - "3.7-dev"
-  - "nightly"
-  - "pypy"
-  - "pypy3.5-5.8.0"
+  - 2.7
+  - 3.3
+  - 3.4
+  - 3.5
+  - 3.5-dev
+  - 3.6
+  - 3.6-dev
+  - 3.7-dev
+  - nightly
+  - pypy
+  - pypy3.5-5.8.0
 install:
     pip install nose coveralls coverage
 script:
     travis_wait nosetests --with-coverage --cover-package=neat
 after_success:
-    coveralls
+    - if [ -a ".coveralls.yml" ]; then
+        coveralls
+        ;
+      fi

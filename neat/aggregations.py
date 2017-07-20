@@ -5,11 +5,10 @@ and methods for adding new user-defined ones.
 import sys
 import warnings
 
-from neat.math_util import mean, median2
-
 from operator import mul
 
 from neat.multiparameter import MultiParameterSet
+from neat.math_util import mean, median2
 
 if sys.version_info[0] > 2:
     from functools import reduce
@@ -70,7 +69,6 @@ def validate_aggregation(function): # TODO: Recognize when need `reduce`
 
 class AggregationFunctionSet(object):
     """Contains aggregation functions and methods to add and retrieve them."""
-    
     def __init__(self, multiparameterset=None):
         if multiparameterset is None:
             warn_string = ("Aggregation init called without multiparameterset:" +

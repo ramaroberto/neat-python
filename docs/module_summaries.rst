@@ -15,7 +15,8 @@ Has the built-in :term:`activation functions <activation function>`, code for us
 
   .. py:exception:: InvalidActivationFunction(TypeError)
 
-    Exception called if an activation function being added is invalid according to the `validate_activation` function.
+    Exception called if an activation function being added is invalid according to the `validate_activation` function, or if an unknown activation
+    function is requested by name via :py:meth:`get <ActivationFunctionSet.get()>`.
 
     .. versionchanged:: 0.91-github
       Base of exception changed to more-precise TypeError.
@@ -87,9 +88,20 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
 
     .. versionadded:: 0.91-config_work
 
+  .. py:function:: mean_aggregation(x)
+
+    Returns the arithmetic mean. Potentially maintains a more stable result than ``sum`` for changing numbers of :term:`enabled`
+    :term:`connections <connection>`, which may be good or bad depending on the circumstances; having both available to the algorithm is advised.
+
+    :param x: The numbers to find the mean of; takes any :pygloss:`iterable`.
+    :type x: list(float) or tuple(float) or set(float)
+    :return: The arithmetic mean.
+    :rtype: :pytypes:`float <typesnumeric>`
+
   .. py:exception:: InvalidAggregationFunction(TypeError)
 
-    Exception called if an aggregation function being added is invalid according to the `validate_aggregation` function.
+    Exception called if an aggregation function being added is invalid according to the `validate_aggregation` function, or if an unknown aggregation
+    function is requested by name via :py:meth:`get <AggregationFunctionSet.get()>`.
 
     .. versionadded:: 0.91-config_work
 
@@ -127,6 +139,20 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
       :rtype: `function`
       :raises InvalidAggregationFunction: If the function is not known.
 
+    .. py:method:: __getitem__(index)
+
+      Present for compatibility with older programs that expect the aggregation functions to be in a `dict`. A wrapper for
+      :py:meth:`get(index) <AggregationFunctionSet.get()>`.
+
+      :param str index: The name of the function.
+      :return: The function of interest.
+      :rtype: `function`
+      :raises InvalidAggregationFunction: If the function is not known.
+      :raises DeprecationWarning: Always.
+
+      .. deprecated:: 0.91-config_work
+        Use :py:meth:`get(index) <AggregationFunctionSet.get()>` instead.
+
     .. py:method:: is_valid(name)
 
       Checks whether the named function is a known aggregation function.
@@ -143,7 +169,8 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
 
 attributes
 -------------
-Deals with :term:`attributes` used by :term:`genes <gene>`.
+Deals with :term:`attributes` used by :term:`genes <gene>`. TODO: ``__config_items__`` should perhaps be ``_config_items`` instead, since it is not
+a term built into Python?
 
   .. inheritance-diagram:: attributes
 
@@ -404,7 +431,8 @@ Does general configuration parsing; used by other classes for their configuratio
 
   .. py:class:: DefaultClassConfig(param_dict, param_list)
 
-    Replaces at least some boilerplate configuration code for reproduction, species_set, and stagnation classes.
+    Replaces at least some boilerplate configuration code for reproduction, species_set, and stagnation classes. TODO: Find a way to put `write_config()`
+    into this class also. This would be simple if it were a normal method, but it is called as a class method.
 
     :param dict param_dict: Dictionary of configuration parameters from config file.
     :param param_list: List of `ConfigParameter` instances; used to know what parameters are of interest to the calling class.
@@ -495,6 +523,142 @@ ctrnn
       :param object genome: A :py:class:`genome.DefaultGenome` instance.
       :param object config: A :py:class:`config.Config` instance.
       :param float time_constant: Used for the :py:class:`CTRNNNodeEval` initializations.
+
+.. todo::
+  The below needs checking! Also, perhaps MODE_SERVER and MODE_CLIENT would be preferable?
+
+.. index:: ! compute node
+.. index:: ! master node
+.. index:: ! slave node
+.. index::
+    see: master compute node; master node
+    see: slave compute node; slave node
+
+
+.. py:module:: distributed
+   :synopsis: Distributed evaluation of genomes.
+
+
+distributed
+--------------
+  Distributed evaluation of genomes.
+
+  .. rubric:: About :term:`compute nodes <compute node>`:
+
+  The :term:`master compute node` (the node which creates and mutates genomes) and the :term:`slave compute nodes <slave node>` (the nodes which
+  evaluate genomes) can execute the same script. The role of a compute node is determined using the ``mode`` argument of the DistributedEvaluator. If the
+  mode is MODE_AUTO, the `host_is_local()` function is used to check if the ``addr`` argument points to the localhost. If it does, the compute node starts
+  as a master node, otherwise as a slave node. If ``mode`` is MODE_MASTER, the compute node always starts as a master node. If ``mode`` is
+  MODE_SLAVE, the compute node will always start as a slave node.
+
+  There can only be one master node per NEAT, but any number of slave nodes. The master node will not evaluate any genomes, which means you will
+  always need at least two compute nodes (one master and at least one slave).
+
+  You can run any number of compute nodes on the same physical machine (or VM). However, if a machine has both a master node and one or more slave
+  nodes, MODE_AUTO cannot be used for those slave nodes - MODE_SLAVE will need to be specified.
+
+  .. rubric:: Usage:
+
+  1. Import modules and define the evaluation logic (the ``eval_genome`` function). (After this, check for ``if __name__ == '__main__'``, and put the rest of the code inside the body of the statement, or in subroutines called from it.)
+  2. Load config and create a :py:class:`population <population.Population>` - here, the variable ``p``.
+  3. If required, create and add :py:mod:`reporters <reporting>`.
+  4. Create a :py:class:`DistributedEvaluator(addr_of_master_node, 'some_password', eval_function, mode=MODE_AUTO) <distributed.DistributedEvaluator>` - here, the variable ``de``.
+  5. Call :py:meth:`de.start(exit_on_stop=True) <distributed.DistributedEvaluator.start>`. The `start()` call will block on the slave nodes and call `sys.exit(0)` when the NEAT evolution finishes. This means that the following code will only be executed on the master node.
+  6. Start the evaluation using :py:meth:`p.run(de.evaluate, number_of_generations) <population.Population.run>`.
+  7. Stop the slave nodes using py:meth:`de.stop() <distributed.DistributedEvaluator.stop>`.
+  8. You are done. You may want to save the winning genome or show some statistics.
+
+    See :file:`examples/xor/evolve-feedforward-distributed.py` for a complete example. Note: Contains a number of private methods (starting with ``_``),
+    which are not documented below.
+
+  .. py:data:: MODE_AUTO
+  .. py:data:: MODE_MASTER
+  .. py:data:: MODE_SLAVE
+    Values that are used for the ``mode`` argument of :py:class:`DistributedEvaluator`. MODE_AUTO uses :py:func:`host_is_local()` and the specified
+    ``addr`` of the :term:`master node` to decide the mode; the other two specify it.
+
+  .. py:exception:: RoleError(RuntimeError)
+    An exception raised when a role-specific method is being called without being in the role (mode) - either a master-specific method
+    called by a :term:`slave node` or a slave-specific method called by a :term:`master node`. TODO: Perhaps this should be ModeError, to be
+    clearer?
+
+  .. py:function:: host_is_local(hostname, port=22)
+
+    Returns True if the hostname points to the localhost (including shares addresses), otherwise False.
+
+    :param str hostname: The hostname to be checked; will be put through `socket.getfqdn`.
+    :param int port: The optional port for `socket` functions requiring one. Defaults to 22, the ssh port.
+    :return: Whether the hostname appears to be equivalent to that of the localhost.
+    :rtype: bool
+
+  .. py:function:: chunked(data, chunksize)
+
+     Splits up ``data`` and returns it as a list of chunks containing at most ``chunksize`` elements of data.
+
+    :param data: The data to split up; takes any :pygloss:`iterable`.
+    :type data: list(object) or tuple(object) or set(object)
+    :param int chunksize: The maximum number of elements per chunk.
+    :return: A list of chunks containing (as a list) at most ``chunksize`` elements of data.
+    :rtype: list(list(object))
+
+  .. index:: fitness function
+  .. index:: fitness
+
+  .. py:class:: DistributedEvaluator(addr, authkey, eval_function, slave_chunksize=1, num_workers=None, mode=MODE_AUTO)
+
+    An evaluator working across multiple machines (:term:`compute nodes <compute node>`).
+
+    :param addr: Should be a tuple of (hostname, port) pointing to the machine running the DistributedEvaluator in master mode. If mode is MODE_AUTO, the mode is determined by checking whether the hostname points to this host or not (via :py:func:`host_is_local()`).
+    :type addr: tuple(str, int)
+    :param str authkey:  The password used to restrict access to the manager; see `multiprocessing.managers` for more information. All DistributedEvaluators need to use the same authkey. Defaults to `multiprocessing.current_process()`.authkey; however, this will not be the same for processes on different machines, including virtual machines.
+    :param eval_function: The eval_function should take two arguments - a genome object and a config object - and return a single :pytypes:`float <typesnumeric>` (the genome's fitness) Note that this is not the same as how a fitness function is called by :py:meth:`Population.run <population.Population.run>`, nor by :py:class:`ParallelEvaluator <parallel.ParallelEvaluator>` (although it is more similar to the latter).
+    :type eval_function: `function`
+    :param int slave_chunksize: The number of :term:`genomes <genome>` that will be sent to a :term:`slave node` at any one time.
+    :param num_workers: The number of worker processes per :term:`slave node`, used for evaluating genomes. If None, will use `multiprocessing.cpu_count()`  to determine the number of processes. **Note**: Whether this number is appropriate can vary depending on the evaluation function (e.g., whether cpu-bound, memory-bound, i/o-bound...), python implementation, and other factors; experimentation may be needed. If 1 (for a slave node), including if there is no usable result from `multiprocessing.cpu_count()`, then the process creating the DistributedEvaluator instance will also do the evaluations.
+    :type num_workers: int or None
+    :param worker_timeout:  specifies the timeout (in seconds) for a slave node getting the results from a worker subprocess; if None, there is no timeout. Defaults to 60 seconds.
+    :type worker_timeout: int or None
+    :param int mode: Specifies the mode to run in - must be one of `MODE_AUTO` (the default), `MODE_MASTER`, or `MODE_SLAVE`.
+    :raises ValueError: If the mode is not one of the above.
+
+    .. py:method:: is_master()
+
+      Returns True if the caller is the :term:`master node`; otherwise False.
+
+      :return: True if master, False if slave
+      :rtype: bool
+
+    .. py:method:: start(exit_on_stop=True, slave_wait=0)
+
+      If the DistributedEvaluator is in master mode, starts the manager process and returns. If the DistributedEvaluator is in slave mode, it connects to the
+      manager and waits for tasks.
+
+      :param bool exit_on_stop: If a slave node, whether to exit upon the calling of `stop()` in the :term:`master node`.
+      :param int slave_wait: Specifies the time (in seconds) to sleep before actually starting, if a :term:`slave node`.
+      :raises RuntimeError: If already started.
+      :raises ValueError: If the mode is invalid.
+
+    .. py:method:: stop(wait=1, shutdown=True)
+
+      Stops all slaves.
+
+      :param int wait: Time (in seconds) to wait after telling the slaves to stop.
+      :param bool shutdown: Whether to shutdown the `multiprocessing.manager.SyncManager` also, after the optional wait.
+      :raises RoleError: If not the :term:`master node` (not in MODE_MASTER).
+      :raises RuntimeError: If not yet :py:meth:`started <start()>`.
+
+    .. py:method:: evaluate(genomes, config)
+
+      Evaluates the genomes. Distributes the genomes to the slave nodes, then gathers the fitnesses from the slave nodes and assigns them to the
+      genomes. Must not be called by :term:`slave nodes <slave node>`.
+
+      :param genomes: Dictionary of (:term:`genome_id <key>`, genome) 
+      :type genomes: dict(int, object)
+      :param config: Configuration object.
+      :type config: object
+      :raises RoleError: If not the :term:`master node` (not in MODE_MASTER).
+
+  .. versionadded:: 0.91-github
 
 .. py:module:: genes
    :synopsis: Handles node and connection genes.
@@ -675,6 +839,7 @@ genome
 
       :param f: The file object to be written to.
       :type f: :pygloss:`file <file-object>`
+      :raises RuntimeError: If the value for a :ref:`partial-connectivity configuration <initial-connection-config-label>` is not in [0.0,1.0].
 
     .. index:: ! key
 
@@ -1156,8 +1321,11 @@ functions (such as for the :ref:`species_fitness_func <species-fitness-func-labe
 
   .. py:data:: stat_functions
 
-    Lookup table for commonly used ``{value} -> value`` functions; includes `max`, `min`, `mean`, and `median`.
+    Lookup table for commonly used ``{value} -> value`` functions, namely `max`, `min`, `mean`, `median`, and `median2`.
     The :ref:`species_fitness_func <species-fitness-func-label>` (used for :py:class:`stagnation.DefaultStagnation`) is required to be one of these.
+
+    .. versionchanged:: 0.91-config_work
+      `median2` added.
 
   .. py:function:: mean(values)
 
@@ -1165,7 +1333,13 @@ functions (such as for the :ref:`species_fitness_func <species-fitness-func-labe
 
   .. py:function:: median(values)
 
-    Returns the median. (Note: For even numbers of values, does not take the mean between the two middle values.)
+    Returns the median for odd numbers of values; returns the higher of the middle two values for even numbers of values.
+
+  .. py:function:: median2(values)
+
+    Returns the median for odd numbers of values; returns the mean of the middle two values for even numbers of values.
+
+    .. versionadded:: 0.91-config_work
 
   .. py:function:: variance(values)
 
@@ -1254,10 +1428,11 @@ Runs evaluation functions in parallel subprocesses in order to evaluate multiple
 
   .. py:class:: ParallelEvaluator(num_workers, eval_function, timeout=None)
 
-    Runs evaluation functions in parallel subprocesses in order to evaluate multiple genomes at once.
+    Runs evaluation functions in parallel subprocesses in order to evaluate multiple genomes at once. The analogous :py:mod:`threaded` is probably preferable
+    for python implementations without a :pygloss:`GIL` (Global Interpreter Lock).
 
     :param int num_workers: How many workers to have in the `Pool <python:multiprocessing.pool.Pool>`.
-    :param eval_function: The eval_function should take one argument - a `tuple` of (genome object, config object) - and return a single :pytypes:`float <typesnumeric>` (the genome's fitness) Note that this is not the same as how a fitness function is called by :py:meth:`Population.run <population.Population.run>`.
+    :param eval_function: The eval_function should take one argument - a `tuple` of (genome object, config object) - and return a single :pytypes:`float <typesnumeric>` (the genome's fitness) Note that this is not the same as how a fitness function is called by :py:meth:`Population.run <population.Population.run>`, nor by :py:class:`ThreadedEvaluator <threaded.ThreadedEvaluator>` (although it is more similar to the latter).
     :type eval_function: `function`
     :param timeout: How long (in seconds) each subprocess will be given before an exception is raised (unlimited if `None`).
     :type timeout: int or None
@@ -1864,10 +2039,14 @@ statistics
 
     .. py:method:: get_fitness_mean()
 
-      Gets the per-generation average fitness. A wrapper for :py:meth:`get_fitness_stat` with the function being ``mean``.
+      Gets the per-generation mean fitness. A wrapper for :py:meth:`get_fitness_stat` with the function being ``mean``.
 
       :return: List of mean genome fitnesses for each generation.
       :rtype: list(float)
+
+    .. py:method:: get_fitness_median()
+
+      Gets the per-generation median fitness. A wrapper for :py:meth:`get_fitness_stat` with the function being `median2`.
 
     .. py:method:: get_fitness_stdev()
 
@@ -1950,5 +2129,53 @@ statistics
 
       A wrapper for :py:meth:`save_genome_fitness`, :py:meth:`save_species_count`, and :py:meth:`save_species_fitness`;
       uses the default values for all three.
+
+.. todo::
+
+  The below needs checking!
+
+.. py:module:: threaded
+   :synopsis: Runs evaluation functions in parallel threads in order to evaluate multiple genomes at once.
+
+threaded
+----------
+Runs evaluation functions in parallel threads (using the python library module `threading <https://docs.python.org/3.5/library/threading.html>`_) in order to evaluate multiple genomes at once. Probably preferable to :py:mod:`parallel` for python implementations without a :pygloss:`GIL` (Global Interpreter Lock).
+
+  .. index:: fitness function
+  .. index:: fitness
+
+  .. py:class:: ThreadedEvaluator(num_workers, eval_function)
+
+    Runs evaluation functions in parallel threads in order to evaluate multiple genomes at once.
+
+    :param int num_workers: How many worker threads to use.
+    :param eval_function: The eval_function should take two arguments - a genome object and a config object - and return a single :pytypes:`float <typesnumeric>` (the genome's fitness) Note that this is not the same as how a fitness function is called by :py:meth:`Population.run <population.Population.run>`, nor by :py:class:`ParallelEvaluator <parallel.ParallelEvaluator>` (although it is more similar to the latter).
+    :type eval_function: `function`
+
+    .. py:method:: __del__()
+
+      Attempts to take care of removing each worker thread, but deliberately calling ``self.stop()`` in the threads may be needed.
+      TODO: Avoid reference cycles to ensure this method is called. (Perhaps use `weakref`, depending on what the cycles are?)
+
+    .. py:method:: start()
+
+      Starts the worker threads, if in the master thread.
+
+    .. py:method:: stop()
+
+      Stops the worker threads and waits for them to finish.
+
+    .. py:method:: _worker():
+
+      The worker function.
+
+    .. py:method:: evaluate(genomes, config)
+
+      Starts the worker threads if need be, queues the evaluation jobs for the worker threads, then assigns each fitness back to the appropriate genome.
+
+      :param genomes: A dictionary of :term:`genome_id <key>` to genome objects.
+      :type genomes: dict(int, object)
+      :param object config: A `config.Config` object.
+
 
 :ref:`Table of Contents <toc-label>`

@@ -67,6 +67,8 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
     except neat.CompleteExtinctionException as e:
         pass
 
+    assert len(stats.get_fitness_median()), "Nothing returned from get_fitness_median()"
+
     if winner:
         if uniform_weights:
             print('\nUsing uniform weight initialization:')
@@ -99,8 +101,6 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
                 raise Exception("Had winner2 without first-try winner")
         elif winner:
             raise Exception("Had first-try winner without winner2")
-            
-
 
 if __name__ == '__main__':
     test_xor_example()
