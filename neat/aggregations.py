@@ -52,21 +52,6 @@ def maxabs_mean_aggregation(x, a):
     assert a >= 0.0
     return ((1.0-a)*mean(x))+(a*maxabs_aggregation(x))
 
-class InvalidAggregationFunction(TypeError):
-    pass
-
-
-def validate_aggregation(function): # TODO: Recognize when need `reduce`
-    if not isinstance(function,
-                      (types.BuiltinFunctionType,
-                       types.FunctionType,
-                       types.LambdaType)):
-        raise InvalidAggregationFunction("A function object is required.")
-
-    if not (function.__code__.co_argcount >= 1):
-        raise InvalidAggregationFunction("A function taking at least one argument is required")
-
-
 class AggregationFunctionSet(object):
     """Contains aggregation functions and methods to add and retrieve them."""
     def __init__(self, multiparameterset=None):

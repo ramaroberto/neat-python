@@ -96,7 +96,7 @@ def test_function_set():
     assert not s.is_valid('foo')
 
     try:
-        aggregations.validate_aggregation(1.0)
+        s.add('test', 1.0)
     except TypeError:
         pass
     else:

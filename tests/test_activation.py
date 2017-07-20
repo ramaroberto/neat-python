@@ -181,7 +181,7 @@ def test_function_set():
     assert not s.is_valid('foo')
 
     try:
-        activations.validate_activation(1.0)
+        s.add('test', 1.0)
     except TypeError:
         pass
     else:
@@ -205,4 +205,5 @@ if __name__ == '__main__':
     test_multiparam_relu()
     test_clamped_tanh_step()
     test_multiparam_sigmoid()
+    test_function_set()
 
