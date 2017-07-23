@@ -46,10 +46,11 @@ class GenomeDistanceCache(object):
 
         return d
 
-class DefaultSpeciesSet(object):
+class DefaultSpeciesSet(DefaultClassConfig):
     """ Encapsulates the default speciation scheme. """
 
     def __init__(self, config, reporters):
+        # pylint: disable=super-init-not-called
         self.species_set_config = config
         self.reporters = reporters
         self.indexer = Indexer(1)
@@ -60,10 +61,6 @@ class DefaultSpeciesSet(object):
     def parse_config(cls, param_dict):
         return DefaultClassConfig(param_dict,
                                   [ConfigParameter('compatibility_threshold', float)])
-
-    @classmethod
-    def write_config(cls, f, config):
-        config.save(f)
 
     def speciate(self, config, population, generation):
         """
@@ -92,7 +89,7 @@ class DefaultSpeciesSet(object):
                 candidates.append((d, g))
 
             # The new representative is the genome closest to the current representative.
-            rdist, new_rep = min(candidates, key=lambda x: x[0])
+            ignored_rdist, new_rep = min(candidates, key=lambda x: x[0])
             new_rid = new_rep.key
             new_representatives[sid] = new_rid
             new_members[sid] = [new_rid]
@@ -112,7 +109,7 @@ class DefaultSpeciesSet(object):
                     candidates.append((d, sid))
 
             if candidates:
-                sdist, sid = min(candidates, key=lambda x: x[0])
+                ignored_sdist, sid = min(candidates, key=lambda x: x[0])
                 new_members[sid].append(gid)
             else:
                 # No species is similar enough, create a new species, using
@@ -138,7 +135,8 @@ class DefaultSpeciesSet(object):
 
         gdmean = mean(itervalues(distances.distances))
         gdstdev = stdev(itervalues(distances.distances))
-        self.reporters.info('Mean genetic distance {0:.3f}, standard deviation {1:.3f}'.format(gdmean, gdstdev))
+        self.reporters.info(
+            'Mean genetic distance {0:.3f}, standard deviation {1:.3f}'.format(gdmean, gdstdev))
 
     def get_species_id(self, individual_id):
         return self.genome_to_species[individual_id]

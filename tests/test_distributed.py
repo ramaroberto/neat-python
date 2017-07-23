@@ -9,7 +9,7 @@ import sys
 import threading
 
 import neat
-from neat.distributed import chunked, MODE_AUTO, MODE_MASTER, MODE_SLAVE, RoleError
+from neat.distributed import chunked, MODE_AUTO, MODE_MASTER, MODE_SLAVE, ModeError
 
 
 def eval_dummy_genome_nn(genome, config):
@@ -134,24 +134,22 @@ def test_DistributedEvaluator_mode():
             raise Exception(
                 "DistributedEvaluator.__init__(mode=MODE_AUTO) did not automatically determine its mode!"
                 )
-        elif result == MODE_MASTER:
-            if not de.is_master():
-                raise Exception(
-                    "DistributedEvaluator.is_master() returns False even if the evaluator is in master mode!"
-                    )
-        elif result == MODE_SLAVE:
-            if de.is_master():
-                raise Exception(
-                    "DistributedEvaluator.is_master() returns True even if the evaluator is in slave mode!"
-                    )
+        elif (result == MODE_MASTER) and (not de.is_master()):
+            raise Exception(
+                "DistributedEvaluator.is_master() returns False even if the evaluator is in master mode!"
+                )
+        elif (result == MODE_SLAVE) and de.is_master():
+            raise Exception(
+                "DistributedEvaluator.is_master() returns True even if the evaluator is in slave mode!"
+                )
     # test invalid mode error
-    de = neat.DistributedEvaluator(
-        addr,
-        authkey=b"abcd1234",
-        eval_function=eval_dummy_genome_nn,
-        mode="#invalid MODE!",
-        )
     try:
+        de = neat.DistributedEvaluator(
+            addr,
+            authkey=b"abcd1234",
+            eval_function=eval_dummy_genome_nn,
+            mode="#invalid MODE!",
+        )
         de.start()
     except ValueError:
         pass
@@ -168,16 +166,16 @@ def test_DistributedEvaluator_master_restrictions():
         )
     try:
         slave.stop()
-    except RoleError:
-        # only ignore RoleErrors
+    except ModeError:
+        # only ignore ModeErrors
         # a RuntimeError should only be raised when in master mode.
         pass
     else:
         raise Exception("A DistributedEvaluator in slave mode could call stop()!")
     try:
         slave.evaluate(None, None)  # we do not need valid values for this test
-    except RoleError:
-        # only ignore RoleErrors
+    except ModeError:
+        # only ignore ModeErrors
         # other errors should only be raised when in master mode.
         pass
     else:

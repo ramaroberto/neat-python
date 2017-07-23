@@ -7,9 +7,9 @@ import sys
 import types
 import warnings
 
-from neat.math_util import mean, median2
-
 from operator import mul
+
+from neat.math_util import mean, median2
 
 if sys.version_info[0] > 2:
     from functools import reduce
@@ -52,7 +52,7 @@ def validate_aggregation(function): # TODO: Recognize when need `reduce`
 
 class AggregationFunctionSet(object):
     """Contains aggregation functions and methods to add and retrieve them."""
-    
+
     def __init__(self):
         self.functions = {}
         self.add('product', product_aggregation)

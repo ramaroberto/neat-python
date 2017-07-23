@@ -24,19 +24,24 @@ class Population(object):
         self.reporters = ReporterSet()
         self.config = config
         stagnation = config.stagnation_type(config.stagnation_config, self.reporters)
-        self.reproduction = config.reproduction_type(config.reproduction_config, self.reporters, stagnation)
+        self.reproduction = config.reproduction_type(config.reproduction_config,
+                                                     self.reporters,
+                                                     stagnation)
         if config.fitness_criterion == 'max':
             self.fitness_criterion = max
         elif config.fitness_criterion == 'min':
             self.fitness_criterion = min
         elif config.fitness_criterion == 'mean':
             self.fitness_criterion = mean
-        else:
-            raise RuntimeError("Unexpected fitness_criterion: {0!r}".format(config.fitness_criterion))
+        elif not config.no_fitness_termination:
+            raise RuntimeError(
+                "Unexpected fitness_criterion: {0!r}".format(config.fitness_criterion))
 
         if initial_state is None:
             # Create a population from scratch, then partition into species.
-            self.population = self.reproduction.create_new(config.genome_type, config.genome_config, config.pop_size)
+            self.population = self.reproduction.create_new(config.genome_type,
+                                                           config.genome_config,
+                                                           config.pop_size)
             self.species = config.species_set_type(config.species_set_config, self.reporters)
             self.generation = 0
             self.species.speciate(config, self.population, self.generation)
@@ -73,7 +78,7 @@ class Population(object):
 
         if self.config.no_fitness_termination and (n is None):
             raise RuntimeError("Cannot have no generational limit with no fitness termination")
-        
+
         k = 0
         while n is None or k < n:
             k += 1
