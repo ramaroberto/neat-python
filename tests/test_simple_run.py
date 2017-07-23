@@ -384,11 +384,13 @@ def test_run_nn_recurrent():
 
 
 def eval_dummy_genomes_nn_automatic(genomes, config):
-    for genome_id, genome in genomes:
+    for ignored_genome_id, genome in genomes:
         net = neat.nn.create(genome, config)
-        genome.fitness = 1.0
+        ignored_output = net.activate((0.5,0.5))
+        net.reset()
+        genome.fitness = 0.0
 
-def test_run_nn_automatic(feed_forward=True):
+def test_run_nn_automatic(feed_forward=True, config_file='test_configuration'):
     """Test automatic determination of recurrent/not w/non-recurrent."""
     # Load configuration.
     local_dir = os.path.dirname(__file__)
@@ -415,6 +417,10 @@ def test_run_nn_automatic(feed_forward=True):
 def test_run_nn_automatic_recurrent():
     """Test automatic determination of recurrent/not w/recurrent."""
     test_run_nn_automatic(False)
+
+def test_run_nn_automatic_maybe_recurrent():
+    """Test automatic determination of recurrent/not w/partial, possibly recurrent."""
+    test_run_nn_automatic(feed_forward=False, config_file='test_configuration2')
 
 def eval_dummy_genomes_nn_recurrent_bad(genomes, config):
     for ignored_genome_id, genome in genomes:
