@@ -10,11 +10,12 @@ from neat.six_util import iterkeys, iteritems
 
 
 class BaseAttribute(object):
+    """Superclass for the type-specialized attribute subclasses, used by genes."""
     def __init__(self, name, **default_dict):
         self.name = name
         for n, default in iteritems(default_dict):
-            self.__config_items__[n] = [self.__config_items__[n][0], default]
-        for n in iterkeys(self.__config_items__):
+            self._config_items[n] = [self._config_items[n][0], default]
+        for n in iterkeys(self._config_items):
             setattr(self, n + "_name", self.config_item_name(n))
 
     def config_item_name(self, config_item_base_name):
@@ -22,19 +23,23 @@ class BaseAttribute(object):
 
     def get_config_params(self):
         return [ConfigParameter(self.config_item_name(n),
-                                self.__config_items__[n][0],
-                                self.__config_items__[n][1])
-                for n in iterkeys(self.__config_items__)]
+                                self._config_items[n][0],
+                                self._config_items[n][1])
+                for n in iterkeys(self._config_items)]
 
 class FloatAttribute(BaseAttribute):
-    __config_items__ = {"init_mean": [float, None],
-                        "init_stdev": [float, None],
-                        "init_type": [str, 'gaussian'],
-                        "replace_rate": [float, None],
-                        "mutate_rate": [float, None],
-                        "mutate_power": [float, None],
-                        "max_value": [float, None],
-                        "min_value": [float, None]}
+    """
+    Class for numeric attributes,
+    such as the response of a node or the weight of a connection.
+    """
+    _config_items = {"init_mean": [float, None],
+                     "init_stdev": [float, None],
+                     "init_type": [str, 'gaussian'],
+                     "replace_rate": [float, None],
+                     "mutate_rate": [float, None],
+                     "mutate_power": [float, None],
+                     "max_value": [float, None],
+                     "min_value": [float, None]}
 
     def clamp(self, value, config):
         min_value = getattr(config, self.min_value_name)
@@ -82,18 +87,24 @@ class FloatAttribute(BaseAttribute):
 
 
 class BoolAttribute(BaseAttribute):
-    __config_items__ = {"default": [bool, None],
-                        "mutate_rate": [float, None],
-                        "rate_to_true_add": [float, 0.0],
-                        "rate_to_false_add": [float, 0.0]}
+    """Class for boolean attributes such as whether a connection is enabled or not."""
+    _config_items = {"default": [str, None],
+                     "mutate_rate": [float, None],
+                     "rate_to_true_add": [float, 0.0],
+                     "rate_to_false_add": [float, 0.0]}
 
     def init_value(self, config):
-        default = getattr(config, self.default_name)
+        default = str(getattr(config, self.default_name)).lower()
 
-        if default is None:
-            return random() < 0.5
+        if default in ('1', 'on', 'yes', 'true'):
+            return True
+        elif default in ('0', 'off', 'no', 'false'):
+            return False
+        elif default in ('random', 'none'):
+            return bool(random() < 0.5)
 
-        return default
+        raise RuntimeError("Unknown default value {!r} for {!s}".format(default,
+                                                                        self.name))
 
     def mutate_value(self, value, config):
         mutate_rate = getattr(config, self.mutate_rate_name)
@@ -119,14 +130,18 @@ class BoolAttribute(BaseAttribute):
 
 
 class StringAttribute(BaseAttribute):
-    __config_items__ = {"default": [str, 'random'],
-                        "options": [list, None],
-                        "mutate_rate": [float, None]}
+    """
+    Class for string attributes such as the aggregation function of a node,
+    which are selected from a list of options.
+    """
+    _config_items = {"default": [str, 'random'],
+                     "options": [list, None],
+                     "mutate_rate": [float, None]}
 
     def init_value(self, config):
         default = getattr(config, self.default_name)
 
-        if default in (None, 'random'):
+        if default.lower() in ('none','random'):
             options = getattr(config, self.options_name)
             return choice(options)
 

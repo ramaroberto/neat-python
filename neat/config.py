@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 import os
-import sys
+#import sys
 import warnings
 
 try:
@@ -10,6 +10,7 @@ try:
 except ImportError:
     from ConfigParser import Error, SafeConfigParser as ConfigParser
 
+from neat.six_util import iterkeys
 
 class ConfigParameter(object):
     """Contains information about one configuration item."""
@@ -36,7 +37,11 @@ class ConfigParameter(object):
         if list == self.value_type:
             v = config_parser.get(section, self.name)
             return v.split(" ")
-        return config_parser.get(section, self.name)
+        if str == self.value_type:
+            return config_parser.get(section, self.name)
+
+        raise RuntimeError("Unexpected configuration type: "
+                           + repr(self.value_type))
 
     def interpret(self, config_dict):
         """
@@ -69,7 +74,6 @@ class ConfigParameter(object):
             if list == self.value_type:
                 return value.split(" ")
         except Exception:
-            sys.excepthook(*sys.exc_info()) # otherwise, why do the above w/RuntimeError?
             raise RuntimeError("Error interpreting config item '{}' with value {!r} and type {}".format(
                 self.name, value, self.value_type))
 
@@ -92,6 +96,10 @@ def write_pretty_params(f, config, params):
         f.write('{} = {}\n'.format(p.name.ljust(longest_name), p.format(getattr(config, p.name))))
 
 
+class UnknownConfigItemError(NameError):
+    """Error for unknown configuration option - partially to catch typos."""
+    pass
+
 class DefaultClassConfig(object):
     """
     Replaces at least some boilerplate configuration code
@@ -100,11 +108,21 @@ class DefaultClassConfig(object):
 
     def __init__(self, param_dict, param_list):
         self._params = param_list
+        param_list_names = []
         for p in param_list:
             setattr(self, p.name, p.interpret(param_dict))
+            param_list_names.append(p.name)
+        unknown_list = [x for x in iterkeys(param_dict) if not x in param_list_names]
+        if unknown_list:
+            if len(unknown_list) > 1:
+                raise UnknownConfigItemError("Unknown configuration items:\n" +
+                                             "\n\t".join(unknown_list))
+            raise UnknownConfigItemError("Unknown configuration item {!s}".format(unknown_list[0]))
 
-    def save(self, f):
-        write_pretty_params(f, self, self._params)
+    @classmethod
+    def write_config(cls, f, config):
+        # pylint: disable=protected-access
+        write_pretty_params(f, config, config._params)
 
 
 class Config(object):
@@ -142,6 +160,7 @@ class Config(object):
         if not parameters.has_section('NEAT'):
             raise RuntimeError("'NEAT' section not found in NEAT configuration file.")
 
+        param_list_names = []
         for p in self.__params:
             if p.default is None:
                 setattr(self, p.name, p.parse('NEAT', parameters))
@@ -152,6 +171,18 @@ class Config(object):
                         setattr(self, p.name, p.default)
                 except (Error, RuntimeError):
                     setattr(self, p.name, p.default)
+                    warnings.warn("Using default {!r} for '{!s}'".format(p.default, p.name),
+                                  DeprecationWarning)
+            param_list_names.append(p.name)
+        param_dict = dict(parameters.items('NEAT'))
+        unknown_list = [x for x in iterkeys(param_dict) if not x in param_list_names]
+        if unknown_list:
+            if len(unknown_list) > 1:
+                raise UnknownConfigItemError("Unknown (section 'NEAT') configuration items:\n" +
+                                             "\n\t".join(unknown_list))
+            raise UnknownConfigItemError(
+                "Unknown (section 'NEAT') configuration item {!s}".format(unknown_list[0]))
+        
 
 
         # Parse type sections.

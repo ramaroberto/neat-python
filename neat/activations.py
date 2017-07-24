@@ -1,6 +1,7 @@
 """
-Has the built-in activation functions, methods for using them,
-and methods for adding new user-defined ones.
+Has the built-in activation functions,
+methods for using them,
+and methods for adding new user-defined ones
 """
 from __future__ import division
 

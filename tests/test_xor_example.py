@@ -1,5 +1,7 @@
 from __future__ import print_function
+
 import os
+
 import neat
 
 def test_xor_example_multiparam_relu():
@@ -60,7 +62,7 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
     checkpointer = neat.Checkpointer(25, 10)
     p.add_reporter(checkpointer)
 
-    # Run for up to 300 generations, allowing extinction.
+    # Run for up to 100 generations, allowing extinction.
     winner = None
     try:
         winner = p.run(eval_genomes, 100)
@@ -101,6 +103,7 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
                 raise Exception("Had winner2 without first-try winner")
         elif winner:
             raise Exception("Had first-try winner without winner2")
+
 
 if __name__ == '__main__':
     test_xor_example()

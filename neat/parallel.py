@@ -17,7 +17,7 @@ class ParallelEvaluator(object):
         self.pool = Pool(num_workers)
 
     def __del__(self):
-        self.pool.close()
+        self.pool.close() # should this be terminate?
         self.pool.join()
 
     def evaluate(self, genomes, config):
