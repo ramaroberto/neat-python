@@ -107,10 +107,10 @@ def test_function_set():
 
     try:
         ignored = s['foo']
-    except TypeError:
+    except LookupError:
         pass
     else:
-        raise Exception("Should have gotten a TypeError for dict lookup of 'foo'")
+        raise Exception("Should have gotten a LookupError/derived for dict lookup of 'foo'")
 
 def test_bad_add1():
     local_dir = os.path.dirname(__file__)

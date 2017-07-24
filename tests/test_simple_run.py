@@ -205,7 +205,7 @@ def test_serial4_bad():
 
 
 def test_serial_bad_config():
-    """Test if bad_configuration1 causes a TypeError on trying to run."""
+    """Test if bad_configuration1 causes a LookupError on trying to run."""
     # Load configuration.
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, 'bad_configuration1')
@@ -218,11 +218,11 @@ def test_serial_bad_config():
 
     try:
         p.run(eval_dummy_genomes_nn, 19)
-    except TypeError:
+    except LookupError:
         pass
     else:
         raise Exception(
-            "Should have had a TypeError with bad_configuration1")
+            "Should have had a LookupError with bad_configuration1")
 
 def test_serial_bad_configA():
     """Test if bad_configurationA causes a RuntimeError on trying to create the population."""
