@@ -9,10 +9,12 @@ if MYPY: # pragma: no cover
                         Tuple, Optional, Union, cast, Dict, Any, TextIO)
     NodeKey = NewType('NodeKey', int)
     ConnKey = Tuple[NodeKey, NodeKey]
+    GeneKey = Union[NodeKey, ConnKey]
     GenomeKey = NewType('GenomeKey', int) # c_type: c_uint
     SpeciesKey = NewType('SpeciesKey', int) # c_type: c_uint
     __all__ += ['Iterable', 'Set', 'List', 'Sequence', # not NewType
-                'Tuple', 'Optional', 'Union', 'Dict', 'Any', 'ConnKey', 'TextIO']
+                'Tuple', 'Optional', 'Union', 'Dict', 'Any', 'TextIO',
+                'ConnKey', 'GeneKey']
 else:
     NodeKey = None # pylint: disable=invalid-name
     GenomeKey = None # pylint: disable=invalid-name

@@ -16,9 +16,15 @@ from neat.six_util import iteritems, iterkeys
 
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
+# Given the number of configuration parameters created on the fly for this module,
+# getting it to be checkable using mypy is just about impossible at the present time.
+# The current annotations are meant - along with setting follow_imports = silent for mypy -
+# to help with checking other parts of the library.
+
 if MYPY: # pragma: no cover
     from neat.activations import ActFunc # pylint: disable=unused-import
     from neat.aggregations import AgFunc # pylint: disable=unused-import
+    from neat.genes import BaseGene # pylint: disable=unused-import
 
 class DefaultGenomeConfig(object):
     """Sets up and holds configuration information for the DefaultGenome class."""
@@ -52,7 +58,7 @@ class DefaultGenomeConfig(object):
         # Gather configuration data from the gene classes.
         self.node_gene_type = params['node_gene_type'] # type: Any # XXX
         self._params += self.node_gene_type.get_config_params()
-        self.connection_gene_type = params['connection_gene_type'] # type: Any # XXX
+        self.connection_gene_type = params['connection_gene_type'] # type: BaseGene # XXX
         self._params += self.connection_gene_type.get_config_params()
 
         # Use the configuration data to interpret the supplied parameters.
@@ -68,7 +74,6 @@ class DefaultGenomeConfig(object):
 
         # Verify that initial connection type is valid.
         # pylint: disable=access-member-before-definition
-        self.initial_connection = cast(str, self.initial_connection)
         if 'partial' in self.initial_connection:
             c, p = self.initial_connection.split()
             self.initial_connection = c # type: str
@@ -184,7 +189,7 @@ class DefaultGenome(object):
         self.key = key
 
         # (gene_key, gene) pairs for gene sets.
-        self.connections = {} # type: Dict[ConnKey, Any] # XXX
+        self.connections = {} # type: Dict[ConnKey, BaseGene] # XXX
         self.nodes = {} # type: Dict[NodeKey, Any] # XXX
 
         # Fitness results.
@@ -356,7 +361,7 @@ class DefaultGenome(object):
         # type: (...) -> None
         # TODO: Add validation of this connection addition.
         key = (input_key, output_key)
-        connection = config.connection_gene_type(key)
+        connection = config.connection_gene_type(key) # type: BaseGene
         connection.init_attributes(config)
         connection.weight = weight
         connection.enabled = enabled
@@ -508,7 +513,7 @@ class DefaultGenome(object):
                           input_id, # type: NodeKey
                           output_id # type: NodeKey
                           ):
-        # type: (...) -> Any # XXX
+        # type: (...) -> BaseGene # XXX
         connection = config.connection_gene_type((input_id, output_id))
         connection.init_attributes(config)
         return connection

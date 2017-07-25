@@ -4,6 +4,14 @@ from random import random
 
 from neat.attributes import FloatAttribute, BoolAttribute, FuncAttribute
 
+from neat.mypy_util import * # pylint: disable=unused-wildcard-import
+
+# MYPY not for direct testing, but for importing - see genome.py
+
+if MYPY:
+    from neat.config import ConfigParameter # pylint: disable=unused-import
+    from neat.genome import DefaultGenomeConfig # pylint: disable=unused-import
+
 # TODO: There is probably a lot of room for simplification of these classes using metaprogramming.
 # TODO: Evaluate using __slots__ for performance/memory usage improvement.
 
@@ -13,15 +21,16 @@ class BaseGene(object):
     Handles functions shared by multiple types of genes (both node and connection),
     including crossover and calling mutation methods.
     """
-    def __init__(self, key):
+    def __init__(self, key): # type: (GeneKey) -> None
         self.key = key
 
-    def __str__(self):
+    def __str__(self): # type: () -> str
         attrib = ['key'] + [a.name for a in self._gene_attributes]
         attrib = ['{0}={1}'.format(a, getattr(self, a)) for a in attrib]
         return '{0}({1})'.format(self.__class__.__name__, ", ".join(attrib))
 
-    def __lt__(self, other):
+    def __lt__(self, other): # type: (BaseGene) -> bool
+        assert isinstance(self,type(other))
         return self.key < other.key
 
     @classmethod
@@ -29,8 +38,8 @@ class BaseGene(object):
         pass
 
     @classmethod
-    def get_config_params(cls):
-        params = []
+    def get_config_params(cls): # type: () -> List[ConfigParameter]
+        params = [] # type: List[ConfigParameter]
         if not hasattr(cls, '_gene_attributes'):
             setattr(cls, '_gene_attributes', getattr(cls, '__gene_attributes__'))
             warnings.warn(
@@ -41,16 +50,16 @@ class BaseGene(object):
             params += a.get_config_params()
         return params
 
-    def init_attributes(self, config):
+    def init_attributes(self, config): # type: (DefaultGenomeConfig) -> None
         for a in self._gene_attributes:
             setattr(self, a.name, a.init_value(config))
 
-    def mutate(self, config):
+    def mutate(self, config): # type: (DefaultGenomeConfig) -> None
         for a in self._gene_attributes:
             v = getattr(self, a.name)
             setattr(self, a.name, a.mutate_value(v, config))
 
-    def copy(self):
+    def copy(self): # type: () -> Union[BaseGene, DefaultConnectionGene, DefaultNodeGene] # XXX
         new_gene = self.__class__(self.key)
         for a in self._gene_attributes:
             if hasattr(a, 'copy'):
@@ -59,7 +68,10 @@ class BaseGene(object):
                 setattr(new_gene, a.name, getattr(self, a.name))
         return new_gene
 
-    def crossover(self, gene2):
+    def crossover(self,
+                  gene2 # type: Union[BaseGene, DefaultConnectionGene, DefaultNodeGene] # XXX
+                  ):
+        # type: (...) -> Union[BaseGene, DefaultConnectionGene, DefaultNodeGene] # XXX
         """ Creates a new gene randomly inheriting attributes from its parents."""
         assert self.key == gene2.key
 
@@ -90,7 +102,7 @@ class DefaultNodeGene(BaseGene):
                         FuncAttribute('activation', options='sigmoid'),
                         FuncAttribute('aggregation', options='sum')]
 
-    def distance(self, other, config):
+    def distance(self, other, config): # type: (DefaultNodeGene, DefaultGenomeConfig) -> float
         """Returns the genetic distance between two node genes."""
         d = abs(self.bias - other.bias) + abs(self.response - other.response)
         if hasattr(self.activation, 'distance'):
@@ -113,7 +125,11 @@ class DefaultConnectionGene(BaseGene):
     _gene_attributes = [FloatAttribute('weight'),
                         BoolAttribute('enabled')]
 
-    def distance(self, other, config):
+    def distance(self,
+                 other, # type: DefaultConnectionGene
+                 config # type: DefaultGenomeConfig
+                 ):
+        # type: (...) -> float
         """Returns the genetic distance between two connection genes."""
         d = abs(self.weight - other.weight)
         if self.enabled != other.enabled:

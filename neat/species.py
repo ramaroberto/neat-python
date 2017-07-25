@@ -5,6 +5,10 @@ from neat.math_util import mean, stdev
 from neat.six_util import iteritems, iterkeys, itervalues
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
+if MYPY:
+    from neat.genome import DefaultGenome, DefaultGenomeConfig # pylint: disable=unused-import
+    from neat.reporting import ReporterSet
+
 class Species(object):
     def __init__(self,
                  key, # type: SpeciesKey
@@ -14,15 +18,15 @@ class Species(object):
         self.key = key
         self.created = generation
         self.last_improved = generation
-        self.representative = None # type: Optional[Any]
-        self.members = {} # type: Dict[GenomeKey, Any]
+        self.representative = None # type: Optional[DefaultGenome] # XXX
+        self.members = {} # type: Dict[GenomeKey, DefaultGenome] # XXX
         self.fitness = None # type: Optional[float]
         self.adjusted_fitness = None # type: Optional[float]
-        self.fitness_history = []
+        self.fitness_history = [] # type: List[float]
 
     def update(self,
-               representative, # type: Any
-               members # type: Dict[GenomeKey, Any]
+               representative, # type: DefaultGenome # XXX
+               members # type: Dict[GenomeKey, DefaultGenome] # XXX
                ):
         # type: (...) -> None
         self.representative = representative
@@ -33,13 +37,13 @@ class Species(object):
 
 
 class GenomeDistanceCache(object):
-    def __init__(self, config):
-        self.distances = {}
+    def __init__(self, config): # type: (DefaultGenomeConfig) -> None
+        self.distances = {} # type: Dict[Tuple[GenomeKey, GenomeKey], float]
         self.config = config
-        self.hits = 0
-        self.misses = 0
+        self.hits = 0 # type: int # c_type: c_uint
+        self.misses = 0 # type: int # c_type: c_uint
 
-    def __call__(self, genome0, genome1):
+    def __call__(self, genome0, genome1): # type: (DefaultGenome, DefaultGenome) -> float # XXX
         g0 = genome0.key
         g1 = genome1.key
         d = self.distances.get((g0, g1))
@@ -57,20 +61,25 @@ class GenomeDistanceCache(object):
 class DefaultSpeciesSet(DefaultClassConfig):
     """ Encapsulates the default speciation scheme. """
 
-    def __init__(self, config, reporters):
+    def __init__(self, config, reporters): # type: (DefaultClassConfig, ReporterSet) -> None
         # pylint: disable=super-init-not-called
         self.species_set_config = config
         self.reporters = reporters
         self.indexer = Indexer(1)
-        self.species = {}
-        self.genome_to_species = {}
+        self.species = {} # type: Dict[SpeciesKey, Species]
+        self.genome_to_species = {} # type: Dict[GenomeKey, SpeciesKey]
 
     @classmethod
-    def parse_config(cls, param_dict):
+    def parse_config(cls, param_dict): # type: (Dict[str, str]) -> DefaultClassConfig
         return DefaultClassConfig(param_dict,
                                   [ConfigParameter('compatibility_threshold', float)])
 
-    def speciate(self, config, population, generation):
+    def speciate(self,
+                 config, # type: DefaultClassConfig
+                 population, # type: Dict[GenomeKey, DefaultGenome] # XXX
+                 generation # type: int
+                 ):
+        # type: (...) -> None
         """
         Place genomes into species by genetic similarity.
 
@@ -82,11 +91,11 @@ class DefaultSpeciesSet(DefaultClassConfig):
         """
         assert isinstance(population, dict)
 
-        compatibility_threshold = self.species_set_config.compatibility_threshold
+        compatibility_threshold = self.species_set_config.compatibility_threshold # type: ignore
 
         # Find the best representatives for each existing species.
         unspeciated = set(iterkeys(population))
-        distances = GenomeDistanceCache(config.genome_config)
+        distances = GenomeDistanceCache(config.genome_config) # type: ignore
         new_representatives = {}
         new_members = {}
         for sid, s in iteritems(self.species):
@@ -146,9 +155,9 @@ class DefaultSpeciesSet(DefaultClassConfig):
         self.reporters.info(
             'Mean genetic distance {0:.3f}, standard deviation {1:.3f}'.format(gdmean, gdstdev))
 
-    def get_species_id(self, individual_id):
+    def get_species_id(self, individual_id): # type: (GenomeKey) -> SpeciesKey
         return self.genome_to_species[individual_id]
 
-    def get_species(self, individual_id):
+    def get_species(self, individual_id): # type: (GenomeKey) -> Species
         sid = self.genome_to_species[individual_id]
         return self.species[sid]

@@ -13,7 +13,7 @@ from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 if MYPY:
     from typing import Callable # pylint: disable=unused-import
-
+    from neat.genome import DefaultGenome
 
 
 # TODO: Make a version of this reporter that doesn't continually increase memory usage.
@@ -26,7 +26,7 @@ class StatisticsReporter(BaseReporter):
     """
     def __init__(self):
         BaseReporter.__init__(self)
-        self.most_fit_genomes = [] # type: List[Any] # XXX
+        self.most_fit_genomes = [] # type: List[DefaultGenome] # XXX
         self.generation_statistics = [] # type: List[Dict[SpeciesKey, Dict[GenomeKey, float]]]
         #self.generation_cross_validation_statistics = []
 
@@ -79,7 +79,7 @@ class StatisticsReporter(BaseReporter):
 
         return avg_cross_validation_fitness
 
-    def best_unique_genomes(self, n): # type: (int) -> List[Any]
+    def best_unique_genomes(self, n): # type: (int) -> List[DefaultGenome] # XXX
         """Returns the most n fit genomes, with no duplication."""
         best_unique = {} # type: Dict[GenomeKey, Any]
         for g in self.most_fit_genomes:
@@ -91,14 +91,14 @@ class StatisticsReporter(BaseReporter):
 
         return sorted(best_unique_list, key=key, reverse=True)[:n]
 
-    def best_genomes(self, n): # type: (int) -> List[Any]
+    def best_genomes(self, n): # type: (int) -> List[DefaultGenome] # XXX
         """Returns the n most fit genomes ever seen."""
         def key(g): # type: (Any) -> float
             return g.fitness
 
         return sorted(self.most_fit_genomes, key=key, reverse=True)[:n]
 
-    def best_genome(self): # type: () -> Any
+    def best_genome(self): # type: () -> DefaultGenome # XXX
         """Returns the most fit genome ever seen."""
         return self.best_genomes(1)[0]
 
@@ -121,13 +121,14 @@ class StatisticsReporter(BaseReporter):
             avg_fitness = self.get_fitness_mean()
 
             if with_cross_validation: # pragma: no cover
-                cv_best_fitness = [c.cross_fitness for c in self.most_fit_genomes]
-                cv_avg_fitness = self.get_average_cross_validation_fitness()
-                for best, avg, cv_best, cv_avg in zip(best_fitness,
-                                                      avg_fitness,
-                                                      cv_best_fitness,
-                                                      cv_avg_fitness):
-                    w.writerow([best, avg, cv_best, cv_avg])
+                pass
+##                cv_best_fitness = [c.cross_fitness for c in self.most_fit_genomes]
+##                cv_avg_fitness = self.get_average_cross_validation_fitness()
+##                for best, avg, cv_best, cv_avg in zip(best_fitness,
+##                                                      avg_fitness,
+##                                                      cv_best_fitness,
+##                                                      cv_avg_fitness):
+##                    w.writerow([best, avg, cv_best, cv_avg])
             else:
                 for best, avg in zip(best_fitness, avg_fitness):
                     w.writerow([best, avg])
