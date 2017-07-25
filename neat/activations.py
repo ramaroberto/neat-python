@@ -9,15 +9,14 @@ import math
 import warnings
 
 MYPY = False
-if MYPY:
-    from typing import Optional, Callable, Dict, Union
-    from mypy_extensions import KwArg
-    from neat.multiparameter import MultiParameterFunctionInstance
-    MPActFunc = Callable[[float, KwArg(float)], float]
-    NormActFunc = Callable[[float], float]
+if MYPY: # pragma: no cover
+    from typing import Optional, Union, cast, Dict
+    from neat.multiparameter import MultiParameterFunctionInstance, MPActFunc, NormActFunc
     ActFunc = Union[MPActFunc, NormActFunc]
 
-from neat.multiparameter import MultiParameterSet, BadFunctionError
+
+from neat.multiparameter import MultiParameterSet
+from neat.multiparameter import BadFunctionError as InvalidActivationFunction
 
 def sigmoid_activation(z): # type: (float) -> float
     z = max(-60.0, min(60.0, 5.0 * z))
@@ -98,13 +97,19 @@ def step_activation(z): # type: (float) -> float
     return z
 
 
-def multiparam_relu_activation(z, a): # type: (float, float) -> float
+def multiparam_relu_activation(z, # type: float
+                               a # type: float
+                               ):
+    # type: (...) -> float
     assert a <= 1.0
     assert a >= -1.0
     return max(z, (z*a))
 
 
-def clamped_tanh_step_activation(z, a): # type: (float, float) -> float
+def clamped_tanh_step_activation(z, # type: float
+                                 a # type: float
+                                 ):
+    # type: (...) -> float
     assert a <= 1.0
     assert a >= -1.0
     tanh_weight = 1.0-abs(a)
@@ -119,18 +124,19 @@ def clamped_tanh_step_activation(z, a): # type: (float, float) -> float
     return tanh_activation(z)
 
 
-def multiparam_sigmoid_activation(z, a): # type: (float, float) -> float
+def multiparam_sigmoid_activation(z, # type: float
+                                  a # type: float
+                                  ):
+    # type: (...) -> float
     """Conversion of clamped_tanh_step_activation to a 0-1 output range"""
     return max(0.0,min(1.0,((clamped_tanh_step_activation(z, a)+1.0)/2.0)))
-
-def InvalidActivationFunction(BadFunctionError): # deprecated!
-    pass
 
 class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""
     def __init__(self,
                  multiparameterset=None # Optional[MultiParameterSet]
                  ):
+        # type: (...) -> None
         if multiparameterset is None:
             warn_string = ("Activation init called without multiparameterset:" +
                            " may cause multiple instances of it")
@@ -164,13 +170,16 @@ class ActivationFunctionSet(object):
     def add(self,
             name, # type: str
             function, # type: ActFunc
-            **kwargs # type: float
+            **kwargs # type: Dict[str, Union[str, float]]
             ):
         # type: (...) -> None
         self.multiparameterset.add_func(name, function, 'activation', **kwargs)
 
     def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> ActFunc
-        return self.multiparameterset.get_func(name, 'activation')
+        to_return = self.multiparameterset.get_func(name, 'activation')
+        if MYPY:
+            to_return = cast(ActFunc, to_return)
+        return to_return
 
     def __getitem__(self, index): # type: (Union[str, MultiParameterFunctionInstance]) -> ActFunc
         warnings.warn("Use get, not indexing ([{!r}]), for activation functions".format(index),

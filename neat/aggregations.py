@@ -7,34 +7,44 @@ import warnings
 
 from operator import mul
 
+MYPY = False
+if MYPY: # pragma: no cover
+    from typing import Optional, Union, Iterable, cast, Dict
+    from neat.multiparameter import MultiParameterFunctionInstance, MPAgFunc, NormAgFunc
+    AgFunc = Union[MPAgFunc, NormAgFunc]
+
 from neat.multiparameter import MultiParameterSet
+from neat.multiparameter import BadFunctionError as InvalidAggregationFunction
 from neat.math_util import mean, median2
 
 if sys.version_info[0] > 2:
     from functools import reduce
 
-def product_aggregation(x): # note: `x` is a list or other iterable
+def product_aggregation(x): # type: (Iterable[float]) -> float
     return reduce(mul, x, 1.0)
 
-def sum_aggregation(x):
+def sum_aggregation(x): # type: (Iterable[float]) -> float
     return sum(x)
 
-def max_aggregation(x):
+def max_aggregation(x): # type: (Iterable[float]) -> float
     return max(x)
 
-def min_aggregation(x):
+def min_aggregation(x): # type: (Iterable[float]) -> float
     return min(x)
 
-def maxabs_aggregation(x):
+def maxabs_aggregation(x): # type: (Iterable[float]) -> float
     return max(x, key=abs)
 
-def median_aggregation(x):
+def median_aggregation(x): # type: (Iterable[float]) -> float
     return median2(x)
 
-def mean_aggregation(x):
+def mean_aggregation(x): # type: (Iterable[float]) -> float
     return mean(x)
 
-def max_median_min_aggregation(x, a):
+def max_median_min_aggregation(x, # type: Iterable[float]
+                               a # type: float
+                               ):
+    # type: (...) -> float
     assert a <= 1.0
     assert a >= -1.0
     median_weight = 1.0-abs(a)
@@ -47,14 +57,20 @@ def max_median_min_aggregation(x, a):
                 (median_weight*median2(x)))
     return median2(x)
 
-def maxabs_mean_aggregation(x, a):
+def maxabs_mean_aggregation(x, # type: Iterable[float]
+                            a # type: float
+                            ):
+    # type: (...) -> float
     assert a <= 1.0
     assert a >= 0.0
     return ((1.0-a)*mean(x))+(a*maxabs_aggregation(x))
 
-class AggregationFunctionSet(object):
+class AggregationFunctionSet():
     """Contains aggregation functions and methods to add and retrieve them."""
-    def __init__(self, multiparameterset=None):
+    def __init__(self,
+                 multiparameterset=None # type: Optional[MultiParameterSet]
+                 ):
+        # type: (...) -> None
         if multiparameterset is None:
             warn_string = ("Aggregation init called without multiparameterset:" +
                            " may cause multiple instances of it")
@@ -73,17 +89,25 @@ class AggregationFunctionSet(object):
         self.add('maxabs_mean', maxabs_mean_aggregation,
                  a={'min_value':0.0, 'max_value':1.0})
 
-    def add(self, name, function, **kwargs):
+
+    def add(self,
+            name, # type: str
+            function, # type: AgFunc
+            **kwargs # type: Dict[str, Union[str, float]]
+            ):
+        # type: (...) -> None
         self.multiparameterset.add_func(name, function, 'aggregation', **kwargs)
 
-    def get(self, name):
-        return self.multiparameterset.get_func(name, 'aggregation')
+    def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> AgFunc
+        to_return = self.multiparameterset.get_func(name, 'aggregation')
+        if MYPY:
+            to_return = cast(AgFunc, to_return)
+        return to_return
 
-    def __getitem__(self, index):
+    def __getitem__(self, index): # type: (Union[str, MultiParameterFunctionInstance]) -> AgFunc
         warnings.warn("Use get, not indexing ([{!r}]), for aggregation functions".format(index),
                       DeprecationWarning)
         return self.get(index)
 
-    def is_valid(self, name):
+    def is_valid(self,name): # type: (str) -> bool
         return self.multiparameterset.is_valid_func(name, 'aggregation')
-

@@ -1,6 +1,6 @@
 """
 Enables the use of activation and aggregation functions
-with multiple evolvable numeric parameters.
+with, as well as the usual input, one or more evolvable numeric parameters.
 """
 ##from __future__ import print_function
 
@@ -10,13 +10,19 @@ import types
 import warnings
 
 MYPY = False
-if MYPY:
+if MYPY: # pragma: no cover
     from typing import Optional, Callable, Dict, Union, Iterable, Sequence, List, Any, cast
-    from mypy_extensions import KwArg
-    MPActFunc = Callable[[float, KwArg(float)], float]
-    MPAgFunc = Callable[[Iterable[float], KwArg(float)], float]
+    from mypy_extensions import Arg, KwArg
+    MPActFunc = Union[Callable[[float, KwArg(float)], float],
+                      Callable[[float, Arg(float)], float],
+                      Callable[[float, Arg(float), Arg(float)], float]]
+    MPAgFunc = Union[Callable[[Iterable[float], KwArg(float)], float],
+                     Callable[[Iterable[float], Arg(float)], float],
+                     Callable[[Iterable[float], Arg(float), Arg(float)], float]]
     MPFunc = Union[MPActFunc, MPAgFunc]
-    NormFunc = Union[Callable[[float], float], Callable[[Iterable[float]], float], types.BuiltinFunctionType]
+    NormActFunc = Union[Callable[[float], float], types.BuiltinFunctionType]
+    NormAgFunc = Union[Callable[[Iterable[float]], float], types.BuiltinFunctionType]
+    NormFunc = Union[NormActFunc, NormAgFunc]
     EitherFunc = Union[MPFunc, NormFunc]
 
 from neat.attributes import FloatAttribute
@@ -65,6 +71,8 @@ class MultiParameterFunctionInstance(object):
 
         if self.name != other.name:
             return 1.0
+        if self.instance_name == other.instance_name:
+            return 0.0
 
         total_diff = 0.0
         for n in self.evolved_param_names:
@@ -89,7 +97,11 @@ class MultiParameterFunctionInstance(object):
         return self.copy()
 
     def get_func(self): # type: () -> functools.partial[float]
-        return functools.partial(self.user_func, **self.current_param_values)
+        partial = functools.partial(self.user_func, **self.current_param_values)
+        setattr(partial, '__name__', self.instance_name)
+        if hasattr(self.user_func, '__doc__'):
+            setattr(partial, '__doc__', self.user_func.__doc__)
+        return partial
         
 
 class MultiParameterFunction(object):
@@ -99,7 +111,7 @@ class MultiParameterFunction(object):
                  which_type, # type: str
                  user_func, # type: MPFunc
                  evolved_param_names, # type: Iterable[str]
-                 **evolved_param_dicts # type: Dict[str, Union[float, str]]
+                 **evolved_param_dicts # type: Dict[str, Union[str, float]]
                  ):
         # type: (...) -> None
         self.name = name + "_function"
@@ -235,13 +247,17 @@ class MultiParameterSet(object):
 
         params = dict(zip(multiparam_func.evolved_param_names, param_nums))
 
-        return functools.partial(multiparam_func.user_func, **params)
+        partial = functools.partial(multiparam_func.user_func, **params)
+        setattr(partial, '__name__', name)
+        if hasattr(multiparam_func.user_func, '__doc__'):
+            setattr(partial, '__doc__', multiparam_func.user_func.__doc__)
+        return partial
 
     def add_func(self,
                  name, # type: str
                  user_func, # type: EitherFunc
                  which_type, # type: str
-                 **kwargs # type: float
+                 **kwargs # type: Dict[str, Union[str, float]]
                  ):
         # type: (...) -> None
         """Adds a new activation/aggregation function, potentially multiparameter."""
@@ -307,7 +323,7 @@ class MultiParameterSet(object):
 ##                                                                  kwargs,type(kwargs)),
 ##              file=sys.stderr)
 
-        if MYPY:
+        if MYPY: # pragma: no cover
             user_func = cast(MPFunc, user_func)
 
         mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]
@@ -316,4 +332,3 @@ class MultiParameterSet(object):
                                                    user_func=user_func,
                                                    evolved_param_names=evolved_param_names,
                                                    **kwargs)
-

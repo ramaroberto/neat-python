@@ -21,6 +21,10 @@ Has the built-in :term:`activation functions <activation function>`, code for us
     .. versionchanged:: 0.91-github
       Base of exception changed to more-precise TypeError.
 
+    .. deprecated:: 0.91-mypy_checking
+      Use (from multiparameter) InvalidFunctionError for ones not passing tests, UnknownFunctionError for unknown ones requested by name, or
+      BadFunctionError for either. InvalidFunctionError is based on TypeError; UnknownFunctionError is based on LookupError.
+
   .. py:function:: validate_activation(function)
 
     Checks to make sure its parameter is a function that takes a single argument.
@@ -675,17 +679,17 @@ distributed
 
   .. rubric:: About :term:`compute nodes <compute node>`:
 
-  The :term:`primary compute node` (the node which creates and mutates genomes) and the :term:`secondary compute nodes <secondary node>` (the nodes which
-  evaluate genomes) can execute the same script. The role of a compute node is determined using the ``mode`` argument of the DistributedEvaluator. If the
-  mode is :py:data:`MODE_AUTO`, the `host_is_local()` function is used to check if the ``addr`` argument points to the localhost. If it does, the compute
-  node starts as a primary node, and otherwise as a secondary node. If ``mode`` is :py:data:`MODE_PRIMARY`, the compute node always starts as a primary
-  node. If ``mode`` is :py:data:`MODE_SECONDARY`, the compute node will always start as a secondary node.
+  The :term:`primary compute node` (the node that creates and mutates genomes) and the :term:`secondary compute nodes <secondary node>` (the
+  nodes that evaluate genomes) can execute the same script. The role of a compute node is determined using the ``mode`` argument of the
+  DistributedEvaluator. If the mode is :py:data:`MODE_AUTO`, the `host_is_local()` function is used to check if the ``addr`` argument points to the
+  localhost. If it does, the compute node starts as a primary node, and otherwise as a secondary node. If ``mode`` is :py:data:`MODE_PRIMARY`, the
+  compute node always starts as a primary node. If ``mode`` is :py:data:`MODE_SECONDARY`, the compute node will always start as a secondary node.
 
-  There can only be one primary node per NEAT, but any number of secondary nodes. The primary node will not evaluate any genomes, which means you will
-  always need at least two compute nodes (one primary and at least one secondary).
+  There can only be one primary node per NEAT, but any number of secondary nodes. The primary node will not evaluate any genomes, which means
+  you will always need at least two compute nodes (one primary and at least one secondary).
 
-  You can run any number of compute nodes on the same physical machine (or VM). However, if a machine has both a primary node and one or more secondary
-  nodes, :py:data:`MODE_AUTO` cannot be used for those secondary nodes - :py:data:`MODE_SECONDARY` will need to be specified.
+  You can run any number of compute nodes on the same physical machine (or VM). However, if a machine has both a primary node and one or
+  more secondary nodes, :py:data:`MODE_AUTO` cannot be used for those secondary nodes - :py:data:`MODE_SECONDARY` will need to be specified.
 
   .. rubric:: Usage:
 
@@ -744,7 +748,8 @@ distributed
 
     .. warning::
 
-      See :pylib:`Authentication Keys <multiprocessing.html#authentication-keys>` for more on the ``authkey`` parameter, used to restrict access to the manager.
+      See :pylib:`Authentication Keys <multiprocessing.html#authentication-keys>` for more on the ``authkey`` parameter, used to restrict access to the
+      manager.
 
     :param addr: Should be a tuple of (hostname, port) pointing to the machine running the DistributedEvaluator in primary mode. If mode is :py:data:`MODE_AUTO`, the mode is determined by checking whether the hostname points to this host or not (via :py:func:`host_is_local()`).
     :type addr: tuple(str, int)
@@ -763,7 +768,8 @@ distributed
 
     .. note::
 
-      Whether the default for ``num_workers`` is appropriate can vary depending on the evaluation function (e.g., whether cpu-bound, memory-bound, i/o-bound...), python implementation, and other factors; if unsure and maximal per-machine performance is critical, experimentation will be required.
+      Whether the default for ``num_workers`` is appropriate can vary depending on the evaluation function (e.g., whether cpu-bound, memory-bound,
+      i/o-bound...), python implementation, and other factors; if unsure and maximal per-machine performance is critical, experimentation will be required.
 
     .. py:method:: is_primary()
 
@@ -784,8 +790,8 @@ distributed
 
     .. py:method:: start(exit_on_stop=True, secondary_wait=0)
 
-      If the DistributedEvaluator is in primary mode, starts the manager process and returns. If the DistributedEvaluator is in secondary mode, it connects to the
-      manager and waits for tasks.
+      If the DistributedEvaluator is in primary mode, starts the manager process and returns. If the DistributedEvaluator is in secondary mode, it connects
+      to the manager and waits for tasks.
 
       :param exit_on_stop: If a secondary node, whether to exit upon the calling of `stop()` in the :term:`primary node`.
       :type exit_on_stop: :pytypes:`bool <typesnumeric>`
@@ -1396,8 +1402,8 @@ Directed graph algorithm implementations.
     :type outputs: list(int)
     :param connections: list of (input, output) connections in the network; should only include enabled ones.
     :type connections: list(tuple(int, int))
-    :return: A list of layers, with each layer consisting of a set of node identifiers.
-    :rtype: list(set(int))
+    :return: A set of node identifiers.
+    :rtype: set(int)
 
   .. py:function:: feed_forward_layers(inputs, outputs, connections)
 

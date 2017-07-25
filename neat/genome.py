@@ -14,6 +14,18 @@ from neat.indexer import Indexer
 from neat.multiparameter import MultiParameterSet
 from neat.six_util import iteritems, iterkeys
 
+MYPY = False
+if MYPY: # pragma: no cover
+    from typing import NewType, Tuple, Dict, TextIO, Optional, Any, List, Union, Iterable, cast
+    from neat.activations import ActFunc
+    from neat.aggregations import AgFunc
+    NodeKey = NewType('NodeKey', int)
+    GenomeKey = NewType('GenomeKey', int) # c_type: c_uint
+    ConnKey = Tuple[NodeKey, NodeKey]
+else:
+    NodeKey = None
+    def cast(ignored, var):
+        return var
 
 class DefaultGenomeConfig(object):
     """Sets up and holds configuration information for the DefaultGenome class."""
@@ -21,7 +33,7 @@ class DefaultGenomeConfig(object):
                             'full_nodirect', 'full', 'full_direct',
                             'partial_nodirect', 'partial', 'partial_direct']
 
-    def __init__(self, params):
+    def __init__(self, params): # type: (Dict[str, Any]) -> None
         # Enables functions with evolved parameters
         self.multiparameterset = MultiParameterSet('activation', 'aggregation')
         # Create full set of available activation functions.
@@ -45,9 +57,9 @@ class DefaultGenomeConfig(object):
                         ConfigParameter('initial_connection', str, 'unconnected')]
 
         # Gather configuration data from the gene classes.
-        self.node_gene_type = params['node_gene_type']
+        self.node_gene_type = params['node_gene_type'] # type: Any # XXX
         self._params += self.node_gene_type.get_config_params()
-        self.connection_gene_type = params['connection_gene_type']
+        self.connection_gene_type = params['connection_gene_type'] # type: Any # XXX
         self._params += self.connection_gene_type.get_config_params()
 
         # Use the configuration data to interpret the supplied parameters.
@@ -56,16 +68,17 @@ class DefaultGenomeConfig(object):
 
         # By convention, input pins have negative keys, and the output
         # pins have keys 0,1,...
-        self.input_keys = [-i - 1 for i in range(self.num_inputs)]
-        self.output_keys = [i for i in range(self.num_outputs)]
+        self.input_keys = [cast(NodeKey, (-1 -1)) for i in range(self.num_inputs)]
+        self.output_keys = [cast(NodeKey, i) for i in range(self.num_outputs)]
 
-        self.connection_fraction = None
+        self.connection_fraction = None # type: Optional[float]
 
         # Verify that initial connection type is valid.
         # pylint: disable=access-member-before-definition
+        self.initial_connection = cast(str, self.initial_connection)
         if 'partial' in self.initial_connection:
             c, p = self.initial_connection.split()
-            self.initial_connection = c
+            self.initial_connection = c # type: str
             self.connection_fraction = float(p)
             if not (0 <= self.connection_fraction <= 1):
                 raise RuntimeError(
@@ -86,15 +99,25 @@ class DefaultGenomeConfig(object):
                 self.structural_mutation_surer)
             raise RuntimeError(error_string)
 
-        self.node_indexer = None
+        self.node_indexer = None # type: Optional[Indexer]
 
-    def add_activation(self, name, func, **kwargs):
+    def add_activation(self,
+                       name, # type: str
+                       func, # type: ActFunc
+                       **kwargs # type: Dict[str, Union[str, float]]
+                       ):
+        # type: (...) -> None
         self.activation_defs.add(name, func, **kwargs)
 
-    def add_aggregation(self, name, func, **kwargs):
+    def add_aggregation(self,
+                        name, # type: str
+                        func, # type: AgFunc
+                        **kwargs # type: Dict[str, Union[str, float]]
+                        ):
+        # type: (...) -> None
         self.aggregation_function_defs.add(name, func, **kwargs)
 
-    def save(self, f):
+    def save(self, f): # type: (TextIO) -> None
         if 'partial' in self.initial_connection:
             if not (0 <= self.connection_fraction <= 1):
                 raise RuntimeError(
@@ -109,17 +132,17 @@ class DefaultGenomeConfig(object):
         write_pretty_params(f, self, [p for p in self._params
                                       if not 'initial_connection' in p.name])
 
-    def get_new_node_key(self, node_dict):
+    def get_new_node_key(self, node_dict): # type: (Dict[NodeKey, Any]) -> NodeKey
         if self.node_indexer is None:
             self.node_indexer = Indexer(max(list(iterkeys(node_dict)))+1)
 
-        new_id = self.node_indexer.get_next()
+        new_id = self.node_indexer.get_next() # type: NodeKey
 
         assert new_id not in node_dict
 
         return new_id
 
-    def check_structural_mutation_surer(self):
+    def check_structural_mutation_surer(self): # type: () -> bool
         if self.structural_mutation_surer == 'true':
             return True
         elif self.structural_mutation_surer == 'false':
@@ -154,27 +177,27 @@ class DefaultGenome(object):
     """
 
     @classmethod
-    def parse_config(cls, param_dict):
+    def parse_config(cls, param_dict): # type: (Dict[str, Any]) -> DefaultGenomeConfig
         param_dict['node_gene_type'] = DefaultNodeGene
         param_dict['connection_gene_type'] = DefaultConnectionGene
         return DefaultGenomeConfig(param_dict)
 
     @classmethod
-    def write_config(cls, f, config):
+    def write_config(cls, f, config): # type: (TextIO, DefaultGenomeConfig) -> None
         config.save(f)
 
-    def __init__(self, key):
+    def __init__(self, key): # type: (GenomeKey) -> None
         # Unique identifier for a genome instance.
         self.key = key
 
         # (gene_key, gene) pairs for gene sets.
-        self.connections = {}
-        self.nodes = {}
+        self.connections = {} # type: Dict[ConnKey, Any] # XXX
+        self.nodes = {} # type: Dict[NodeKey, Any] # XXX
 
         # Fitness results.
-        self.fitness = None
+        self.fitness = None # Optional[float]
 
-    def configure_new(self, config):
+    def configure_new(self, config): # type: (DefaultGenomeConfig) -> None
         """Configure a new genome based on the given configuration."""
 
         # Create node genes for the output pins.
@@ -233,8 +256,15 @@ class DefaultGenome(object):
                         sep='\n', file=sys.stderr);
                 self.connect_partial_nodirect(config)
 
-    def configure_crossover(self, genome1, genome2, config):
+    def configure_crossover(self,
+                            genome1, # type: DefaultGenome
+                            genome2, # type: DefaultGenome
+                            ignored_config=None # type: Optional[Any]
+                            ):
+        # type: (...) -> None
         """ Configure a new genome by crossover from two parent genomes. """
+        assert isinstance(genome1.fitness, (int, float))
+        assert isinstance(genome2.fitness, (int, float))
         if genome1.fitness > genome2.fitness:
             parent1, parent2 = genome1, genome2
         else:
@@ -264,7 +294,7 @@ class DefaultGenome(object):
                 # Homologous gene: combine genes from both parents.
                 self.nodes[key] = ng1.crossover(ng2)
 
-    def mutate(self, config):
+    def mutate(self, config): # type: (DefaultGenomeConfig) -> None
         """ Mutates this genome. """
 
         if config.single_structural_mutation:
@@ -302,7 +332,7 @@ class DefaultGenome(object):
         for ng in self.nodes.values():
             ng.mutate(config)
 
-    def mutate_add_node(self, config):
+    def mutate_add_node(self, config): # type: (DefaultGenomeConfig) -> None
         if not self.connections:
             if config.check_structural_mutation_surer():
                 self.mutate_add_connection(config)
@@ -323,7 +353,14 @@ class DefaultGenome(object):
         self.add_connection(config, i, new_node_id, 1.0, True)
         self.add_connection(config, new_node_id, o, conn_to_split.weight, True)
 
-    def add_connection(self, config, input_key, output_key, weight, enabled):
+    def add_connection(self,
+                       config, # type: DefaultGenomeConfig
+                       input_key, # type: NodeKey
+                       output_key, # type: NodeKey
+                       weight, # type: float
+                       enabled # type: bool
+                       ):
+        # type: (...) -> None
         # TODO: Add validation of this connection addition.
         key = (input_key, output_key)
         connection = config.connection_gene_type(key)
@@ -332,16 +369,16 @@ class DefaultGenome(object):
         connection.enabled = enabled
         self.connections[key] = connection
 
-    def mutate_add_connection(self, config):
+    def mutate_add_connection(self, config): # type: (DefaultGenomeConfig) -> None
         """
         Attempt to add a new connection, the only restriction being that the output
         node cannot be one of the network input pins.
         """
         possible_outputs = list(iterkeys(self.nodes))
-        out_node = choice(possible_outputs)
+        out_node = choice(possible_outputs) # type: NodeKey
 
         possible_inputs = possible_outputs + config.input_keys
-        in_node = choice(possible_inputs)
+        in_node = choice(possible_inputs) # type: NodeKey
 
         # Don't duplicate connections.
         key = (in_node, out_node)
@@ -365,11 +402,11 @@ class DefaultGenome(object):
         cg = self.create_connection(config, in_node, out_node)
         self.connections[cg.key] = cg
 
-    def mutate_delete_node(self, config):
+    def mutate_delete_node(self, config): # type: (DefaultGenomeConfig) -> NodeKey
         # Do nothing if there are no non-output nodes.
-        available_nodes = [k for k in iterkeys(self.nodes) if k not in config.output_keys]
+        available_nodes = [cast(NodeKey,k) for k in iterkeys(self.nodes) if k not in config.output_keys]
         if not available_nodes:
-            return -1
+            return cast(NodeKey,-1)
 
         del_key = choice(available_nodes)
 
@@ -385,12 +422,16 @@ class DefaultGenome(object):
 
         return del_key
 
-    def mutate_delete_connection(self):
+    def mutate_delete_connection(self): # type: () -> None
         if self.connections:
             key = choice(list(self.connections.keys()))
             del self.connections[key]
 
-    def distance(self, other, config):
+    def distance(self,
+                 other, # type: DefaultGenome
+                 config # type: DefaultGenomeConfig
+                 ):
+        # type: (...) -> float
         """
         Returns the genetic distance between this genome and the other. This distance value
         is used to compute genome compatibility for speciation.
@@ -441,15 +482,15 @@ class DefaultGenome(object):
         distance = node_distance + connection_distance
         return distance
 
-    def size(self):
+    def size(self): # type: () -> Tuple[int, int]
         """
         Returns genome 'complexity', taken to be
         (number of nodes, number of enabled connections)
         """
         num_enabled_connections = sum([1 for cg in self.connections.values() if cg.enabled])
-        return len(self.nodes), num_enabled_connections
+        return len(self.nodes), num_enabled_connections # c_type: Tuple[c_uint, c_uinit]
 
-    def __str__(self):
+    def __str__(self): # type: () -> str
         s = "Nodes:"
         for k, ng in iteritems(self.nodes):
             s += "\n\t{0} {1!s}".format(k, ng)
@@ -461,18 +502,25 @@ class DefaultGenome(object):
         return s
 
     @staticmethod
-    def create_node(config, node_id):
+    def create_node(config, # type: DefaultGenomeConfig
+                    node_id # type: NodeKey
+                    ):
+        # type: (...) -> Any # XXX
         node = config.node_gene_type(node_id)
         node.init_attributes(config)
         return node
 
     @staticmethod
-    def create_connection(config, input_id, output_id):
+    def create_connection(config, # type: DefaultGenomeConfig
+                          input_id, # type: NodeKey
+                          output_id # type: NodeKey
+                          ):
+        # type: (...) -> Any # XXX
         connection = config.connection_gene_type((input_id, output_id))
         connection.init_attributes(config)
         return connection
 
-    def connect_fs_neat_nohidden(self, config):
+    def connect_fs_neat_nohidden(self, config): # type: (DefaultGenomeConfig) -> None
         """
         Randomly connect one input to all output nodes
         (FS-NEAT without connections to hidden, if any).
@@ -483,7 +531,7 @@ class DefaultGenome(object):
             connection = self.create_connection(config, input_id, output_id)
             self.connections[connection.key] = connection
 
-    def connect_fs_neat_hidden(self, config):
+    def connect_fs_neat_hidden(self, config): # type: (DefaultGenomeConfig) -> None
         """
         Randomly connect one input to all hidden and output nodes
         (FS-NEAT with connections to hidden, if any).
@@ -494,7 +542,11 @@ class DefaultGenome(object):
             connection = self.create_connection(config, input_id, output_id)
             self.connections[connection.key] = connection
 
-    def compute_full_connections(self, config, direct):
+    def compute_full_connections(self,
+                                 config, # type: DefaultGenomeConfig
+                                 direct # type: bool
+                                 ):
+        # type: (...) -> List[ConnKey]
         """
         Compute connections for a fully-connected feed-forward genome--each
         input connected to all hidden nodes
@@ -504,7 +556,7 @@ class DefaultGenome(object):
         """
         hidden = [i for i in iterkeys(self.nodes) if i not in config.output_keys]
         output = [i for i in iterkeys(self.nodes) if i in config.output_keys]
-        connections = []
+        connections = [] # type: List[ConnKey]
         if hidden:
             for input_id in config.input_keys:
                 for h in hidden:
@@ -525,7 +577,7 @@ class DefaultGenome(object):
         return connections
 
 
-    def connect_full_nodirect(self, config):
+    def connect_full_nodirect(self, config): # type: (DefaultGenomeConfig) -> None
         """
         Create a fully-connected genome
         (except without direct input-output unless no hidden nodes).
@@ -534,13 +586,13 @@ class DefaultGenome(object):
             connection = self.create_connection(config, input_id, output_id)
             self.connections[connection.key] = connection
 
-    def connect_full_direct(self, config):
+    def connect_full_direct(self, config): # type: (DefaultGenomeConfig) -> None
         """Create a fully-connected genome, including direct input-output connections."""
         for input_id, output_id in self.compute_full_connections(config, True):
             connection = self.create_connection(config, input_id, output_id)
             self.connections[connection.key] = connection
 
-    def connect_partial_nodirect(self, config):
+    def connect_partial_nodirect(self, config): # type: (DefaultGenomeConfig) -> None
         """
         Create a partially-connected genome,
         with (unless no hidden nodes) no direct input-output connections.
@@ -554,7 +606,7 @@ class DefaultGenome(object):
             connection = self.create_connection(config, input_id, output_id)
             self.connections[connection.key] = connection
 
-    def connect_partial_direct(self, config):
+    def connect_partial_direct(self, config): # type: (DefaultGenomeConfig) -> None
         """
         Create a partially-connected genome,
         including (possibly) direct input-output connections.
