@@ -7,15 +7,16 @@ import warnings
 
 from operator import mul
 
-MYPY = False
-if MYPY: # pragma: no cover
-    from typing import Optional, Union, Iterable, cast, Dict
-    from neat.multiparameter import MultiParameterFunctionInstance, MPAgFunc, NormAgFunc
-    AgFunc = Union[MPAgFunc, NormAgFunc]
-
 from neat.multiparameter import MultiParameterSet
-from neat.multiparameter import BadFunctionError as InvalidAggregationFunction
+from neat.multiparameter import BadFunctionError as InvalidAggregationFunction # pylint: disable=unused-import
 from neat.math_util import mean, median2
+
+from neat.mypy_util import * # pylint: disable=unused-wildcard-import
+
+if MYPY: # pragma: no cover
+    from neat.multiparameter import (MultiParameterFunctionInstance, # pylint: disable=unused-import
+                                     MPAgFunc, NormAgFunc)
+    AgFunc = Union[MPAgFunc, NormAgFunc]
 
 if sys.version_info[0] > 2:
     from functools import reduce
@@ -65,7 +66,7 @@ def maxabs_mean_aggregation(x, # type: Iterable[float]
     assert a >= 0.0
     return ((1.0-a)*mean(x))+(a*maxabs_aggregation(x))
 
-class AggregationFunctionSet():
+class AggregationFunctionSet(object):
     """Contains aggregation functions and methods to add and retrieve them."""
     def __init__(self,
                  multiparameterset=None # type: Optional[MultiParameterSet]

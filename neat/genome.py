@@ -14,18 +14,11 @@ from neat.indexer import Indexer
 from neat.multiparameter import MultiParameterSet
 from neat.six_util import iteritems, iterkeys
 
-MYPY = False
+from neat.mypy_util import * # pylint: disable=unused-wildcard-import
+
 if MYPY: # pragma: no cover
-    from typing import NewType, Tuple, Dict, TextIO, Optional, Any, List, Union, Iterable, cast
-    from neat.activations import ActFunc
-    from neat.aggregations import AgFunc
-    NodeKey = NewType('NodeKey', int)
-    GenomeKey = NewType('GenomeKey', int) # c_type: c_uint
-    ConnKey = Tuple[NodeKey, NodeKey]
-else:
-    NodeKey = None
-    def cast(ignored, var):
-        return var
+    from neat.activations import ActFunc # pylint: disable=unused-import
+    from neat.aggregations import AgFunc # pylint: disable=unused-import
 
 class DefaultGenomeConfig(object):
     """Sets up and holds configuration information for the DefaultGenome class."""

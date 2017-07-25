@@ -1,11 +1,6 @@
 """Directed graph algorithm implementations."""
-MYPY = False
-if MYPY: # pragma: no cover
-    from typing import Iterable, Set, List, Sequence
-    from typing import NewType, Tuple
-    NodeKey = NewType('NodeKey', int)
-    GenomeKey = NewType('GenomeKey', int)
-    ConnKey = Tuple[NodeKey, NodeKey]
+
+from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 def creates_cycle(connections, # type: Iterable[ConnKey]
                   test # type: ConnKey

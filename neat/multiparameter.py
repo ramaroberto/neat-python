@@ -7,11 +7,15 @@ with, as well as the usual input, one or more evolvable numeric parameters.
 import functools
 ##import sys
 import types
-import warnings
+##import warnings
 
-MYPY = False
+from neat.attributes import FloatAttribute
+from neat.six_util import iteritems
+
+from neat.mypy_util import * # pylint: disable=unused-wildcard-import
+
 if MYPY: # pragma: no cover
-    from typing import Optional, Callable, Dict, Union, Iterable, Sequence, List, Any, cast
+    from typing import Callable
     from mypy_extensions import Arg, KwArg
     MPActFunc = Union[Callable[[float, KwArg(float)], float],
                       Callable[[float, Arg(float)], float],
@@ -25,8 +29,7 @@ if MYPY: # pragma: no cover
     NormFunc = Union[NormActFunc, NormAgFunc]
     EitherFunc = Union[MPFunc, NormFunc]
 
-from neat.attributes import FloatAttribute
-from neat.six_util import iteritems
+
 
 class MultiParameterFunctionInstance(object):
     """

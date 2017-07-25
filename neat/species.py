@@ -3,24 +3,32 @@ from neat.config import ConfigParameter, DefaultClassConfig
 from neat.indexer import Indexer
 from neat.math_util import mean, stdev
 from neat.six_util import iteritems, iterkeys, itervalues
-
+from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 class Species(object):
-    def __init__(self, key, generation):
+    def __init__(self,
+                 key, # type: SpeciesKey
+                 generation # type: int
+                 ):
+        # type: (...) -> None
         self.key = key
         self.created = generation
         self.last_improved = generation
-        self.representative = None
-        self.members = {}
-        self.fitness = None
-        self.adjusted_fitness = None
+        self.representative = None # type: Optional[Any]
+        self.members = {} # type: Dict[GenomeKey, Any]
+        self.fitness = None # type: Optional[float]
+        self.adjusted_fitness = None # type: Optional[float]
         self.fitness_history = []
 
-    def update(self, representative, members):
+    def update(self,
+               representative, # type: Any
+               members # type: Dict[GenomeKey, Any]
+               ):
+        # type: (...) -> None
         self.representative = representative
         self.members = members
 
-    def get_fitnesses(self):
+    def get_fitnesses(self): # type: () -> List[Optional[float]]
         return [m.fitness for m in itervalues(self.members)]
 
 

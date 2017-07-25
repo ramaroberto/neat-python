@@ -3,9 +3,7 @@ from __future__ import division
 
 from math import sqrt, exp
 
-MYPY = False
-if MYPY: # pragma: no cover
-    from typing import Iterable
+from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 def mean(values): # type: (Iterable[float]) -> float
     values = list(values)

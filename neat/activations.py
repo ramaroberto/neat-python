@@ -8,15 +8,17 @@ from __future__ import division
 import math
 import warnings
 
-MYPY = False
+from neat.multiparameter import MultiParameterSet # disable=unused-import
+from neat.multiparameter import BadFunctionError as InvalidActivationFunction # pylint: disable=unused-import
+
+from neat.mypy_util import * # pylint: disable=unused-wildcard-import
+
 if MYPY: # pragma: no cover
-    from typing import Optional, Union, cast, Dict
-    from neat.multiparameter import MultiParameterFunctionInstance, MPActFunc, NormActFunc
+    from neat.multiparameter import (MultiParameterFunctionInstance, # pylint: disable=unused-import
+                                     MPActFunc, NormActFunc)
     ActFunc = Union[MPActFunc, NormActFunc]
 
 
-from neat.multiparameter import MultiParameterSet
-from neat.multiparameter import BadFunctionError as InvalidActivationFunction
 
 def sigmoid_activation(z): # type: (float) -> float
     z = max(-60.0, min(60.0, 5.0 * z))
