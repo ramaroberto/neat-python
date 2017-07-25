@@ -7,6 +7,17 @@ with multiple evolvable numeric parameters.
 import functools
 ##import sys
 import types
+import warnings
+
+MYPY = False
+if MYPY:
+    from typing import Optional, Callable, Dict, Union, Iterable, Sequence, List, Any, cast
+    from mypy_extensions import KwArg
+    MPActFunc = Callable[[float, KwArg(float)], float]
+    MPAgFunc = Callable[[Iterable[float], KwArg(float)], float]
+    MPFunc = Union[MPActFunc, MPAgFunc]
+    NormFunc = Union[Callable[[float], float], Callable[[Iterable[float]], float], types.BuiltinFunctionType]
+    EitherFunc = Union[MPFunc, NormFunc]
 
 from neat.attributes import FloatAttribute
 from neat.six_util import iteritems
@@ -16,50 +27,54 @@ class MultiParameterFunctionInstance(object):
     Holds, initializes, and mutates the evolved parameters for one instance
     of a multiparameter function.
     """
-    def __init__(self, name, multi_param_func):
+    def __init__(self,
+                 name, # type: str
+                 multi_param_func # type: MultiParameterFunction
+                 ):
+        # type: (...) -> None
         self.name = name
         self.multi_param_func = multi_param_func
         self.user_func = multi_param_func.user_func
         self.evolved_param_names = multi_param_func.evolved_param_names
         self.evolved_param_attributes = multi_param_func.evolved_param_attributes
         self.evolved_param_dicts = multi_param_func.evolved_param_dicts
-        self.current_param_values = {}
-        self.instance_name = ''
+        self.current_param_values = {} # type: Dict[str, float]
+        self.instance_name = '' # type: str
 
         self.init_value()
 
-    def init_value(self, ignored_config=None):
+    def init_value(self, ignored_config=None): # type: (Any) -> None
         for n, m in iteritems(self.evolved_param_attributes):
             self.current_param_values[n] = m.init_value(self.multi_param_func)
         self.instance_name = self.name + '(' + ','.join([str(self.current_param_values[n])
                                                          for n in self.evolved_param_names]) + ')'
 
-    def mutate_value(self, ignored_config=None):
+    def mutate_value(self, ignored_config=None): # type: (Any) -> None
         for n, m in iteritems(self.evolved_param_attributes):
             self.current_param_values[n] = m.mutate_value(self.current_param_values[n],
                                                           self.multi_param_func)
         self.instance_name = self.name + '(' + ','.join([str(self.current_param_values[n])
                                                          for n in self.evolved_param_names]) + ')'
 
-    def __str__(self):
+    def __str__(self): # type: () -> str
         return self.instance_name
 
-    def distance(self, other):
+    def distance(self, other): # type: (Any) -> float
         if not isinstance(other, MultiParameterFunctionInstance):
-            return 1
+            return 1.0
 
         if self.name != other.name:
-            return 1
+            return 1.0
 
         total_diff = 0.0
         for n in self.evolved_param_names:
             diff = abs(self.current_param_values[n] -
                        other.current_param_values[n])
             param_dict = self.evolved_param_dicts[n]
-            total_diff += diff / max(1,abs(param_dict['max_value'] - param_dict['min_value']))
+            total_diff += diff / max(1.0,abs(param_dict['max_value'] - param_dict['min_value'])) # type: ignore
         return total_diff
 
-    def copy(self):
+    def copy(self): # type: () -> MultiParameterFunctionInstance
         #print("{0!s}: Copying myself {1!r}".format(self.instance_name,self),file=sys.stderr)
         other = MultiParameterFunctionInstance(self.name, self.multi_param_func)
         for n in self.evolved_param_names:
@@ -67,50 +82,57 @@ class MultiParameterFunctionInstance(object):
         other.instance_name = self.instance_name[:]
         return other
 
-    def __copy__(self):
+    def __copy__(self): # type: () -> MultiParameterFunctionInstance
         return self.copy()
 
-    def __deepcopy__(self, ignored_dict):
+    def __deepcopy__(self, ignored_dict): # type: (Dict[Any, Any]) -> MultiParameterFunctionInstance
         return self.copy()
 
-    def get_func(self):
+    def get_func(self): # type: () -> functools.partial[float]
         return functools.partial(self.user_func, **self.current_param_values)
         
 
 class MultiParameterFunction(object):
     """Holds and initializes configuration information for one multiparameter function."""
-    def __init__(self, name, which_type, user_func, evolved_param_names, **evolved_param_dicts):
+    def __init__(self,
+                 name, # type: str
+                 which_type, # type: str
+                 user_func, # type: MPFunc
+                 evolved_param_names, # type: Iterable[str]
+                 **evolved_param_dicts # type: Dict[str, Union[float, str]]
+                 ):
+        # type: (...) -> None
         self.name = name + "_function"
         self.orig_name = name
         self.which_type = which_type # activation or aggregation
         self.user_func = user_func
         self.evolved_param_names = evolved_param_names
         self.evolved_param_dicts = evolved_param_dicts
-        self.evolved_param_attributes = {}
+        self.evolved_param_attributes = {} # type: Dict[str, FloatAttribute]
 
         for n in evolved_param_names:
             self.evolved_param_dicts[n].setdefault('init_type','uniform')
             param_dict = self.evolved_param_dicts[n]
-            middle = (param_dict['max_value'] +
+            middle = (param_dict['max_value'] + # type: ignore
                       param_dict['min_value'])/2.0
             self.evolved_param_dicts[n].setdefault('init_mean', middle)
-            for_stdev = min(abs(param_dict['max_value'] -
+            for_stdev = min(abs(param_dict['max_value'] - # type: ignore
                                 param_dict['init_mean']),
-                            abs(param_dict['min_value'] -
+                            abs(param_dict['min_value'] - # type: ignore
                                 param_dict['init_mean']))/2.0
             self.evolved_param_dicts[n].setdefault('init_stdev', for_stdev)
             # below here is mainly intended for users wanting to use built-in
             # multiparameter functions without too much initialization worries
             self.evolved_param_dicts[n].setdefault('replace_rate', 0.1)
-            mutate_rate = min((1-param_dict['replace_rate']),(param_dict['replace_rate']*5.0))
+            mutate_rate = min((1-param_dict['replace_rate']),(param_dict['replace_rate']*5.0)) # type: ignore
             self.evolved_param_dicts[n].setdefault('mutate_rate', mutate_rate)
             # actual standard deviation of uniform distribution is width/sqrt(12) -
             # use of 1/4 range in the uniform distribution FloatAttribute setup
             # (and thus the above) is to make it easier to figure out how to
             # get a given initialization range that is not the same as the
             # overall min/max range.
-            mutate_power = ((param_dict['replace_rate']/param_dict['mutate_rate'])*
-                            (abs(param_dict['max_value']-param_dict['min_value'])/pow(12.0,0.5)))
+            mutate_power = ((param_dict['replace_rate']/param_dict['mutate_rate'])* # type: ignore
+                            (abs(param_dict['max_value']-param_dict['min_value'])/pow(12.0,0.5))) # type: ignore
             self.evolved_param_dicts[n].setdefault('mutate_power', mutate_power)
             
             tmp_name = "{0}_{1}".format(name,n)
@@ -119,10 +141,16 @@ class MultiParameterFunction(object):
             for x, y in iteritems(param_dict):
                 setattr(self, self.evolved_param_attributes[n].config_item_name(x), y)
 
-    def init_instance(self):
+    def init_instance(self): # type: (...) -> MultiParameterFunctionInstance
         return MultiParameterFunctionInstance(self.orig_name, self)
 
-class InvalidFunctionError(TypeError):
+class BadFunctionError(Exception):
+    pass
+
+class InvalidFunctionError(TypeError, BadFunctionError):
+    pass
+
+class UnknownFunctionError(LookupError, BadFunctionError):
     pass
 
 class MultiParameterSet(object):
@@ -130,14 +158,17 @@ class MultiParameterSet(object):
     Holds the set of (potentially multiparameter) functions
     and contains methods for dealing with them.
     """
-    def __init__(self, *which_types):
-        self.norm_func_dict = {}
-        self.multiparam_func_dict = {}
+    def __init__(self,
+                 *which_types # type: str
+                 ):
+        # type: (...) -> None
+        self.norm_func_dict = {} # type: Dict[str, Dict[str, NormFunc]]
+        self.multiparam_func_dict = {} # type: Dict[str, Dict[str, MultiParameterFunction]]
         for which_type in list(which_types):
             self.norm_func_dict[which_type] = {}
             self.multiparam_func_dict[which_type] = {}
 
-    def is_valid_func(self, name, which_type):
+    def is_valid_func(self, name, which_type): # type: (str, str) -> bool
         if name in self.multiparam_func_dict[which_type]:
             return True
         if name in self.norm_func_dict[which_type]:
@@ -146,32 +177,44 @@ class MultiParameterSet(object):
             raise InvalidFunctionError("Called with uncertain name '{!s}'".format(name))
         return False
 
-    def is_multiparameter(self, name, which_type):
+    def is_multiparameter(self, name, which_type): # type: (str, str) -> bool
         if name.endswith(')'):
             raise InvalidFunctionError("Called with uncertain name '{!s}'".format(name))
-        return name in self.multiparam_func_dict[which_type]
+        return bool(name in self.multiparam_func_dict[which_type])
 
-    def init_multiparameter(self, name, instance, ignored_config):
+    def init_multiparameter(self,
+                            name, # type: str
+                            instance, # type: Any # XXX
+                            ignored_config # type: Any
+                            ):
+        # type: (...) -> MultiParameterFunctionInstance
         which_type = instance.name
         multiparam_func_dict = self.multiparam_func_dict[which_type]
         multiparam_func = multiparam_func_dict[name]
         return multiparam_func.init_instance()
 
-    def get_func(self, name, which_type):
+    def get_func(self,
+                 name, # type: Union[str, MultiParameterFunctionInstance]
+                 which_type # type: str
+                 ):
+        # type: (...) -> Union[EitherFunc, MultiParameterFunction, functools.partial[float]]
         """
         Figures out what function, or function instance for multiparameter functions,
         is needed, and returns it.
         """
-        if name in self.norm_func_dict[which_type]:
-            func_dict = self.norm_func_dict[which_type]
-            return func_dict[name]
 
-        if hasattr(name, 'get_func'):
+        if isinstance(name, MultiParameterFunctionInstance):
             return name.get_func()
+        if hasattr(name, 'get_func'):
+            return name.get_func() # type: ignore
+        
+        if name in self.norm_func_dict[which_type]:
+            nfunc_dict = self.norm_func_dict[which_type] # type: Dict[str, NormFunc]
+            return nfunc_dict[name]
 
         if name in self.multiparam_func_dict[which_type]:
-            func_dict = self.multiparam_func_dict[which_type]
-            return func_dict[name] # Allows for altering configuration
+            mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]
+            return mpfunc_dict[name] # Allows for altering configuration
 
         if not name.endswith(')'):
             raise LookupError("Unknown function {!r} - no end )".
@@ -179,13 +222,13 @@ class MultiParameterSet(object):
 
         param_start = name.find('(')
         if param_start < 0:
-            raise LookupError("Unknown function {!r} - no start (".
-                              format(name))
+            raise UnknownFunctionError("Unknown function {!r} - no start (".
+                                       format(name))
 
         func_name = name[:(param_start-1)]
         if not func_name in self.multiparam_func_dict[which_type]:
-            raise LookupError("Unknown function {!r} (from {!r})".
-                              format(func_name,name))
+            raise UnknownFunctionError("Unknown function {!r} (from {!r})".
+                                       format(func_name,name))
         multiparam_func = self.multiparam_func_dict[which_type][func_name]
 
         param_nums = map(float, name[(param_start+1):(len(name)-2)].split(','))
@@ -194,13 +237,32 @@ class MultiParameterSet(object):
 
         return functools.partial(multiparam_func.user_func, **params)
 
-    def add_func(self, name, user_func, which_type, **kwargs):
+    def add_func(self,
+                 name, # type: str
+                 user_func, # type: EitherFunc
+                 which_type, # type: str
+                 **kwargs # type: float
+                 ):
+        # type: (...) -> None
         """Adds a new activation/aggregation function, potentially multiparameter."""
         if not isinstance(user_func,
-                          (types.BuiltinFunctionType,
-                           types.FunctionType,
+                          (types.FunctionType,
                            types.LambdaType)):
-            raise InvalidFunctionError("A function object is required.")
+            raise InvalidFunctionError(
+                "A function object is required, not {0!r} ({1!s})".format(user_func,name))
+
+        if isinstance(user_func, types.BuiltinFunctionType):
+            if kwargs:
+                raise InvalidFunctionError(
+                    "Cannot use built-in function as multiparam function - needs wrapping")
+            nfunc_dict = self.norm_func_dict[which_type]
+            nfunc_dict[name] = user_func
+            return
+
+        if not hasattr(user_func, '__code__'):
+            raise InvalidFunctionError(
+                "An object with __code__ attribute is required, not {0!r} ({1!s})".format(user_func,
+                                                                                          name))
         
         func_code = user_func.__code__
         if func_code.co_argcount != (len(kwargs)+1):
@@ -210,8 +272,8 @@ class MultiParameterSet(object):
                                                                                     kwargs))
 
         if func_code.co_argcount == 1:
-            func_dict = self.norm_func_dict[which_type]
-            func_dict[name] = user_func
+            nfunc_dict2 = self.norm_func_dict[which_type]
+            nfunc_dict2[name] = user_func # type: ignore
             return
 
         if ('(' in name) or (')' in name):
@@ -219,7 +281,7 @@ class MultiParameterSet(object):
                                                                                       user_func)
                                        + " - multiparam function cannot have '(' or ')'")
 
-        first_an = func_code.co_varnames[0]
+        first_an = func_code.co_varnames[0] # type: str
         if first_an in kwargs:
             raise InvalidFunctionError("First argument '{0!s}' of function {1!r}".format(first_an,
                                                                                          user_func)
@@ -245,9 +307,13 @@ class MultiParameterSet(object):
 ##                                                                  kwargs,type(kwargs)),
 ##              file=sys.stderr)
 
-        func_dict = self.multiparam_func_dict[which_type]
-        func_dict[name] = MultiParameterFunction(name=name, which_type=which_type,
-                                                 user_func=user_func,
-                                                 evolved_param_names=evolved_param_names,
-                                                 **kwargs)
+        if MYPY:
+            user_func = cast(MPFunc, user_func)
+
+        mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]
+        mpfunc_dict[name] = MultiParameterFunction(name=name,
+                                                   which_type=which_type,
+                                                   user_func=user_func,
+                                                   evolved_param_names=evolved_param_names,
+                                                   **kwargs)
 

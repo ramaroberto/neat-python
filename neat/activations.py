@@ -7,46 +7,56 @@ from __future__ import division
 
 import math
 import warnings
-from neat.multiparameter import MultiParameterSet
 
-def sigmoid_activation(z):
+MYPY = False
+if MYPY:
+    from typing import Optional, Callable, Dict, Union
+    from mypy_extensions import KwArg
+    from neat.multiparameter import MultiParameterFunctionInstance
+    MPActFunc = Callable[[float, KwArg(float)], float]
+    NormActFunc = Callable[[float], float]
+    ActFunc = Union[MPActFunc, NormActFunc]
+
+from neat.multiparameter import MultiParameterSet, BadFunctionError
+
+def sigmoid_activation(z): # type: (float) -> float
     z = max(-60.0, min(60.0, 5.0 * z))
     return 1.0 / (1.0 + math.exp(-z))
 
 
-def tanh_activation(z):
+def tanh_activation(z): # type: (float) -> float
     z = max(-60.0, min(60.0, 2.5 * z))
     return math.tanh(z)
 
 
-def sin_activation(z):
+def sin_activation(z): # type: (float) -> float
     z = max(-60.0, min(60.0, 5.0 * z))
     return math.sin(z)
 
 
-def gauss_activation(z):
+def gauss_activation(z): # type: (float) -> float
     z = max(-3.4, min(3.4, z))
     return math.exp(-5.0 * z**2)
 
 
-def relu_activation(z):
+def relu_activation(z): # type: (float) -> float
     return z if z > 0.0 else 0.0
 
 
-def softplus_activation(z):
+def softplus_activation(z): # type: (float) -> float
     z = max(-60.0, min(60.0, 5.0 * z))
     return 0.2 * math.log(1 + math.exp(z))
 
 
-def identity_activation(z):
+def identity_activation(z): # type: (float) -> float
     return z
 
 
-def clamped_activation(z):
+def clamped_activation(z): # type: (float) -> float
     return max(-1.0, min(1.0, z))
 
 
-def inv_activation(z):
+def inv_activation(z): # type: (float) -> float
     try:
         z = 1.0 / z
     except ArithmeticError: # handle overflows
@@ -55,32 +65,32 @@ def inv_activation(z):
         return z
 
 
-def log_activation(z):
+def log_activation(z): # type: (float) -> float
     z = max(1e-7, z)
     return math.log(z)
 
 
-def exp_activation(z):
+def exp_activation(z): # type: (float) -> float
     z = max(-60.0, min(60.0, z))
     return math.exp(z)
 
 
-def abs_activation(z):
+def abs_activation(z): # type: (float) -> float
     return abs(z)
 
 
-def hat_activation(z):
+def hat_activation(z): # type: (float) -> float
     return max(0.0, 1 - abs(z))
 
 
-def square_activation(z):
+def square_activation(z): # type: (float) -> float
     return z ** 2
 
 
-def cube_activation(z):
+def cube_activation(z): # type: (float) -> float
     return z ** 3
 
-def step_activation(z):
+def step_activation(z): # type: (float) -> float
     if z < 0:
         return -1
     if z > 0:
@@ -88,13 +98,13 @@ def step_activation(z):
     return z
 
 
-def multiparam_relu_activation(z, a):
+def multiparam_relu_activation(z, a): # type: (float, float) -> float
     assert a <= 1.0
     assert a >= -1.0
     return max(z, (z*a))
 
 
-def clamped_tanh_step_activation(z, a):
+def clamped_tanh_step_activation(z, a): # type: (float, float) -> float
     assert a <= 1.0
     assert a >= -1.0
     tanh_weight = 1.0-abs(a)
@@ -109,14 +119,18 @@ def clamped_tanh_step_activation(z, a):
     return tanh_activation(z)
 
 
-def multiparam_sigmoid_activation(z, a):
+def multiparam_sigmoid_activation(z, a): # type: (float, float) -> float
     """Conversion of clamped_tanh_step_activation to a 0-1 output range"""
     return max(0.0,min(1.0,((clamped_tanh_step_activation(z, a)+1.0)/2.0)))
 
+def InvalidActivationFunction(BadFunctionError): # deprecated!
+    pass
 
 class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""
-    def __init__(self, multiparameterset=None):
+    def __init__(self,
+                 multiparameterset=None # Optional[MultiParameterSet]
+                 ):
         if multiparameterset is None:
             warn_string = ("Activation init called without multiparameterset:" +
                            " may cause multiple instances of it")
@@ -147,16 +161,21 @@ class ActivationFunctionSet(object):
                  a={'min_value':-1.0, 'max_value':1.0})
         
 
-    def add(self, name, function, **kwargs):
+    def add(self,
+            name, # type: str
+            function, # type: ActFunc
+            **kwargs # type: float
+            ):
+        # type: (...) -> None
         self.multiparameterset.add_func(name, function, 'activation', **kwargs)
 
-    def get(self, name):
+    def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> ActFunc
         return self.multiparameterset.get_func(name, 'activation')
 
-    def __getitem__(self, index):
+    def __getitem__(self, index): # type: (Union[str, MultiParameterFunctionInstance]) -> ActFunc
         warnings.warn("Use get, not indexing ([{!r}]), for activation functions".format(index),
                       DeprecationWarning)
         return self.get(index)
 
-    def is_valid(self, name):
+    def is_valid(self,name): # type: (str) -> bool
         return self.multiparameterset.is_valid_func(name, 'activation')
