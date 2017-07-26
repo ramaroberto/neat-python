@@ -7,6 +7,9 @@ if MYPY:
     from neat.config import Config # pylint: disable=unused-import
     from neat.genes import DefaultConnectionGene # pylint: disable=unused-import
     from neat.multiparameter import NormActFunc, NormAgFunc # pylint: disable=unused-import
+else:
+    NormActFunc = None
+    NormAgFunc = None
 
 class FeedForwardNetwork(object):
     def __init__(self,
@@ -60,8 +63,8 @@ class FeedForwardNetwork(object):
                 aggregation_function = config.genome_config.aggregation_function_defs.get(ng.aggregation) # type: ignore
                 activation_function = config.genome_config.activation_defs.get(ng.activation) # type: ignore
                 node_evals.append((node,
-                                   activation_function,
-                                   aggregation_function,
+                                   cast(NormActFunc,activation_function),
+                                   cast(NormAgFunc,aggregation_function),
                                    ng.bias, ng.response, # type: ignore
                                    inputs))
 

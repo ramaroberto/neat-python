@@ -4,9 +4,11 @@ from neat.six_util import itervalues, iteritems
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 if MYPY:
-    from neat.genome import DefaultGenome, DefaultGenomeConfig # pylint: disable=unused-import
-    from neat.config import Config # pylint: disable=unused-import
+    from neat.mypy_util import DefaultGenome, Config, DefaultGenomeConfig # pylint: disable=unused-import
     from neat.multiparameter import NormActFunc, NormAgFunc # pylint: disable=unused-import
+else:
+    NormActFunc = None
+    NormAgFunc = None
 
 class RecurrentNetwork(object):
     def __init__(self,
@@ -80,9 +82,9 @@ class RecurrentNetwork(object):
             node = genome.nodes[node_key]
             activation_function = genome_config.activation_defs.get(node.activation) # type: ignore
             aggregation_function = genome_config.aggregation_function_defs.get(node.aggregation) # type: ignore
-            node_evals.append((node_key, # type: ignore
-                               activation_function,
-                               aggregation_function,
+            node_evals.append((node_key,
+                               cast(NormActFunc,activation_function),
+                               cast(NormAgFunc,aggregation_function),
                                node.bias, node.response, # type: ignore
                                inputs))
 

@@ -2,10 +2,28 @@ from __future__ import division
 
 from neat.graphs import required_for_output
 from neat.six_util import itervalues, iteritems
+from neat.genes import DefaultNodeGene # pylint: disable=unused-import
 
+from neat.mypy_util import * # pylint: disable=unused-wildcard-import
+
+if MYPY:
+    from neat.genome import DefaultGenome, DefaultGenomeConfig # pylint: disable=unused-import
+    from neat.config import Config # pylint: disable=unused-import
+    from neat.multiparameter import NormActFunc, NormAgFunc # pylint: disable=unused-import
+else:
+    NormActFunc = None
+    NormAgFunc = None
 
 class CTRNNNodeEval(object):
-    def __init__(self, time_constant, activation, aggregation, bias, response, links):
+    def __init__(self,
+                 time_constant, # type: float
+                 activation, # type: NormActFunc
+                 aggregation, # type: NormAgFunc
+                 bias, # type: float
+                 response, # type: float
+                 links # type: List[Tuple[NodeKey, float]]
+                 ):
+        # type: (...) -> None
         self.time_constant = time_constant
         self.activation = activation
         self.aggregation = aggregation
@@ -15,12 +33,17 @@ class CTRNNNodeEval(object):
 
 
 class CTRNN(object):
-    def __init__(self, inputs, outputs, node_evals):
+    def __init__(self,
+                 inputs, # type: List[NodeKey]
+                 outputs, # type: List[NodeKey]
+                 node_evals # type: Dict[NodeKey, CTRNNNodeEval]
+                 ):
+        # type: (...) -> None
         self.input_nodes = inputs
         self.output_nodes = outputs
         self.node_evals = node_evals
 
-        self.values = [{}, {}]
+        self.values = [{}, {}] # type: List[Dict[NodeKey, float]]
         for v in self.values:
             for k in inputs + outputs:
                 v[k] = 0.0
@@ -30,15 +53,15 @@ class CTRNN(object):
                 for i, w in ne.links:
                     v[i] = 0.0
 
-        self.active = 0
-        self.time_seconds = 0.0
+        self.active = 0 # type: int # c_type: c_uint
+        self.time_seconds = 0.0 # type: float
 
-    def reset(self):
+    def reset(self): # type: () -> None
         self.values = [dict((k, 0.0) for k in v) for v in self.values]
         self.active = 0
         self.time_seconds = 0.0
 
-    def set_node_value(self, node_key, value):
+    def set_node_value(self, node_key, value): # type: (NodeKey, float) -> None
         for v in self.values:
             v[node_key] = value
 
@@ -48,7 +71,12 @@ class CTRNN(object):
         # pylint: disable=no-self-use
         raise NotImplementedError()
 
-    def advance(self, inputs, advance_time, time_step=None):
+    def advance(self,
+                inputs, # type: List[float]
+                advance_time, # type: float
+                time_step=None # type: Optional[float]
+                ):
+        # type: (...) -> List[float]
         """
         Advance the simulation by the given amount of time, assuming that inputs are
         constant at the given values during the simulated time.
@@ -63,7 +91,7 @@ class CTRNN(object):
             raise RuntimeError("Expected {0} inputs, got {1}".format(len(self.input_nodes), len(inputs)))
 
         while self.time_seconds < final_time_seconds:
-            dt = min(time_step, final_time_seconds - self.time_seconds)
+            dt = min(time_step, final_time_seconds - self.time_seconds) # type: float
 
             ivalues = self.values[self.active]
             ovalues = self.values[1 - self.active]
@@ -74,9 +102,9 @@ class CTRNN(object):
                 ovalues[i] = v
 
             for node_key, ne in iteritems(self.node_evals):
-                node_inputs = [ivalues[i] * w for i, w in ne.links]
-                s = ne.aggregation(node_inputs)
-                z = ne.activation(ne.bias + ne.response * s)
+                node_inputs = [ivalues[i] * w for i, w in ne.links] # type: List[float]
+                s = ne.aggregation(node_inputs) # type: float
+                z = ne.activation(ne.bias + ne.response * s) # type: float
                 ovalues[node_key] += dt / ne.time_constant * (-ovalues[node_key] + z)
 
             self.time_seconds += dt
@@ -85,18 +113,22 @@ class CTRNN(object):
         return [ovalues[i] for i in self.output_nodes]
 
     @staticmethod
-    def create(genome, config, time_constant):
+    def create(genome, # type: DefaultGenome
+               config, # type: Config
+               time_constant # type: float
+               ):
+        # type: (...) -> CTRNN
         """ Receives a genome and returns its phenotype (a CTRNN). """
-        genome_config = config.genome_config
+        genome_config = config.genome_config # type: DefaultGenomeConfig
         required = required_for_output(genome_config.input_keys, genome_config.output_keys, genome.connections)
 
         # Gather inputs and expressed connections.
-        node_inputs = {}
+        node_inputs = {} # type: Dict[NodeKey, List[Tuple[NodeKey, float]]]
         for cg in itervalues(genome.connections):
             if not cg.enabled:
                 continue
 
-            i, o = cg.key
+            i, o = cast(ConnKey,cg.key) # type: NodeKey, NodeKey
             if o not in required and i not in required:
                 continue
 
@@ -105,16 +137,16 @@ class CTRNN(object):
             else:
                 node_inputs[o].append((i, cg.weight))
 
-        node_evals = {}
+        node_evals = {} # type: Dict[NodeKey, CTRNNNodeEval]
         for node_key, inputs in iteritems(node_inputs):
-            node = genome.nodes[node_key]
-            activation_function = genome_config.activation_defs.get(node.activation)
-            aggregation_function = genome_config.aggregation_function_defs.get(node.aggregation)
+            node = cast(DefaultNodeGene,genome.nodes[node_key])
+            activation_function = genome_config.activation_defs.get(node.activation) # type: ignore
+            aggregation_function = genome_config.aggregation_function_defs.get(node.aggregation) # type: ignore
             node_evals[node_key] = CTRNNNodeEval(time_constant,
-                                                 activation_function,
-                                                 aggregation_function,
-                                                 node.bias,
-                                                 node.response,
+                                                 cast(NormActFunc,activation_function),
+                                                 cast(NormAgFunc,aggregation_function),
+                                                 node.bias, # type: ignore
+                                                 node.response, # type: ignore
                                                  inputs)
 
         return CTRNN(genome_config.input_keys, genome_config.output_keys, node_evals)

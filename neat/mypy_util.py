@@ -2,7 +2,7 @@
 
 MYPY = False # pragma: no cover
 
-__all__ = ['cast', 'NodeKey', 'GenomeKey', 'SpeciesKey', 'ConnKey', 'MYPY'] # pragma: no cover
+__all__ = ['cast', 'NodeKey', 'GenomeKey', 'SpeciesKey', 'ConnKey', 'GeneKey', 'MYPY'] # pragma: no cover
 
 if MYPY: # pragma: no cover
     from typing import (Iterable, Set, List, Sequence, NewType, # pylint: disable=unused-import
@@ -19,12 +19,20 @@ if MYPY: # pragma: no cover
     SpeciesKey = NewType('SpeciesKey', int) # c_type: c_uint
     __all__ += ['Iterable', 'Set', 'List', 'Sequence', # not NewType
                 'Tuple', 'Optional', 'Union', 'Dict', 'Any', 'TextIO',
-                'ConnKey', 'GeneKey', 'KnownConfig', 'KnownGenome']
+                'KnownConfig', 'KnownGenome']
 else:
-    NodeKey = None # pylint: disable=invalid-name
-    GenomeKey = None # pylint: disable=invalid-name
-    SpeciesKey = None # pylint: disable=invalid-name
-    ConnKey = None # pylint: disable=invalid-name
+    NodeKey = int # pylint: disable=invalid-name
+    ConnKey = tuple # pylint: disable=invalid-name
+    GenomeKey = int # pylint: disable=invalid-name
+    SpeciesKey = int # pylint: disable=invalid-name
+    GeneKey = (int, tuple) # pylint: disable=invalid-name
 
-    def cast(ignored_type, var):
-        return var
+    def cast(desired_type, var):
+        if desired_type is None:
+            return var
+        try:
+            assert isinstance(var, desired_type)
+        except TypeError:
+            return var
+        else:
+            return var

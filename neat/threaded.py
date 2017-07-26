@@ -1,43 +1,57 @@
 """Threaded evaluation of genomes"""
 from __future__ import print_function
 
+import warnings
+
 try:
     import threading
 except ImportError: # pragma: no cover
-    import dummy_threading as threading
+    import dummy_threading as threading # type: ignore
     HAVE_THREADS = False
 else:
     HAVE_THREADS = True
 
-try:
-    # pylint: disable=import-error
-    import Queue as queue
-except ImportError:
-    # pylint: disable=import-error
-    import queue
+from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
-from sys import stderr
+if MYPY:
+    import sys
+    if sys.version_info[0] >= 3:
+        import queue # pylint: disable=import-error
+    else:
+        import Queue as queue # pylint: disable=import-error
+
+    from typing import Callable # pylint: disable=unused-import
+    from neat.config import Config # pylint: disable=unused-import
+
+else:
+    try:
+        import Queue as queue  # pylint: disable=import-error,ungrouped-imports
+    except ImportError:
+        import queue # pylint: disable=import-error,ungrouped-imports
 
 class ThreadedEvaluator(object):
     """
     A threaded genome evaluator.
     Useful on python implementations without GIL (Global Interpreter Lock).
     """
-    def __init__(self, num_workers, eval_function):
+    def __init__(self,
+                 num_workers, # type: int
+                 eval_function # type: Callable[[KnownGenome, Config], float]
+                 ):
+        # type: (...) -> None
         """
         eval_function should take two arguments (a genome object and the
         configuration) and return a single float (the genome's fitness).
         """
         self.num_workers = num_workers
         self.eval_function = eval_function
-        self.workers = []
+        self.workers = [] # type: List[threading.Thread]
         self.working = False
-        self.inqueue = queue.Queue()
-        self.outqueue = queue.Queue()
+        self.inqueue = queue.Queue() # type: queue.Queue
+        self.outqueue = queue.Queue() # type: queue.Queue
 
         if not HAVE_THREADS: # pragma: no cover
-            print("No threads available; use ParallelEvaluator, not ThreadedEvaluator",
-                  file=stderr)
+            warnings.warn("No threads available; use ParallelEvaluator, not ThreadedEvaluator")
 
     def __del__(self):
         """
@@ -77,17 +91,21 @@ class ThreadedEvaluator(object):
                 genome_id, genome, config = self.inqueue.get(
                     block=True,
                     timeout=0.2,
-                    )
+                    ) # type: GenomeKey, KnownGenome, Config
             except queue.Empty:
                 continue
-            f = self.eval_function(genome, config)
+            f = self.eval_function(genome, config) # type: float
             self.outqueue.put((genome_id, genome, f))
 
-    def evaluate(self, genomes, config):
+    def evaluate(self,
+                 genomes, # type: List[Tuple[GenomeKey, KnownGenome]]
+                 config # type: Config
+                 ):
+        # type: (...) -> None
         """Evaluate the genomes"""
         if not self.working:
             self.start()
-        p = 0
+        p = 0 # type: int
         for genome_id, genome in genomes:
             p += 1
             self.inqueue.put((genome_id, genome, config))
@@ -95,5 +113,5 @@ class ThreadedEvaluator(object):
         # assign the fitness back to each genome
         while p > 0:
             p -= 1
-            ignored_genome_id, genome, fitness = self.outqueue.get()
-            genome.fitness = fitness
+            ignored_genome_id, return_genome, fitness = self.outqueue.get() # type: GenomeKey, KnownGenome, float
+            return_genome.fitness = fitness # type: ignore

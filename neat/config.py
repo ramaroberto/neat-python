@@ -2,24 +2,44 @@
 from __future__ import print_function
 
 import os
-#import sys
 import warnings
 
-try:
-    from configparser import ConfigParser, Error
-except ImportError:
-    from ConfigParser import Error, SafeConfigParser as ConfigParser
+
 
 from neat.six_util import iterkeys
 
+from neat.mypy_util import cast, MYPY
+
+if MYPY:
+    import sys
+    if sys.version_info[0] >= 3:
+        from configparser import ConfigParser, Error
+    else:
+        from ConfigParser import Error, SafeConfigParser as ConfigParser
+
+    from neat.mypy_util import (Any, List, Dict, Tuple, Union, Optional, KnownConfig, # pylint: disable=unused-import
+                                Iterable, TextIO, DefaultGenomeConfig)
+else:
+    Iterable = list
+
+    try:
+        from configparser import ConfigParser, Error # pylint: disable=ungrouped-imports
+    except ImportError:
+        from ConfigParser import Error, SafeConfigParser as ConfigParser # pylint: disable=ungrouped-imports
+
 class ConfigParameter(object):
     """Contains information about one configuration item."""
-    def __init__(self, name, value_type, default=None):
+    def __init__(self,
+                 name, # type: str
+                 value_type, # type: type
+                 default=None # type: Union[None, str, List[str], bool, int, float]
+                 ):
+        # type: (...) -> None
         self.name = name
         self.value_type = value_type
         self.default = default
 
-    def __repr__(self):
+    def __repr__(self): # type: () -> str
         if self.default is None:
             return "ConfigParameter({!r}, {!r})".format(self.name,
                                                         self.value_type)
@@ -27,7 +47,11 @@ class ConfigParameter(object):
                                                           self.value_type,
                                                           self.default)
 
-    def parse(self, section, config_parser):
+    def parse(self,
+              section, # type: str
+              config_parser # type: ConfigParser
+              ):
+        # type: (...) -> Union[str, List[str], int, bool, float]
         if int == self.value_type:
             return config_parser.getint(section, self.name)
         if bool == self.value_type:
@@ -35,7 +59,7 @@ class ConfigParameter(object):
         if float == self.value_type:
             return config_parser.getfloat(section, self.name)
         if list == self.value_type:
-            v = config_parser.get(section, self.name)
+            v = config_parser.get(section, self.name) # type: str
             return v.split(" ")
         if str == self.value_type:
             return config_parser.get(section, self.name)
@@ -44,6 +68,7 @@ class ConfigParameter(object):
                            + repr(self.value_type))
 
     def interpret(self, config_dict):
+        # type: (Dict[str, str]) -> Union[str, int, bool, float, List[str]]
         """
         Converts the config_parser output into the proper type,
         supplies defaults if available and needed, and checks for some errors.
@@ -55,7 +80,10 @@ class ConfigParameter(object):
             else:
                 warnings.warn("Using default {!r} for '{!s}'".format(self.default, self.name),
                               DeprecationWarning)
-                value = self.default
+                if (str != self.value_type) and isinstance(self.default, self.value_type):
+                    return self.default
+                else:
+                    value = self.default # type: ignore
 
         try:
             if str == self.value_type:
@@ -79,20 +107,21 @@ class ConfigParameter(object):
 
         raise RuntimeError("Unexpected configuration type: " + repr(self.value_type))
 
-    def format(self, value):
+    def format(self, value): # type: (Union[str, int, bool, float, List[str]]) -> str
         if list == self.value_type:
-            return " ".join(value)
+            return " ".join(cast(Iterable,value))
         return str(value)
 
 
 def write_pretty_params(f, config, params):
-    param_names = [p.name for p in params]
-    longest_name = max(len(name) for name in param_names)
+    # type: (TextIO, KnownConfig, List[ConfigParameter]) -> None
+    param_names = [p.name for p in params] # type: List[str]
+    longest_name = max(len(name) for name in param_names) # type: int # c_type: c_uint
     param_names.sort()
-    params = dict((p.name, p) for p in params)
+    params_dict = dict((p.name, p) for p in params) # type: Dict[str, ConfigParameter]
 
     for name in param_names:
-        p = params[name]
+        p = params_dict[name]
         f.write('{} = {}\n'.format(p.name.ljust(longest_name), p.format(getattr(config, p.name))))
 
 
@@ -106,13 +135,17 @@ class DefaultClassConfig(object):
     for reproduction, species_set, and stagnation classes.
     """
 
-    def __init__(self, param_dict, param_list):
+    def __init__(self,
+                 param_dict, # type: Dict[str, str]
+                 param_list # type: List[ConfigParameter]
+                 ):
+        # type: (...) -> None
         self._params = param_list
-        param_list_names = []
+        param_list_names = [] # type: List[str]
         for p in param_list:
             setattr(self, p.name, p.interpret(param_dict))
             param_list_names.append(p.name)
-        unknown_list = [x for x in iterkeys(param_dict) if not x in param_list_names]
+        unknown_list = [x for x in iterkeys(param_dict) if not x in param_list_names] # type: List[str]
         if unknown_list:
             if len(unknown_list) > 1:
                 raise UnknownConfigItemError("Unknown configuration items:\n" +
@@ -120,7 +153,7 @@ class DefaultClassConfig(object):
             raise UnknownConfigItemError("Unknown configuration item {!s}".format(unknown_list[0]))
 
     @classmethod
-    def write_config(cls, f, config):
+    def write_config(cls, f, config): # type: (TextIO, DefaultClassConfig) -> None
         # pylint: disable=protected-access
         write_pretty_params(f, config, config._params)
 
@@ -134,7 +167,14 @@ class Config(object):
                 ConfigParameter('reset_on_extinction', bool),
                 ConfigParameter('no_fitness_termination', bool, False)]
 
-    def __init__(self, genome_type, reproduction_type, species_set_type, stagnation_type, filename):
+    def __init__(self,
+                 genome_type,
+                 reproduction_type,
+                 species_set_type,
+                 stagnation_type,
+                 filename # type: str
+                 ):
+        # type: (...) -> None
         # Check that the provided types have the required methods.
         assert hasattr(genome_type, 'parse_config')
         assert hasattr(reproduction_type, 'parse_config')
@@ -154,7 +194,7 @@ class Config(object):
             if hasattr(parameters, 'read_file'):
                 parameters.read_file(f)
             else:
-                parameters.readfp(f)
+                parameters.readfp(f) # type: ignore
 
         # NEAT configuration
         if not parameters.has_section('NEAT'):
@@ -175,7 +215,7 @@ class Config(object):
                                   DeprecationWarning)
             param_list_names.append(p.name)
         param_dict = dict(parameters.items('NEAT'))
-        unknown_list = [x for x in iterkeys(param_dict) if not x in param_list_names]
+        unknown_list = [x for x in iterkeys(param_dict) if not x in param_list_names] # type: List[str]
         if unknown_list:
             if len(unknown_list) > 1:
                 raise UnknownConfigItemError("Unknown (section 'NEAT') configuration items:\n" +
@@ -186,18 +226,18 @@ class Config(object):
 
         # Parse type sections.
         genome_dict = dict(parameters.items(genome_type.__name__))
-        self.genome_config = genome_type.parse_config(genome_dict)
+        self.genome_config = genome_type.parse_config(genome_dict) # type: DefaultGenomeConfig # XXX
 
         species_set_dict = dict(parameters.items(species_set_type.__name__))
-        self.species_set_config = species_set_type.parse_config(species_set_dict)
+        self.species_set_config = species_set_type.parse_config(species_set_dict) # type: DefaultClassConfig # XXX
 
         stagnation_dict = dict(parameters.items(stagnation_type.__name__))
-        self.stagnation_config = stagnation_type.parse_config(stagnation_dict)
+        self.stagnation_config = stagnation_type.parse_config(stagnation_dict) # type: DefaultClassConfig # XXX
 
         reproduction_dict = dict(parameters.items(reproduction_type.__name__))
-        self.reproduction_config = reproduction_type.parse_config(reproduction_dict)
+        self.reproduction_config = reproduction_type.parse_config(reproduction_dict) # type; DefaultClassConfig # XXX
 
-    def save(self, filename):
+    def save(self, filename): # type: (str) -> None
         with open(filename, 'w') as f:
             f.write('# The `NEAT` section specifies parameters particular to the NEAT algorithm\n')
             f.write('# or the experiment itself.  This is the only required section.\n')
