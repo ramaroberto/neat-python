@@ -14,14 +14,10 @@ from neat.indexer import Indexer
 from neat.multiparameter import MultiParameterSet
 from neat.six_util import iteritems, iterkeys
 
-from neat.mypy_util import * # pylint: disable=unused-wildcard-import
-
-# Given the number of configuration parameters created on the fly for this module,
-# getting it to be checkable using mypy is just about impossible at the present time.
-# The current annotations are meant - along with setting follow_imports = silent for mypy -
-# to help with checking other parts of the library.
+from neat.mypy_util import (cast, NodeKey, GenomeKey, ConnKey, MYPY) # pylint: disable=unused-import
 
 if MYPY: # pragma: no cover
+    from neat.mypy_util import (Dict, Any, List, Optional, Union, TextIO, Tuple) # pylint: disable=unused-import
     from neat.activations import ActFunc # pylint: disable=unused-import
     from neat.aggregations import AgFunc # pylint: disable=unused-import
     from neat.genes import BaseGene # pylint: disable=unused-import
@@ -41,6 +37,9 @@ class DefaultGenomeConfig(object):
         self.aggregation_function_defs = AggregationFunctionSet(self.multiparameterset)
         self.aggregation_defs = self.aggregation_function_defs
 
+        self.input_keys = [] # type: List[NodeKey]
+        self.output_keys = [] # type: List[NodeKey]
+
         self._params = [ConfigParameter('num_inputs', int),
                         ConfigParameter('num_outputs', int),
                         ConfigParameter('num_hidden', int),
@@ -56,9 +55,9 @@ class DefaultGenomeConfig(object):
                         ConfigParameter('initial_connection', str, 'unconnected')]
 
         # Gather configuration data from the gene classes.
-        self.node_gene_type = params['node_gene_type'] # type: Any # XXX
+        self.node_gene_type = params['node_gene_type'] # type: BaseGene # XXX
         self._params += self.node_gene_type.get_config_params()
-        self.connection_gene_type = params['connection_gene_type'] # type: BaseGene # XXX
+        self.connection_gene_type = params['connection_gene_type'] # type: DefaultConnectionGene # XXX
         self._params += self.connection_gene_type.get_config_params()
 
         # Use the configuration data to interpret the supplied parameters.
@@ -67,17 +66,17 @@ class DefaultGenomeConfig(object):
 
         # By convention, input pins have negative keys, and the output
         # pins have keys 0,1,...
-        self.input_keys = [cast(NodeKey, (-1 -1)) for i in range(self.num_inputs)]
-        self.output_keys = [cast(NodeKey, i) for i in range(self.num_outputs)]
+        self.input_keys = [cast(NodeKey, (-i -1)) for i in range(self.num_inputs)] # type: ignore
+        self.output_keys = [cast(NodeKey, i) for i in range(self.num_outputs)] # type: ignore
 
         self.connection_fraction = None # type: Optional[float]
 
         # Verify that initial connection type is valid.
         # pylint: disable=access-member-before-definition
         if 'partial' in self.initial_connection:
-            c, p = self.initial_connection.split()
+            c, p = self.initial_connection.split() # type: ignore
             self.initial_connection = c # type: str
-            self.connection_fraction = float(p)
+            self.connection_fraction = float(p) # type: ignore
             if not (0 <= self.connection_fraction <= 1):
                 raise RuntimeError(
                     "'partial' connection value must be between 0.0 and 1.0, inclusive.")
@@ -86,7 +85,7 @@ class DefaultGenomeConfig(object):
 
         # Verify structural_mutation_surer is valid.
         # pylint: disable=access-member-before-definition
-        if self.structural_mutation_surer.lower() in ['1','yes','true','on']:
+        if self.structural_mutation_surer.lower() in ['1','yes','true','on']: # type: ignore
             self.structural_mutation_surer = 'true'
         elif self.structural_mutation_surer.lower() in ['0','no','false','off']:
             self.structural_mutation_surer = 'false'
@@ -130,7 +129,7 @@ class DefaultGenomeConfig(object):
         write_pretty_params(f, self, [p for p in self._params
                                       if not 'initial_connection' in p.name])
 
-    def get_new_node_key(self, node_dict): # type: (Dict[NodeKey, Any]) -> NodeKey
+    def get_new_node_key(self, node_dict): # type: (Dict[NodeKey, BaseGene]) -> NodeKey
         if self.node_indexer is None:
             self.node_indexer = Indexer(max(list(iterkeys(node_dict)))+1)
 
@@ -146,7 +145,7 @@ class DefaultGenomeConfig(object):
         elif self.structural_mutation_surer == 'false':
             return False
         elif self.structural_mutation_surer == 'default':
-            return self.single_structural_mutation
+            return self.single_structural_mutation # type: ignore
         else:
             error_string = "Invalid structural_mutation_surer {!r}".format(
                 self.structural_mutation_surer)
@@ -189,8 +188,8 @@ class DefaultGenome(object):
         self.key = key
 
         # (gene_key, gene) pairs for gene sets.
-        self.connections = {} # type: Dict[ConnKey, BaseGene] # XXX
-        self.nodes = {} # type: Dict[NodeKey, Any] # XXX
+        self.connections = {} # type: Dict[ConnKey, DefaultConnectionGene] # XXX
+        self.nodes = {} # type: Dict[NodeKey, BaseGene] # XXX
 
         # Fitness results.
         self.fitness = None # Optional[float]
@@ -203,8 +202,8 @@ class DefaultGenome(object):
             self.nodes[node_key] = self.create_node(config, node_key)
 
         # Add hidden nodes if requested.
-        if config.num_hidden > 0:
-            for i in range(config.num_hidden):
+        if config.num_hidden > 0: # type: ignore
+            for i in range(config.num_hidden): # type: ignore
                 node_key = config.get_new_node_key(self.nodes)
                 assert node_key not in self.nodes
                 node = self.create_node(config, node_key)
@@ -218,7 +217,7 @@ class DefaultGenome(object):
             elif config.initial_connection == 'fs_neat_hidden':
                 self.connect_fs_neat_hidden(config)
             else:
-                if config.num_hidden > 0:
+                if config.num_hidden > 0: # type: ignore
                     print(
                         "Warning: initial_connection = fs_neat will not connect to hidden nodes;",
                         "\tif this is desired, set initial_connection = fs_neat_nohidden;",
@@ -231,7 +230,7 @@ class DefaultGenome(object):
             elif config.initial_connection == 'full_direct':
                 self.connect_full_direct(config)
             else:
-                if config.num_hidden > 0:
+                if config.num_hidden > 0: # type: ignore
                     print(
                         "Warning: initial_connection = full with hidden nodes will not do direct input-output connections;",
                         "\tif this is desired, set initial_connection = full_nodirect;",
@@ -244,7 +243,7 @@ class DefaultGenome(object):
             elif config.initial_connection == 'partial_direct':
                 self.connect_partial_direct(config)
             else:
-                if config.num_hidden > 0:
+                if config.num_hidden > 0: # type: ignore
                     print(
                         "Warning: initial_connection = partial with hidden nodes will not do direct input-output connections;",
                         "\tif this is desired, set initial_connection = partial_nodirect {0};".format(
@@ -263,7 +262,7 @@ class DefaultGenome(object):
         """ Configure a new genome by crossover from two parent genomes. """
         assert isinstance(genome1.fitness, (int, float))
         assert isinstance(genome2.fitness, (int, float))
-        if genome1.fitness > genome2.fitness:
+        if genome1.fitness > genome2.fitness: # type: ignore
             parent1, parent2 = genome1, genome2
         else:
             parent1, parent2 = genome2, genome1
@@ -295,31 +294,31 @@ class DefaultGenome(object):
     def mutate(self, config): # type: (DefaultGenomeConfig) -> None
         """ Mutates this genome. """
 
-        if config.single_structural_mutation:
-            div = max(1,(config.node_add_prob + config.node_delete_prob +
-                         config.conn_add_prob + config.conn_delete_prob))
+        if config.single_structural_mutation: # type: ignore
+            div = max(1,(config.node_add_prob + config.node_delete_prob + # type: ignore
+                         config.conn_add_prob + config.conn_delete_prob)) # type: ignore
             r = random()
-            if r < (config.node_add_prob/div):
+            if r < (config.node_add_prob/div): # type: ignore
                 self.mutate_add_node(config)
-            elif r < ((config.node_add_prob + config.node_delete_prob)/div):
+            elif r < ((config.node_add_prob + config.node_delete_prob)/div): # type: ignore
                 self.mutate_delete_node(config)
-            elif r < ((config.node_add_prob + config.node_delete_prob +
-                       config.conn_add_prob)/div):
+            elif r < ((config.node_add_prob + config.node_delete_prob + # type: ignore
+                       config.conn_add_prob)/div): # type: ignore
                 self.mutate_add_connection(config)
-            elif r < ((config.node_add_prob + config.node_delete_prob +
-                       config.conn_add_prob + config.conn_delete_prob)/div):
+            elif r < ((config.node_add_prob + config.node_delete_prob + # type: ignore
+                       config.conn_add_prob + config.conn_delete_prob)/div): # type: ignore
                 self.mutate_delete_connection()
         else:
-            if random() < config.node_add_prob:
+            if random() < config.node_add_prob: # type: ignore
                 self.mutate_add_node(config)
 
-            if random() < config.node_delete_prob:
+            if random() < config.node_delete_prob: # type: ignore
                 self.mutate_delete_node(config)
 
-            if random() < config.conn_add_prob:
+            if random() < config.conn_add_prob: # type: ignore
                 self.mutate_add_connection(config)
 
-            if random() < config.conn_delete_prob:
+            if random() < config.conn_delete_prob: # type: ignore
                 self.mutate_delete_connection()
 
         # Mutate connection genes.
@@ -337,7 +336,7 @@ class DefaultGenome(object):
             return
 
         # Choose a random connection to split
-        conn_to_split = choice(list(self.connections.values()))
+        conn_to_split = choice(list(self.connections.values())) # type: DefaultConnectionGene
         new_node_id = config.get_new_node_key(self.nodes)
         ng = self.create_node(config, new_node_id)
         self.nodes[new_node_id] = ng
@@ -345,23 +344,27 @@ class DefaultGenome(object):
         # Disable this connection and create two new connections joining its nodes via
         # the given node.  The new node+connections have roughly the same behavior as
         # the original connection (depending on the activation function of the new node).
-        conn_to_split.enabled = False
+        conn_to_split.enabled = False # type: ignore
 
-        i, o = conn_to_split.key
+        i, o = cast(ConnKey,conn_to_split.key)
         self.add_connection(config, i, new_node_id, 1.0, True)
-        self.add_connection(config, new_node_id, o, conn_to_split.weight, True)
+        self.add_connection(config, new_node_id, o, conn_to_split.weight, True) # type: ignore
 
     def add_connection(self,
                        config, # type: DefaultGenomeConfig
                        input_key, # type: NodeKey
-                       output_key, # type: NodeKey
+                       output_key, # type: NodeKey # c_type: c_uint
                        weight, # type: float
                        enabled # type: bool
                        ):
         # type: (...) -> None
-        # TODO: Add validation of this connection addition.
-        key = (input_key, output_key)
-        connection = config.connection_gene_type(key) # type: BaseGene
+        # TODO: Add further validation of this connection addition?
+        assert isinstance(input_key, int)
+        assert isinstance(output_key, int)
+        assert output_key >= 0
+        assert isinstance(enabled, bool)
+        key = (input_key, output_key) # type: ConnKey
+        connection = config.connection_gene_type(key) # type: ignore
         connection.init_attributes(config)
         connection.weight = weight
         connection.enabled = enabled
@@ -379,11 +382,11 @@ class DefaultGenome(object):
         in_node = choice(possible_inputs) # type: NodeKey
 
         # Don't duplicate connections.
-        key = (in_node, out_node)
+        key = (in_node, out_node) # type: ConnKey
         if key in self.connections:
             # TODO: Should this be using mutation to/from rates? Hairy to configure...
             if config.check_structural_mutation_surer():
-                self.connections[key].enabled = True
+                self.connections[key].enabled = True # type: ignore
             return
 
         # Don't allow connections between two output nodes
@@ -394,11 +397,11 @@ class DefaultGenome(object):
         # they cannot be the output end of a connection (see above).
 
         # For feed-forward networks, avoid creating cycles.
-        if config.feed_forward and creates_cycle(list(iterkeys(self.connections)), key):
+        if config.feed_forward and creates_cycle(list(iterkeys(self.connections)), key): # type: ignore
             return
 
-        cg = self.create_connection(config, in_node, out_node)
-        self.connections[cg.key] = cg
+        cg = self.create_connection(config, in_node, out_node) # type: DefaultConnectionGene # XXX
+        self.connections[cast(ConnKey,cg.key)] = cg
 
     def mutate_delete_node(self, config): # type: (DefaultGenomeConfig) -> NodeKey
         # Do nothing if there are no non-output nodes.
@@ -436,9 +439,9 @@ class DefaultGenome(object):
         """
 
         # Compute node gene distance component.
-        node_distance = 0.0
+        node_distance = 0.0 # type: float
         if self.nodes or other.nodes:
-            disjoint_nodes = 0
+            disjoint_nodes = 0 # type: int # c_type: c_uint
             for k2 in iterkeys(other.nodes):
                 if k2 not in self.nodes:
                     disjoint_nodes += 1
@@ -453,13 +456,13 @@ class DefaultGenome(object):
 
             max_nodes = max(len(self.nodes), len(other.nodes))
             node_distance = (node_distance +
-                             (config.compatibility_disjoint_coefficient *
+                             (config.compatibility_disjoint_coefficient * # type: ignore
                               disjoint_nodes)) / max_nodes
 
         # Compute connection gene differences.
-        connection_distance = 0.0
+        connection_distance = 0.0 # type: float
         if self.connections or other.connections:
-            disjoint_connections = 0
+            disjoint_connections = 0 # type: int # c_type: c_uint
             for k2 in iterkeys(other.connections):
                 if k2 not in self.connections:
                     disjoint_connections += 1
@@ -474,7 +477,7 @@ class DefaultGenome(object):
 
             max_conn = max(len(self.connections), len(other.connections))
             connection_distance = (connection_distance +
-                                   (config.compatibility_disjoint_coefficient *
+                                   (config.compatibility_disjoint_coefficient * # type: ignore
                                     disjoint_connections)) / max_conn
 
         distance = node_distance + connection_distance
@@ -485,7 +488,7 @@ class DefaultGenome(object):
         Returns genome 'complexity', taken to be
         (number of nodes, number of enabled connections)
         """
-        num_enabled_connections = sum([1 for cg in self.connections.values() if cg.enabled])
+        num_enabled_connections = sum([1 for cg in self.connections.values() if cg.enabled]) # type: ignore
         return len(self.nodes), num_enabled_connections # c_type: Tuple[c_uint, c_uinit]
 
     def __str__(self): # type: () -> str
@@ -503,8 +506,8 @@ class DefaultGenome(object):
     def create_node(config, # type: DefaultGenomeConfig
                     node_id # type: NodeKey
                     ):
-        # type: (...) -> Any # XXX
-        node = config.node_gene_type(node_id)
+        # type: (...) -> BaseGene # XXX
+        node = config.node_gene_type(node_id) # type: ignore
         node.init_attributes(config)
         return node
 
@@ -513,8 +516,8 @@ class DefaultGenome(object):
                           input_id, # type: NodeKey
                           output_id # type: NodeKey
                           ):
-        # type: (...) -> BaseGene # XXX
-        connection = config.connection_gene_type((input_id, output_id))
+        # type: (...) -> DefaultConnectionGene # XXX
+        connection = config.connection_gene_type((input_id, output_id)) # type: ignore
         connection.init_attributes(config)
         return connection
 
@@ -526,8 +529,8 @@ class DefaultGenome(object):
         """
         input_id = choice(config.input_keys)
         for output_id in config.output_keys:
-            connection = self.create_connection(config, input_id, output_id)
-            self.connections[connection.key] = connection
+            connection = self.create_connection(config, input_id, output_id) # type: DefaultConnectionGene # XXX
+            self.connections[cast(ConnKey, connection.key)] = connection
 
     def connect_fs_neat_hidden(self, config): # type: (DefaultGenomeConfig) -> None
         """
@@ -535,10 +538,10 @@ class DefaultGenome(object):
         (FS-NEAT with connections to hidden, if any).
         """
         input_id = choice(config.input_keys)
-        others = [i for i in iterkeys(self.nodes) if i not in config.input_keys]
+        others = [cast(NodeKey, i) for i in iterkeys(self.nodes) if i not in config.input_keys]
         for output_id in others:
-            connection = self.create_connection(config, input_id, output_id)
-            self.connections[connection.key] = connection
+            connection = self.create_connection(config, input_id, output_id) # type: DefaultConnectionGene # XXX
+            self.connections[cast(ConnKey, connection.key)] = connection
 
     def compute_full_connections(self,
                                  config, # type: DefaultGenomeConfig
@@ -552,8 +555,8 @@ class DefaultGenome(object):
         each hidden node connected to all output nodes.
         (Recurrent genomes will also include node self-connections.)
         """
-        hidden = [i for i in iterkeys(self.nodes) if i not in config.output_keys]
-        output = [i for i in iterkeys(self.nodes) if i in config.output_keys]
+        hidden = [cast(NodeKey,i) for i in iterkeys(self.nodes) if i not in config.output_keys]
+        output = [cast(NodeKey,i) for i in iterkeys(self.nodes) if i in config.output_keys]
         connections = [] # type: List[ConnKey]
         if hidden:
             for input_id in config.input_keys:
@@ -568,7 +571,7 @@ class DefaultGenome(object):
                     connections.append((input_id, output_id))
 
         # For recurrent genomes, include node self-connections.
-        if not config.feed_forward:
+        if not config.feed_forward: # type: ignore
             for i in iterkeys(self.nodes):
                 connections.append((i, i))
 
@@ -581,14 +584,14 @@ class DefaultGenome(object):
         (except without direct input-output unless no hidden nodes).
         """
         for input_id, output_id in self.compute_full_connections(config, False):
-            connection = self.create_connection(config, input_id, output_id)
-            self.connections[connection.key] = connection
+            connection = self.create_connection(config, input_id, output_id) # type: DefaultConnectionGene # XXX
+            self.connections[cast(ConnKey,connection.key)] = connection
 
     def connect_full_direct(self, config): # type: (DefaultGenomeConfig) -> None
         """Create a fully-connected genome, including direct input-output connections."""
         for input_id, output_id in self.compute_full_connections(config, True):
-            connection = self.create_connection(config, input_id, output_id)
-            self.connections[connection.key] = connection
+            connection = self.create_connection(config, input_id, output_id) # type: DefaultConnectionGene # XXX
+            self.connections[cast(ConnKey,connection.key)] = connection
 
     def connect_partial_nodirect(self, config): # type: (DefaultGenomeConfig) -> None
         """
@@ -601,8 +604,8 @@ class DefaultGenome(object):
         shuffle(all_connections)
         num_to_add = int(round(len(all_connections) * config.connection_fraction))
         for input_id, output_id in all_connections[:num_to_add]:
-            connection = self.create_connection(config, input_id, output_id)
-            self.connections[connection.key] = connection
+            connection = self.create_connection(config, input_id, output_id) # type: DefaultConnectionGene # XXX
+            self.connections[cast(ConnKey,connection.key)] = connection
 
     def connect_partial_direct(self, config): # type: (DefaultGenomeConfig) -> None
         """
@@ -614,5 +617,5 @@ class DefaultGenome(object):
         shuffle(all_connections)
         num_to_add = int(round(len(all_connections) * config.connection_fraction))
         for input_id, output_id in all_connections[:num_to_add]:
-            connection = self.create_connection(config, input_id, output_id)
-            self.connections[connection.key] = connection
+            connection = self.create_connection(config, input_id, output_id) # type: DefaultConnectionGene # XXX
+            self.connections[cast(ConnKey,connection.key)] = connection

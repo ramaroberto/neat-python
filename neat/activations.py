@@ -122,7 +122,7 @@ def clamped_tanh_step_activation(z, # type: float
     if a < 0.0:
         return (((1.0-tanh_weight)*step_activation(z)) +
                 (tanh_weight*tanh_activation(z)))
-    
+
     return tanh_activation(z)
 
 
@@ -167,7 +167,7 @@ class ActivationFunctionSet(object):
                  a={'min_value':-1.0, 'max_value':1.0})
         self.add('multiparam_sigmoid', multiparam_sigmoid_activation,
                  a={'min_value':-1.0, 'max_value':1.0})
-        
+
 
     def add(self,
             name, # type: str

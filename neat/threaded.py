@@ -48,7 +48,7 @@ class ThreadedEvaluator(object):
         """
         if self.working:
             self.stop()
-            
+
     def start(self):
         """Starts the worker threads"""
         if self.working:

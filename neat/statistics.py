@@ -13,7 +13,8 @@ from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 if MYPY:
     from typing import Callable # pylint: disable=unused-import
-    from neat.genome import DefaultGenome
+    from neat.config import Config # pylint: disable=unused-import
+    from neat.species import DefaultSpeciesSet # pylint: disable=unused-import
 
 
 # TODO: Make a version of this reporter that doesn't continually increase memory usage.
@@ -26,11 +27,17 @@ class StatisticsReporter(BaseReporter):
     """
     def __init__(self):
         BaseReporter.__init__(self)
-        self.most_fit_genomes = [] # type: List[DefaultGenome] # XXX
+        self.most_fit_genomes = [] # type: List[KnownGenome] # XXX
         self.generation_statistics = [] # type: List[Dict[SpeciesKey, Dict[GenomeKey, float]]]
         #self.generation_cross_validation_statistics = []
 
-    def post_evaluate(self, config, population, species, best_genome):
+    def post_evaluate(self,
+                      config, # type: Config
+                      population, # type: Dict[GenomeKey, KnownGenome] # XXX
+                      species, # type: DefaultSpeciesSet # XXX
+                      best_genome # type: KnownGenome # XXX
+                      ):
+        # type: (...) -> None
         self.most_fit_genomes.append(copy.deepcopy(best_genome))
 
         # Store the fitnesses of the members of each currently active species.
@@ -44,10 +51,10 @@ class StatisticsReporter(BaseReporter):
         #self.generation_cross_validation_statistics.append(species_cross_validation_stats)
 
     def get_fitness_stat(self,
-                         f # type: Callable[[Iterable[float]], Any]
+                         f # type: Callable[[Iterable[float]], Union[Sequence[float], float]]
                          ):
-        # type: (...) -> List[Any]
-        stat = [] # type: List[Any]
+        # type: (...) -> List[Union[Sequence[float], float]]
+        stat = [] # type: List[Union[Sequence[float], float]]
         for stats in self.generation_statistics:
             scores = [] # type: List[float]
             for species_stats in stats.values():
@@ -58,11 +65,11 @@ class StatisticsReporter(BaseReporter):
 
     def get_fitness_mean(self): # type: () -> List[float]
         """Get the per-generation mean fitness."""
-        return self.get_fitness_stat(mean)
+        return self.get_fitness_stat(mean) # type: ignore
 
     def get_fitness_stdev(self): # type: () -> List[float]
         """Get the per-generation standard deviation of the fitness."""
-        return self.get_fitness_stat(stdev)
+        return self.get_fitness_stat(stdev) # type: ignore
 
     def get_fitness_median(self): # type () -> List[float]
         """Get the per-generation median fitness."""
@@ -79,26 +86,26 @@ class StatisticsReporter(BaseReporter):
 
         return avg_cross_validation_fitness
 
-    def best_unique_genomes(self, n): # type: (int) -> List[DefaultGenome] # XXX
+    def best_unique_genomes(self, n): # type: (int) -> List[KnownGenome] # XXX
         """Returns the most n fit genomes, with no duplication."""
-        best_unique = {} # type: Dict[GenomeKey, Any]
+        best_unique = {} # type: Dict[GenomeKey, KnownGenome] # XXX
         for g in self.most_fit_genomes:
             best_unique[g.key] = g
         best_unique_list = list(best_unique.values())
 
-        def key(genome): # type: (Any) -> float
+        def key(genome): # type: (KnownGenome) -> float # XXX
             return genome.fitness
 
         return sorted(best_unique_list, key=key, reverse=True)[:n]
 
-    def best_genomes(self, n): # type: (int) -> List[DefaultGenome] # XXX
+    def best_genomes(self, n): # type: (int) -> List[KnownGenome] # XXX
         """Returns the n most fit genomes ever seen."""
-        def key(g): # type: (Any) -> float
+        def key(g): # type: (KnownGenome) -> float # XXX
             return g.fitness
 
         return sorted(self.most_fit_genomes, key=key, reverse=True)[:n]
 
-    def best_genome(self): # type: () -> DefaultGenome # XXX
+    def best_genome(self): # type: () -> KnownGenome # XXX
         """Returns the most fit genome ever seen."""
         return self.best_genomes(1)[0]
 

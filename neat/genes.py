@@ -6,8 +6,6 @@ from neat.attributes import FloatAttribute, BoolAttribute, FuncAttribute
 
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
-# MYPY not for direct testing, but for importing - see genome.py
-
 if MYPY:
     from neat.config import ConfigParameter # pylint: disable=unused-import
     from neat.genome import DefaultGenomeConfig # pylint: disable=unused-import
@@ -25,13 +23,13 @@ class BaseGene(object):
         self.key = key
 
     def __str__(self): # type: () -> str
-        attrib = ['key'] + [a.name for a in self._gene_attributes]
+        attrib = ['key'] + [a.name for a in self._gene_attributes] # type: ignore
         attrib = ['{0}={1}'.format(a, getattr(self, a)) for a in attrib]
         return '{0}({1})'.format(self.__class__.__name__, ", ".join(attrib))
 
     def __lt__(self, other): # type: (BaseGene) -> bool
         assert isinstance(self,type(other))
-        return self.key < other.key
+        return self.key < other.key # type: ignore
 
     @classmethod
     def parse_config(cls, config, param_dict):
@@ -46,22 +44,22 @@ class BaseGene(object):
                 "Class '{!s}' {!r} needs '_gene_attributes' not '__gene_attributes__'".format(
                     cls.__name__,cls),
                 DeprecationWarning)
-        for a in cls._gene_attributes:
+        for a in cls._gene_attributes: # type: ignore
             params += a.get_config_params()
         return params
 
     def init_attributes(self, config): # type: (DefaultGenomeConfig) -> None
-        for a in self._gene_attributes:
+        for a in self._gene_attributes: # type: ignore
             setattr(self, a.name, a.init_value(config))
 
     def mutate(self, config): # type: (DefaultGenomeConfig) -> None
-        for a in self._gene_attributes:
+        for a in self._gene_attributes: # type: ignore
             v = getattr(self, a.name)
             setattr(self, a.name, a.mutate_value(v, config))
 
     def copy(self): # type: () -> Union[BaseGene, DefaultConnectionGene, DefaultNodeGene] # XXX
         new_gene = self.__class__(self.key)
-        for a in self._gene_attributes:
+        for a in self._gene_attributes: # type: ignore
             if hasattr(a, 'copy'):
                 setattr(new_gene, a.name, a.copy())
             else:
@@ -78,7 +76,7 @@ class BaseGene(object):
         # Note: we use "a if random() > 0.5 else b" instead of choice((a, b))
         # here because `choice` is substantially slower.
         new_gene = self.__class__(self.key)
-        for a in self._gene_attributes:
+        for a in self._gene_attributes: # type: ignore
             if random() > 0.5:
                 if hasattr(a, 'copy'):
                     setattr(new_gene, a.name, a.copy())
@@ -93,7 +91,7 @@ class BaseGene(object):
         return new_gene
 
 
-# TODO: Should these be in the nn module?  iznn and ctrnn can have additional attributes.
+# TODO: Should these be in the nn module? iznn and ctrnn can have additional attributes.
 
 
 class DefaultNodeGene(BaseGene):
@@ -102,28 +100,39 @@ class DefaultNodeGene(BaseGene):
                         FuncAttribute('activation', options='sigmoid'),
                         FuncAttribute('aggregation', options='sum')]
 
+    def __init__(self, key): # type: (NodeKey) -> None
+        assert isinstance(key, int)
+        BaseGene.__init__(self, key)
+
     def distance(self, other, config): # type: (DefaultNodeGene, DefaultGenomeConfig) -> float
         """Returns the genetic distance between two node genes."""
-        d = abs(self.bias - other.bias) + abs(self.response - other.response)
-        if hasattr(self.activation, 'distance'):
-            d += self.activation.distance(other.activation)
-        elif self.activation != other.activation:
+        d = abs(self.bias - other.bias) + abs(self.response - other.response) # type: ignore
+        if hasattr(self.activation, 'distance'): # type: ignore
+            d += self.activation.distance(other.activation) # type: ignore
+        elif self.activation != other.activation: # type: ignore
             d += 1.0
 
-        if hasattr(self.aggregation, 'distance'):
-            d += self.aggregation.distance(other.aggregation)
-        elif self.aggregation != other.aggregation:
+        if hasattr(self.aggregation, 'distance'): # type: ignore
+            d += self.aggregation.distance(other.aggregation) # type: ignore
+        elif self.aggregation != other.aggregation: # type: ignore
             d += 1.0
-        
-        return d * config.compatibility_weight_coefficient
+
+        return d * config.compatibility_weight_coefficient # type: ignore
 
 
 # TODO: Do an ablation study to determine whether the enabled setting is
 # important--presumably mutations that set the weight to near zero could
-# provide a similar effect depending on the weight range and mutation rate.
+# provide a similar effect depending on the weight range, mutation rate, and
+# aggregation function. (Near-zero weight for the `product` aggregation function
+# is rather more important than one giving an output of 1 from the connection,
+# for instance!)
 class DefaultConnectionGene(BaseGene):
     _gene_attributes = [FloatAttribute('weight'),
                         BoolAttribute('enabled')]
+
+    def __init__(self, key): # type: (ConnKey) -> None
+        assert isinstance(key, tuple)
+        BaseGene.__init__(self, key)
 
     def distance(self,
                  other, # type: DefaultConnectionGene
@@ -131,8 +140,8 @@ class DefaultConnectionGene(BaseGene):
                  ):
         # type: (...) -> float
         """Returns the genetic distance between two connection genes."""
-        d = abs(self.weight - other.weight)
-        if self.enabled != other.enabled:
+        d = abs(self.weight - other.weight) # type: ignore
+        if self.enabled != other.enabled: # type: ignore
             d += 1.0
-        return d * config.compatibility_weight_coefficient
+        return d * config.compatibility_weight_coefficient # type: ignore
 

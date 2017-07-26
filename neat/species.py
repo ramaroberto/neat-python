@@ -7,7 +7,8 @@ from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 if MYPY:
     from neat.genome import DefaultGenome, DefaultGenomeConfig # pylint: disable=unused-import
-    from neat.reporting import ReporterSet
+    from neat.reporting import ReporterSet # pylint: disable=unused-import
+    from neat.config import Config # pylint: disable=unused-import
 
 class Species(object):
     def __init__(self,
@@ -18,15 +19,15 @@ class Species(object):
         self.key = key
         self.created = generation
         self.last_improved = generation
-        self.representative = None # type: Optional[DefaultGenome] # XXX
-        self.members = {} # type: Dict[GenomeKey, DefaultGenome] # XXX
+        self.representative = None # type: Optional[KnownGenome] # XXX
+        self.members = {} # type: Dict[GenomeKey, KnownGenome] # XXX
         self.fitness = None # type: Optional[float]
         self.adjusted_fitness = None # type: Optional[float]
         self.fitness_history = [] # type: List[float]
 
     def update(self,
-               representative, # type: DefaultGenome # XXX
-               members # type: Dict[GenomeKey, DefaultGenome] # XXX
+               representative, # type: KnownGenome # XXX
+               members # type: Dict[GenomeKey, KnownGenome] # XXX
                ):
         # type: (...) -> None
         self.representative = representative
@@ -43,7 +44,7 @@ class GenomeDistanceCache(object):
         self.hits = 0 # type: int # c_type: c_uint
         self.misses = 0 # type: int # c_type: c_uint
 
-    def __call__(self, genome0, genome1): # type: (DefaultGenome, DefaultGenome) -> float # XXX
+    def __call__(self, genome0, genome1): # type: (KnownGenome, KnownGenome) -> float # XXX
         g0 = genome0.key
         g1 = genome1.key
         d = self.distances.get((g0, g1))
@@ -75,8 +76,8 @@ class DefaultSpeciesSet(DefaultClassConfig):
                                   [ConfigParameter('compatibility_threshold', float)])
 
     def speciate(self,
-                 config, # type: DefaultClassConfig
-                 population, # type: Dict[GenomeKey, DefaultGenome] # XXX
+                 config, # type: Config # CORRECTION
+                 population, # type: Dict[GenomeKey, KnownGenome] # XXX
                  generation # type: int
                  ):
         # type: (...) -> None
@@ -92,14 +93,15 @@ class DefaultSpeciesSet(DefaultClassConfig):
         assert isinstance(population, dict)
 
         compatibility_threshold = self.species_set_config.compatibility_threshold # type: ignore
+        compatibility_threshold = cast(float, compatibility_threshold)
 
         # Find the best representatives for each existing species.
-        unspeciated = set(iterkeys(population))
-        distances = GenomeDistanceCache(config.genome_config) # type: ignore
+        unspeciated = set(iterkeys(population)) # type: Set[GenomeKey]
+        distances = GenomeDistanceCache(config.genome_config)
         new_representatives = {}
         new_members = {}
         for sid, s in iteritems(self.species):
-            candidates = []
+            candidates = [] # type: List[Tuple[float, KnownGenome]] # XXX
             for gid in unspeciated:
                 g = population[gid]
                 d = distances(s.representative, g)
@@ -107,7 +109,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
 
             # The new representative is the genome closest to the current representative.
             ignored_rdist, new_rep = min(candidates, key=lambda x: x[0])
-            new_rid = new_rep.key
+            new_rid = new_rep.key # type: GenomeKey
             new_representatives[sid] = new_rid
             new_members[sid] = [new_rid]
             unspeciated.remove(new_rid)

@@ -5,6 +5,9 @@ from math import sqrt, exp
 
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
+if MYPY:
+    from typing import Callable # pylint: disable=unused-import
+
 def mean(values): # type: (Iterable[float]) -> float
     values = list(values)
     return sum(map(float, values)) / len(values)
@@ -49,4 +52,4 @@ def softmax(values): # type: (Iterable[float]) -> float
 
 # Lookup table for commonly used {value} -> value functions.
 stat_functions = {'min': min, 'max': max, 'mean': mean, 'median': median,
-                  'median2': median2}
+                  'median2': median2} # type: Dict[str, Callable[[Iterable[float]], float]]

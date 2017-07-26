@@ -15,6 +15,7 @@ from neat.six_util import iteritems
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 if MYPY: # pragma: no cover
+    from neat.attributes import FuncAttribute # pylint: disable=unused-import
     from typing import Callable
     from mypy_extensions import Arg, KwArg
     MPActFunc = Union[Callable[[float, KwArg(float)], float],
@@ -105,7 +106,7 @@ class MultiParameterFunctionInstance(object):
         if hasattr(self.user_func, '__doc__'):
             setattr(partial, '__doc__', self.user_func.__doc__)
         return partial
-        
+
 
 class MultiParameterFunction(object):
     """Holds and initializes configuration information for one multiparameter function."""
@@ -149,7 +150,7 @@ class MultiParameterFunction(object):
             mutate_power = ((param_dict['replace_rate']/param_dict['mutate_rate'])* # type: ignore
                             (abs(param_dict['max_value']-param_dict['min_value'])/pow(12.0,0.5))) # type: ignore
             self.evolved_param_dicts[n].setdefault('mutate_power', mutate_power)
-            
+
             tmp_name = "{0}_{1}".format(name,n)
             self.evolved_param_attributes[n] = FloatAttribute(name=tmp_name,
                                                               **param_dict)
@@ -199,8 +200,8 @@ class MultiParameterSet(object):
 
     def init_multiparameter(self,
                             name, # type: str
-                            instance, # type: Any # XXX
-                            ignored_config # type: Any
+                            instance, # type: FuncAttribute
+                            ignored_config=None # type: Any
                             ):
         # type: (...) -> MultiParameterFunctionInstance
         which_type = instance.name
@@ -222,7 +223,7 @@ class MultiParameterSet(object):
             return name.get_func()
         if hasattr(name, 'get_func'):
             return name.get_func() # type: ignore
-        
+
         if name in self.norm_func_dict[which_type]:
             nfunc_dict = self.norm_func_dict[which_type] # type: Dict[str, NormFunc]
             return nfunc_dict[name]
@@ -274,7 +275,7 @@ class MultiParameterSet(object):
             if kwargs:
                 raise InvalidFunctionError(
                     "Cannot use built-in function as multiparam function - needs wrapping")
-            nfunc_dict = self.norm_func_dict[which_type]
+            nfunc_dict = self.norm_func_dict[which_type] # type: Dict[str, NormFunc]
             nfunc_dict[name] = user_func
             return
 
@@ -282,7 +283,7 @@ class MultiParameterSet(object):
             raise InvalidFunctionError(
                 "An object with __code__ attribute is required, not {0!r} ({1!s})".format(user_func,
                                                                                           name))
-        
+
         func_code = user_func.__code__
         if func_code.co_argcount != (len(kwargs)+1):
             raise InvalidFunctionError("Function {0!r} ({1!s})".format(user_func,name) +
@@ -309,7 +310,7 @@ class MultiParameterSet(object):
         evolved_param_names = func_code.co_varnames[1:func_code.co_argcount]
         func_names_set = set(evolved_param_names)
         kwargs_names_set = set(kwargs.keys())
-        
+
         missing1 = func_names_set - kwargs_names_set
         if missing1:
             raise InvalidFunctionError("Function {0!r} ({1!s}) has arguments ".format(user_func,
