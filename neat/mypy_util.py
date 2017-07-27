@@ -29,14 +29,15 @@ if MYPY: # pragma: no cover
                 'KnownConfig', 'KnownGenome']
 else:
     from types import FunctionType, LambdaType, BuiltinFunctionType
-    
+    import warnings
+
     AgFunc = (FunctionType, LambdaType, BuiltinFunctionType)
     ActFunc = AgFunc
     NormActFunc = ActFunc
     NormAgFunc = AgFunc
     MPActFunc = (FunctionType, LambdaType)
     MPAgFunc = (FunctionType, LambdaType)
-    
+
     NodeKey = int # pylint: disable=invalid-name
     ConnKey = 'ConnKey' # pylint: disable=invalid-name
     GenomeKey = 'uint' # pylint: disable=invalid-name
@@ -47,22 +48,26 @@ else:
                 'MPActFunc', 'MPAgFunc']
 
     def cast(desired_type, var):
-        if desired_type is None:
+        if desired_type is None: # pragma: no cover
             return var
         if desired_type == 'uint':
-            assert isinstance(var, int)
-            assert var >= 0
+            assert isinstance(var, int), "Var {0!r}, type '{1!s}', is not an int".format(var, type(var))
+            assert var >= 0, "Var has negative value {:n}".format(var)
             return var
         if desired_type == 'ConnKey':
-            assert isinstance(var, tuple)
+            assert isinstance(var, tuple), "Var {0!r}, type '{1!s}', is not a tuple".format(var, type(var))
             assert len(var) == 2
             assert isinstance(var[0], int)
             assert isinstance(var[1], int)
             assert var[1] >= 0
             return var
         try:
-            assert isinstance(var, desired_type)
-        except TypeError: # pragma: no cover
+            assert isinstance(var,
+                              desired_type), "Var {0!r}, type '{1!s}' is not desired type {2!r}".format(var,
+                                                                                                        type(var),
+                                                                                                        desired_type)
+        except TypeError:
+            warnings.warn("Desired_type {!r} not usable by isinstance".format(desired_type))
             return var
         else:
             return var

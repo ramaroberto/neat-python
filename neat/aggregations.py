@@ -15,6 +15,7 @@ from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 if MYPY: # pragma: no cover
     from neat.multiparameter import (MultiParameterFunctionInstance, # pylint: disable=unused-import
+                                     MultiParameterFunction,
                                      MPAgFunc, NormAgFunc)
     AgFunc = Union[MPAgFunc, NormAgFunc]
 
@@ -100,12 +101,13 @@ class AggregationFunctionSet(object):
         # type: (...) -> None
         self.multiparameterset.add_func(name, function, 'aggregation', **kwargs)
 
-    def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> AgFunc
+    def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> Union[AgFunc, MultiParameterFunction]
         to_return = self.multiparameterset.get_func(name, 'aggregation')
-        to_return = cast(AgFunc, to_return)
+        if MYPY:
+            to_return = cast(AgFunc, to_return)
         return to_return
 
-    def __getitem__(self, index): # type: (Union[str, MultiParameterFunctionInstance]) -> AgFunc
+    def __getitem__(self, index): # type: (Union[str, MultiParameterFunctionInstance]) -> Union[AgFunc, MultiParameterFunction]
         warnings.warn("Use get, not indexing ([{!r}]), for aggregation functions".format(index),
                       DeprecationWarning)
         return self.get(index)

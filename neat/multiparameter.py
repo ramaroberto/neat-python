@@ -25,8 +25,8 @@ if MYPY: # pragma: no cover
                      Callable[[Iterable[float], Arg(float)], float],
                      Callable[[Iterable[float], Arg(float), Arg(float)], float]]
     MPFunc = Union[MPActFunc, MPAgFunc]
-    NormActFunc = Union[Callable[[float], float], types.BuiltinFunctionType]
-    NormAgFunc = Union[Callable[[Iterable[float]], float], types.BuiltinFunctionType]
+    NormActFunc = Union[Callable[[float], float], types.BuiltinFunctionType, functools.partial[float]]
+    NormAgFunc = Union[Callable[[Iterable[float]], float], types.BuiltinFunctionType, functools.partial[float]]
     NormFunc = Union[NormActFunc, NormAgFunc]
     EitherFunc = Union[MPFunc, NormFunc]
 
@@ -230,7 +230,7 @@ class MultiParameterSet(object):
 
         if name in self.multiparam_func_dict[which_type]:
             mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]
-            return mpfunc_dict[name] # Allows for altering configuration
+            return mpfunc_dict[name] # Allows for altering configuration... not entirely sure a good idea to do this way!
 
         if not name.endswith(')'):
             raise LookupError("Unknown function {!r} - no end )".

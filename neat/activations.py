@@ -15,6 +15,7 @@ from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 if MYPY: # pragma: no cover
     from neat.multiparameter import (MultiParameterFunctionInstance, # pylint: disable=unused-import
+                                     MultiParameterFunction,
                                      MPActFunc, NormActFunc)
     ActFunc = Union[MPActFunc, NormActFunc]
 
@@ -175,12 +176,13 @@ class ActivationFunctionSet(object):
         # type: (...) -> None
         self.multiparameterset.add_func(name, function, 'activation', **kwargs)
 
-    def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> ActFunc
+    def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> Union[ActFunc, MultiParameterFunction]
         to_return = self.multiparameterset.get_func(name, 'activation')
-        to_return = cast(ActFunc, to_return)
+        if MYPY:
+            to_return = cast(Union[ActFunc, MultiParameterFunction], to_return)
         return to_return
 
-    def __getitem__(self, index): # type: (Union[str, MultiParameterFunctionInstance]) -> ActFunc
+    def __getitem__(self, index): # type: (Union[str, MultiParameterFunctionInstance]) -> Union[ActFunc, MultiParameterFunction]
         warnings.warn("Use get, not indexing ([{!r}]), for activation functions".format(index),
                       DeprecationWarning)
         return self.get(index)
