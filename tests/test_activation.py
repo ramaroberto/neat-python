@@ -243,6 +243,13 @@ def test_get_MPF():
     assert config.genome_config.get_activation_MPF('clamped_tanh_step') is not None
     assert config.genome_config.get_activation_MPF('multiparam_sigmoid') is not None
 
+    try:
+        ignored = config.genome_config.get_activation_MPF('foo')
+    except LookupError:
+        pass
+    else:
+        raise Exception("Should have had a LookupError/derived for get_activation_MPF 'foo'")
+
 if __name__ == '__main__':
     test_sigmoid()
     test_tanh()

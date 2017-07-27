@@ -150,6 +150,13 @@ def test_get_MPF():
     assert config.genome_config.get_aggregation_MPF('max_median_min') is not None
     assert config.genome_config.get_aggregation_MPF('maxabs_mean') is not None
 
+    try:
+        ignored = config.genome_config.get_aggregation_MPF('foo')
+    except LookupError:
+        pass
+    else:
+        raise Exception("Should have had a LookupError/derived for get_aggregation_MPF 'foo'")
+
 if __name__ == '__main__':
     test_sum()
     test_product()
