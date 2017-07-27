@@ -2,7 +2,7 @@
 
 MYPY = False # pragma: no cover
 
-__all__ = ['cast', 'NodeKey', 'GenomeKey', 'SpeciesKey', 'ConnKey', 'GeneKey', 'MYPY'] # pragma: no cover
+__all__ = ['cast', 'NodeKey', 'GenomeKey', 'SpeciesKey', 'ConnKey', 'GeneKey', 'MYPY']
 
 if MYPY: # pragma: no cover
     import sys
@@ -34,7 +34,7 @@ else:
     SpeciesKey = 'uint' # pylint: disable=invalid-name
     GeneKey = (int, tuple) # pylint: disable=invalid-name
 
-    def cast(desired_type, var): # pragma: no cover
+    def cast(desired_type, var):
         if desired_type is None:
             return var
         if desired_type == 'uint':
