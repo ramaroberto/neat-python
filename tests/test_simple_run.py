@@ -181,6 +181,41 @@ def test_serial4():
 
     p.remove_reporter(stats)
 
+def test_serial5():
+    """Test more configuration variations for simple serial run."""
+    # Load configuration.
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, 'test_configuration5')
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_path)
+
+    print("config.genome_config.__dict__: {!r}".format(
+        config.genome_config.__dict__))
+
+    # Create the population, which is the top-level object for a NEAT run.
+    p = neat.Population(config)
+
+    # Add a stdout reporter to show progress in the terminal.
+    p.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+    p.add_reporter(neat.Checkpointer(1, 5))
+
+    # Run for up to 45 generations.
+    p.run(eval_dummy_genomes_nn, 45)
+
+    stats.save()
+    # stats.save_genome_fitness(with_cross_validation=True)
+
+    stats.get_fitness_stdev()
+    # stats.get_average_cross_validation_fitness()
+    stats.best_unique_genomes(5)
+    stats.best_genomes(5)
+    stats.best_genome()
+
+    p.remove_reporter(stats)
+
 def test_serial4_bad():
     """Make sure no_fitness_termination and n=None give an error."""
     # Load configuration.
@@ -553,6 +588,9 @@ if __name__ == '__main__':
     test_serial_random()
     test_serial3()
     test_serial4()
+    test_serial5()
     test_serial_bad_config()
     test_serial_bad_configA()
+    test_serial_extinction_exception()
+    test_serial_extinction_no_exception()
     test_parallel()
