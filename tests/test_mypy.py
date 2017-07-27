@@ -7,7 +7,10 @@ if ((sys.version_info.major < 3) or
     ((sys.version_info.major == 3) and (sys.version_info.minor < 3))):
     raise SkipTest("Need Python 3.3+ for mypy to run")
 
-from mypy import api
+try:
+    from mypy import api
+except ImportError:
+    raise SkipTest("Unable to access mypy (pypy3?)")
 
 def get_file_list(neat_path):
     # all but distributed.py
