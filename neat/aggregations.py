@@ -18,6 +18,7 @@ if MYPY: # pragma: no cover
                                      MPAgFunc, NormAgFunc)
     AgFunc = Union[MPAgFunc, NormAgFunc]
 
+
 if sys.version_info[0] > 2:
     from functools import reduce
 
@@ -101,8 +102,7 @@ class AggregationFunctionSet(object):
 
     def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> AgFunc
         to_return = self.multiparameterset.get_func(name, 'aggregation')
-        if MYPY: # pragma: no cover
-            to_return = cast(AgFunc, to_return)
+        to_return = cast(AgFunc, to_return)
         return to_return
 
     def __getitem__(self, index): # type: (Union[str, MultiParameterFunctionInstance]) -> AgFunc

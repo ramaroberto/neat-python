@@ -6,9 +6,6 @@ from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 if MYPY: # pragma: no cover
     from neat.mypy_util import DefaultGenome, Config, DefaultGenomeConfig # pylint: disable=unused-import
     from neat.multiparameter import NormActFunc, NormAgFunc # pylint: disable=unused-import
-else:
-    NormActFunc = None
-    NormAgFunc = None
 
 class RecurrentNetwork(object):
     def __init__(self,

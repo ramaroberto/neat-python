@@ -18,8 +18,6 @@ if MYPY: # pragma: no cover
                                      MPActFunc, NormActFunc)
     ActFunc = Union[MPActFunc, NormActFunc]
 
-
-
 def sigmoid_activation(z): # type: (float) -> float
     z = max(-60.0, min(60.0, 5.0 * z))
     return 1.0 / (1.0 + math.exp(-z))
@@ -179,8 +177,7 @@ class ActivationFunctionSet(object):
 
     def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> ActFunc
         to_return = self.multiparameterset.get_func(name, 'activation')
-        if MYPY: # pragma: no cover
-            to_return = cast(ActFunc, to_return)
+        to_return = cast(ActFunc, to_return)
         return to_return
 
     def __getitem__(self, index): # type: (Union[str, MultiParameterFunctionInstance]) -> ActFunc

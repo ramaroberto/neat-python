@@ -6,9 +6,6 @@ if MYPY: # pragma: no cover
     from neat.mypy_util import DefaultGenome, Config # pylint: disable=unused-import
     from neat.genes import DefaultConnectionGene # pylint: disable=unused-import
     from neat.multiparameter import NormActFunc, NormAgFunc # pylint: disable=unused-import
-else:
-    NormActFunc = None
-    NormAgFunc = None
 
 class FeedForwardNetwork(object):
     def __init__(self,
