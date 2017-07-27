@@ -4,8 +4,6 @@ from __future__ import print_function
 import os
 import warnings
 
-
-
 from neat.six_util import iterkeys
 
 from neat.mypy_util import cast, MYPY
