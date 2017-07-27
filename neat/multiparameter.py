@@ -209,11 +209,22 @@ class MultiParameterSet(object):
         multiparam_func = multiparam_func_dict[name]
         return multiparam_func.init_instance()
 
+    def get_MPF(self,
+                name, # type: str
+                which_type # type: str
+                ):
+        # type: (...) -> MultiParameterFunction
+
+        if name in self.multiparam_func_dict[which_type]:
+            mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]
+            return mpfunc_dict[name] # Allows for altering configuration...
+        raise UnknownFunctionError("Unknown function {!r}".format(name))
+
     def get_func(self,
                  name, # type: Union[str, MultiParameterFunctionInstance]
                  which_type # type: str
                  ):
-        # type: (...) -> Union[EitherFunc, MultiParameterFunction, functools.partial[float]]
+        # type: (...) -> Union[EitherFunc, functools.partial[float]]
         """
         Figures out what function, or function instance for multiparameter functions,
         is needed, and returns it.
@@ -227,10 +238,6 @@ class MultiParameterSet(object):
         if name in self.norm_func_dict[which_type]:
             nfunc_dict = self.norm_func_dict[which_type] # type: Dict[str, NormFunc]
             return nfunc_dict[name]
-
-        if name in self.multiparam_func_dict[which_type]:
-            mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]
-            return mpfunc_dict[name] # Allows for altering configuration... not entirely sure a good idea to do this way!
 
         if not name.endswith(')'):
             raise LookupError("Unknown function {!r} - no end )".

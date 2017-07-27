@@ -6,7 +6,7 @@ from neat.attributes import FloatAttribute, BoolAttribute, FuncAttribute
 
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
-if MYPY:
+if MYPY: # pragma: no cover
     from neat.config import ConfigParameter # pylint: disable=unused-import
     from neat.genome import DefaultGenomeConfig # pylint: disable=unused-import
 

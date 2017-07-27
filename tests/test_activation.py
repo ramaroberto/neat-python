@@ -180,9 +180,9 @@ def test_function_set():
     assert s.get('hat') is not None
     assert s.get('square') is not None
     assert s.get('cube') is not None
-    assert s.get('multiparam_relu') is not None
-    assert s.get('clamped_tanh_step') is not None
-    assert s.get('multiparam_sigmoid') is not None
+    assert m.get_MPF('multiparam_relu','activation') is not None
+    assert m.get_MPF('clamped_tanh_step','activation') is not None
+    assert m.get_MPF('multiparam_sigmoid','activation') is not None
 
     assert s.is_valid('sigmoid')
     assert s.is_valid('tanh')
@@ -232,6 +232,17 @@ def test_bad_add2():
     else:
         raise Exception("Should have had a TypeError/derived for dud_function")
 
+def test_get_MPF():
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, 'test_configuration')
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_path)
+
+    assert config.genome_config.get_activation_MPF('multiparam_relu') is not None
+    assert config.genome_config.get_activation_MPF('clamped_tanh_step') is not None
+    assert config.genome_config.get_activation_MPF('multiparam_sigmoid') is not None
+
 if __name__ == '__main__':
     test_sigmoid()
     test_tanh()
@@ -252,4 +263,4 @@ if __name__ == '__main__':
     test_clamped_tanh_step()
     test_multiparam_sigmoid()
     test_function_set()
-
+    test_get_MPF()

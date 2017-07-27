@@ -176,13 +176,12 @@ class ActivationFunctionSet(object):
         # type: (...) -> None
         self.multiparameterset.add_func(name, function, 'activation', **kwargs)
 
-    def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> Union[ActFunc, MultiParameterFunction]
+    def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> ActFunc
         to_return = self.multiparameterset.get_func(name, 'activation')
-        if MYPY:
-            to_return = cast(Union[ActFunc, MultiParameterFunction], to_return)
+        to_return = cast(ActFunc, to_return)
         return to_return
 
-    def __getitem__(self, index): # type: (Union[str, MultiParameterFunctionInstance]) -> Union[ActFunc, MultiParameterFunction]
+    def __getitem__(self, index): # type: (Union[str, MultiParameterFunctionInstance]) -> ActFunc
         warnings.warn("Use get, not indexing ([{!r}]), for activation functions".format(index),
                       DeprecationWarning)
         return self.get(index)

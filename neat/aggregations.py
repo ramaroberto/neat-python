@@ -101,13 +101,12 @@ class AggregationFunctionSet(object):
         # type: (...) -> None
         self.multiparameterset.add_func(name, function, 'aggregation', **kwargs)
 
-    def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> Union[AgFunc, MultiParameterFunction]
+    def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> AgFunc
         to_return = self.multiparameterset.get_func(name, 'aggregation')
-        if MYPY:
-            to_return = cast(AgFunc, to_return)
+        to_return = cast(AgFunc, to_return)
         return to_return
 
-    def __getitem__(self, index): # type: (Union[str, MultiParameterFunctionInstance]) -> Union[AgFunc, MultiParameterFunction]
+    def __getitem__(self, index): # type: (Union[str, MultiParameterFunctionInstance]) -> AgFunc
         warnings.warn("Use get, not indexing ([{!r}]), for aggregation functions".format(index),
                       DeprecationWarning)
         return self.get(index)

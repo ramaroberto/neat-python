@@ -21,6 +21,7 @@ if MYPY: # pragma: no cover
     from neat.activations import ActFunc # pylint: disable=unused-import
     from neat.aggregations import AgFunc # pylint: disable=unused-import
     from neat.genes import BaseGene # pylint: disable=unused-import
+    from neat.multiparameter import MultiParameterFunction # pylint: disable=unused-import
 
 class DefaultGenomeConfig(object):
     """Sets up and holds configuration information for the DefaultGenome class."""
@@ -106,6 +107,9 @@ class DefaultGenomeConfig(object):
         # type: (...) -> None
         self.activation_defs.add(name, func, **kwargs)
 
+    def get_activation_MPF(self, name): # type: (str) -> MultiParameterFunction
+        return self.multiparameterset.get_MPF(name, 'activation')
+
     def add_aggregation(self,
                         name, # type: str
                         func, # type: AgFunc
@@ -113,6 +117,9 @@ class DefaultGenomeConfig(object):
                         ):
         # type: (...) -> None
         self.aggregation_function_defs.add(name, func, **kwargs)
+
+    def get_aggregation_MPF(self, name): # type: (str) -> MultiParameterFunction
+        return self.multiparameterset.get_MPF(name, 'aggregation')
 
     def save(self, f): # type: (TextIO) -> None
         if 'partial' in self.initial_connection:
