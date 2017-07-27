@@ -31,8 +31,8 @@ def test_serial():
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(1, 5))
 
-    # Run for up to 45 generations.
-    p.run(eval_dummy_genomes_nn, 45)
+    # Run for up to 19 generations.
+    p.run(eval_dummy_genomes_nn, 19)
 
     stats.save()
     # stats.save_genome_fitness(with_cross_validation=True)
@@ -44,6 +44,8 @@ def test_serial():
     stats.best_genome()
 
     p.remove_reporter(stats)
+
+
 
 def eval_dummy_genome_nn_bad(genome, config):
     net = neat.nn.FeedForwardNetwork.create(genome, config)
@@ -241,6 +243,68 @@ def test_serial_bad_configA():
     else:
         raise Exception(
             "Should have had a RuntimeError with bad_configurationA")
+
+def test_serial_extinction_exception():
+    """Test for complete extinction with exception."""
+    # Load configuration.
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, 'test_configuration')
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_path)
+    config.stagnation_config.max_stagnation = 1
+    config.stagnation_config.species_elitism = 0
+
+    # Create the population, which is the top-level object for a NEAT run.
+    p = neat.Population(config)
+
+    # Add a stdout reporter to show progress in the terminal.
+    p.add_reporter(neat.StdOutReporter(True))
+
+    try:
+        # Run for up to 45 generations.
+        p.run(eval_dummy_genomes_nn, 45)
+    except Exception:
+        pass
+    else:
+        raise Exception("Should have had a complete extinction at some point!")
+
+def test_serial_extinction_no_exception():
+    """Test for complete extinction without exception."""
+    # Load configuration.
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, 'test_configuration')
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_path)
+    config.stagnation_config.max_stagnation = 1
+    config.stagnation_config.species_elitism = 0
+    config.reset_on_extinction = True
+
+    # Create the population, which is the top-level object for a NEAT run.
+    p = neat.Population(config)
+
+    # Add a stdout reporter to show progress in the terminal.
+    reporter = neat.StdOutReporter(True)
+    p.add_reporter(reporter)
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+
+    # Run for up to 45 generations.
+    p.run(eval_dummy_genomes_nn, 45)
+
+    assert reporter.num_extinctions > 0, "No extinctions happened!"
+
+    stats.save()
+    # stats.save_genome_fitness(with_cross_validation=True)
+
+    stats.get_fitness_stdev()
+    # stats.get_average_cross_validation_fitness()
+    stats.best_unique_genomes(5)
+    stats.best_genomes(5)
+    stats.best_genome()
+
+    p.remove_reporter(stats)
 
 def test_parallel():
     """Test parallel run using ParallelEvaluator (subprocesses)."""
