@@ -12,7 +12,7 @@ from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 # MYPY - really needs a way to tell it that a given attribute is created dynamically...
 
-if MYPY:
+if MYPY: # pragma: no cover
     from neat.multiparameter import MultiParameterFunctionInstance # pylint: disable=unused-import
     from neat.genome import DefaultGenomeConfig # pylint: disable=unused-import
 
