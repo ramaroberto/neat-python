@@ -28,15 +28,16 @@ if MYPY: # pragma: no cover
                 'Tuple', 'Optional', 'Union', 'Dict', 'Any', 'TextIO',
                 'KnownConfig', 'KnownGenome']
 else:
+    import functools
     from types import FunctionType, LambdaType, BuiltinFunctionType
     import warnings
 
-    AgFunc = (FunctionType, LambdaType, BuiltinFunctionType)
+    AgFunc = (FunctionType, LambdaType, BuiltinFunctionType, functools.partial)
     ActFunc = AgFunc
     NormActFunc = ActFunc
     NormAgFunc = AgFunc
-    MPActFunc = (FunctionType, LambdaType)
-    MPAgFunc = (FunctionType, LambdaType)
+    MPActFunc = (FunctionType, LambdaType, functools.partial)
+    MPAgFunc = (FunctionType, LambdaType, functools.partial)
 
     NodeKey = int # pylint: disable=invalid-name
     ConnKey = 'ConnKey' # pylint: disable=invalid-name
