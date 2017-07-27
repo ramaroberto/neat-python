@@ -161,7 +161,7 @@ class DefaultReproduction(DefaultClassConfig):
         min_species_size = self.reproduction_config.min_species_size # type: ignore
         # Isn't the effective min_species_size going to be max(min_species_size, self.reproduction_config.elitism)?
         # That would probably produce more accurate tracking of population sizes and relative fitnesses... doing; will document.
-        min_species_size = max(min_species_size,self.reproduction_config.elitism)
+        min_species_size = max(min_species_size,self.reproduction_config.elitism) # type: ignore
         spawn_amounts = self.compute_spawn(adjusted_fitnesses, previous_sizes,
                                            pop_size, min_species_size)
 
