@@ -5,6 +5,11 @@ MYPY = False # pragma: no cover
 __all__ = ['cast', 'NodeKey', 'GenomeKey', 'SpeciesKey', 'ConnKey', 'GeneKey', 'MYPY'] # pragma: no cover
 
 if MYPY: # pragma: no cover
+    import sys
+    if sys.version_info[0] >= 3:
+        from typing import TextIO # pylint: disable=unused-import
+    else:
+        from typing import IO as TextIO # pylint: disable=unused-import
     from typing import (Iterable, Set, List, Sequence, NewType, # pylint: disable=unused-import
                         Tuple, Optional, Union, cast, Dict, Any, Callable)
     from neat.config import DefaultClassConfig, Config # pylint: disable=unused-import
@@ -17,12 +22,8 @@ if MYPY: # pragma: no cover
     GeneKey = Union[NodeKey, ConnKey]
     GenomeKey = NewType('GenomeKey', int) # c_type: c_uint
     SpeciesKey = NewType('SpeciesKey', int) # c_type: c_uint
-    import sys
-    if sys.version_info[0] >= 3:
-        from typing import TextIO
-    else:
-        from typing import IO as TextIO
-    
+
+
     __all__ += ['Iterable', 'Set', 'List', 'Sequence', # not NewType
                 'Tuple', 'Optional', 'Union', 'Dict', 'Any', 'TextIO',
                 'KnownConfig', 'KnownGenome']

@@ -12,16 +12,16 @@ from neat.indexer import Indexer
 from neat.math_util import mean
 from neat.six_util import iteritems, itervalues
 
-from neat.mypy_util import cast, MYPY, GenomeKey, SpeciesKey # pylint: disable=unused-imports
+from neat.mypy_util import cast, MYPY, GenomeKey, SpeciesKey # pylint: disable=unused-import
 
 if MYPY: # pragma: no cover
-    from neat.mypy_util import (Any, List, Dict, Tuple, Union, Optional,
-                                KnownGenome, DefaultGenomeConfig, Config) # pylint: disable=unused-imports
-    from neat.reporting import ReporterSet # pylint: disable=unused-imports
-    from neat.stagnation import DefaultStagnation # pylint: disable=unused-imports
-    from neat.species import Species, DefaultSpeciesSet # pylint: disable=unused-imports
+    from neat.mypy_util import (Any, List, Dict, Tuple, Union, Optional, # pylint: disable=unused-import
+                                KnownGenome, DefaultGenomeConfig, Config)
+    from neat.reporting import ReporterSet # pylint: disable=unused-import
+    from neat.stagnation import DefaultStagnation # pylint: disable=unused-import
+    from neat.species import Species, DefaultSpeciesSet # pylint: disable=unused-import
 else:
-    from neat.mypy_util import * # pylint: disable=unused-wildcard-imports
+    from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 # TODO: Provide some sort of optional cross-species performance criteria, which
 # are then used to control stagnation and possibly the mutation rate
@@ -124,7 +124,7 @@ class DefaultReproduction(DefaultClassConfig):
         # Find minimum/maximum fitness across the entire population, for use in
         # species adjusted fitness computation.
         all_fitnesses = [] # type: List[float]
-        for sid, s in iteritems(species.species): # type: SpeciesKey, Species
+        for ignored_sid, s in iteritems(species.species): # type: SpeciesKey, Species
             all_fitnesses.extend(m.fitness for m in itervalues(s.members))
         min_fitness = min(all_fitnesses) # type: float
         max_fitness = max(all_fitnesses) # type: float

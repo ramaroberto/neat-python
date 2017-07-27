@@ -21,7 +21,6 @@ if MYPY: # pragma: no cover
                                 Iterable, TextIO, DefaultGenomeConfig)
 else:
     Iterable = list
-    from neat.mypy_util import * # pylint: disable=unused-wildcard-imports
 
     try:
         from configparser import ConfigParser, Error # pylint: disable=ungrouped-imports
