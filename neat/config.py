@@ -10,7 +10,7 @@ from neat.six_util import iterkeys
 
 from neat.mypy_util import cast, MYPY
 
-if MYPY:
+if MYPY: # pragma: no cover
     import sys
     if sys.version_info[0] >= 3:
         from configparser import ConfigParser, Error
@@ -21,6 +21,7 @@ if MYPY:
                                 Iterable, TextIO, DefaultGenomeConfig)
 else:
     Iterable = list
+    from neat.mypy_util import * # pylint: disable=unused-wildcard-imports
 
     try:
         from configparser import ConfigParser, Error # pylint: disable=ungrouped-imports
@@ -192,7 +193,7 @@ class Config(object):
         parameters = ConfigParser()
         with open(filename) as f:
             if hasattr(parameters, 'read_file'):
-                parameters.read_file(f)
+                parameters.read_file(f) # type: ignore
             else:
                 parameters.readfp(f) # type: ignore
 

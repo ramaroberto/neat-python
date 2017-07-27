@@ -179,7 +179,7 @@ class ActivationFunctionSet(object):
 
     def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> ActFunc
         to_return = self.multiparameterset.get_func(name, 'activation')
-        if MYPY:
+        if MYPY: # pragma: no cover
             to_return = cast(ActFunc, to_return)
         return to_return
 

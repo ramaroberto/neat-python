@@ -13,16 +13,14 @@ else:
 
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
-if MYPY:
+if MYPY: # pragma: no cover
     import sys
     if sys.version_info[0] >= 3:
         import queue # pylint: disable=import-error
     else:
         import Queue as queue # pylint: disable=import-error
 
-    from typing import Callable # pylint: disable=unused-import
-    from neat.config import Config # pylint: disable=unused-import
-
+    from neat.mypy_util import Callable, Config # pylint: disable=unused-import
 else:
     try:
         import Queue as queue  # pylint: disable=import-error,ungrouped-imports

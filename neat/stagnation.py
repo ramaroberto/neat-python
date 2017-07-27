@@ -7,7 +7,7 @@ from neat.math_util import stat_functions
 
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
-if MYPY:
+if MYPY: # pragma: no cover
     from typing import Callable # pylint: disable=unused-import
     from neat.reporting import ReporterSet # pylint: disable=unused-import
     from neat.species import DefaultSpeciesSet, Species # pylint: disable=unused-import

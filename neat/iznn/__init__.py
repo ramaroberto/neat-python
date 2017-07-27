@@ -17,7 +17,7 @@ from neat.six_util import itervalues
 
 from neat.mypy_util import cast, NodeKey, GenomeKey, SpeciesKey, ConnKey, GeneKey, MYPY # pylint: disable=unused-import
 
-if MYPY:
+if MYPY: # pragma: no cover
     from neat.mypy_util import Any, List, Tuple, Dict, Config # pylint: disable=unused-import
 
 # a, b, c, d are the parameters of the Izhikevich model.

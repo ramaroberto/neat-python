@@ -197,7 +197,7 @@ class FuncAttribute(BaseAttribute):
             options = getattr(config,
                               self.options_name) # type: ignore # type: List[Union[str, MultiParameterFunctionInstance]]
             default = choice(options)
-            if MYPY:
+            if MYPY: # pragma: no cover
                 default = cast(Union[str, MultiParameterFunctionInstance], default)
 
         if hasattr(default, 'init_value'):

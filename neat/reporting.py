@@ -12,9 +12,9 @@ from neat.six_util import itervalues, iterkeys
 
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
-if MYPY:
+if MYPY: # pragma: no cover
     from neat.species import Species, DefaultSpeciesSet # pylint: disable=unused-import
-    from neat.config import Config # pylint: disable=unused-import
+    from neat.mypy_util import Config # pylint: disable=unused-import
 
 # TODO: Add a curses-based reporter.
 

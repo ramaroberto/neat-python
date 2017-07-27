@@ -7,8 +7,8 @@ from neat.six_util import iteritems, itervalues
 
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
-if MYPY:
-    from typing import Callable # pylint: disable=unused-import
+if MYPY: # pragma: no cover
+    from neat.mypy_util import Config, Callable # pylint: disable=unused-import
     from neat.config import Config # pylint: disable=unused-import
     from neat.reporting import BaseReporter # pylint: disable=unused-import
     from neat.species import DefaultSpeciesSet # pylint: disable=unused-import

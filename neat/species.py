@@ -5,10 +5,9 @@ from neat.math_util import mean, stdev
 from neat.six_util import iteritems, iterkeys, itervalues
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
-if MYPY:
-    from neat.genome import DefaultGenome, DefaultGenomeConfig # pylint: disable=unused-import
+if MYPY: # pragma: no cover
+    from neat.mypy_util import DefaultGenome, DefaultGenomeConfig, Config # pylint: disable=unused-import
     from neat.reporting import ReporterSet # pylint: disable=unused-import
-    from neat.config import Config # pylint: disable=unused-import
 
 class Species(object):
     def __init__(self,
@@ -109,7 +108,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
 
             # The new representative is the genome closest to the current representative.
             ignored_rdist, new_rep = min(candidates, key=lambda x: x[0])
-            new_rid = new_rep.key # type: GenomeKey
+            new_rid = cast(GenomeKey,new_rep.key)
             new_representatives[sid] = new_rid
             new_members[sid] = [new_rid]
             unspeciated.remove(new_rid)

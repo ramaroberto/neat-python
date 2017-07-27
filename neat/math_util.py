@@ -5,7 +5,7 @@ from math import sqrt, exp
 
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
-if MYPY:
+if MYPY: # pragma: no cover
     from typing import Callable # pylint: disable=unused-import
 
 def mean(values): # type: (Iterable[float]) -> float

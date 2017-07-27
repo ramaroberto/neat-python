@@ -101,7 +101,7 @@ class AggregationFunctionSet(object):
 
     def get(self, name): # type: (Union[str, MultiParameterFunctionInstance]) -> AgFunc
         to_return = self.multiparameterset.get_func(name, 'aggregation')
-        if MYPY:
+        if MYPY: # pragma: no cover
             to_return = cast(AgFunc, to_return)
         return to_return
 

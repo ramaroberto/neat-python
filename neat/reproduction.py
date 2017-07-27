@@ -12,6 +12,17 @@ from neat.indexer import Indexer
 from neat.math_util import mean
 from neat.six_util import iteritems, itervalues
 
+from neat.mypy_util import cast, MYPY, GenomeKey, SpeciesKey # pylint: disable=unused-imports
+
+if MYPY: # pragma: no cover
+    from neat.mypy_util import (Any, List, Dict, Tuple, Union, Optional,
+                                KnownGenome, DefaultGenomeConfig, Config) # pylint: disable=unused-imports
+    from neat.reporting import ReporterSet # pylint: disable=unused-imports
+    from neat.stagnation import DefaultStagnation # pylint: disable=unused-imports
+    from neat.species import Species, DefaultSpeciesSet # pylint: disable=unused-imports
+else:
+    from neat.mypy_util import * # pylint: disable=unused-wildcard-imports
+
 # TODO: Provide some sort of optional cross-species performance criteria, which
 # are then used to control stagnation and possibly the mutation rate
 # configuration. This scheme should be adaptive so that species do not evolve
@@ -24,25 +35,35 @@ class DefaultReproduction(DefaultClassConfig):
     """
 
     @classmethod
-    def parse_config(cls, param_dict):
+    def parse_config(cls, param_dict): # type: (Dict[str, str]) -> DefaultClassConfig
         return DefaultClassConfig(param_dict,
                                   [ConfigParameter('elitism', int, 0),
                                    ConfigParameter('survival_threshold', float, 0.2),
                                    ConfigParameter('min_species_size', int, 2)])
 
-    def __init__(self, config, reporters, stagnation):
+    def __init__(self,
+                 config, # type: DefaultClassConfig
+                 reporters, # type: ReporterSet
+                 stagnation # type: DefaultStagnation # XXX
+                 ):
+        # type: (...) -> None
         # pylint: disable=super-init-not-called
         self.reproduction_config = config
         self.reporters = reporters
         self.genome_indexer = Indexer(1)
         self.stagnation = stagnation
-        self.ancestors = {}
+        self.ancestors = {} # type: Dict[GenomeKey, Union[tuple, Tuple[GenomeKey, GenomeKey]]]
 
-    def create_new(self, genome_type, genome_config, num_genomes):
-        new_genomes = {}
+    def create_new(self,
+                   genome_type,
+                   genome_config, # type: DefaultGenomeConfig # XXX
+                   num_genomes # type: int # c_type: c_uint
+                   ):
+        # type: (...) -> Dict[GenomeKey, KnownGenome] # XXX
+        new_genomes = {} # Dict[GenomeKey, KnownGenome] # XXX
         for i in range(num_genomes):
-            key = self.genome_indexer.get_next()
-            g = genome_type(key)
+            key = cast(GenomeKey,self.genome_indexer.get_next())
+            g = genome_type(key) # type: KnownGenome # XXX
             g.configure_new(genome_config)
             new_genomes[key] = g
             self.ancestors[key] = tuple()
@@ -50,14 +71,19 @@ class DefaultReproduction(DefaultClassConfig):
         return new_genomes
 
     @staticmethod
-    def compute_spawn(adjusted_fitness, previous_sizes, pop_size, min_species_size):
+    def compute_spawn(adjusted_fitness, # type: List[float]
+                      previous_sizes, # type: List[int]
+                      pop_size, # type: int # c_type: c_uint
+                      min_species_size # type: int # c_type: c_uint
+                      ):
+        # type: (...) -> List[int]
         """Compute the proper number of offspring per species (proportional to fitness)."""
         af_sum = sum(adjusted_fitness)
 
-        spawn_amounts = []
+        spawn_amounts = [] # type: List[int]
         for af, ps in zip(adjusted_fitness, previous_sizes):
             if af_sum > 0:
-                s = max(min_species_size, af / af_sum * pop_size)
+                s = max(min_species_size, af / af_sum * pop_size) # type: float
             else:
                 s = min_species_size
 
@@ -81,7 +107,13 @@ class DefaultReproduction(DefaultClassConfig):
 
         return spawn_amounts
 
-    def reproduce(self, config, species, pop_size, generation):
+    def reproduce(self,
+                  config, # type: Config
+                  species, # type: DefaultSpeciesSet # XXX
+                  pop_size, # type: int # c_type: c_uint
+                  generation # type: int
+                  ):
+        # type: (...) -> Dict[GenomeKey, KnownGenome] # XXX
         """
         Handles creation of genomes, either from scratch or by sexual or
         asexual reproduction from parents.
@@ -91,11 +123,11 @@ class DefaultReproduction(DefaultClassConfig):
 
         # Find minimum/maximum fitness across the entire population, for use in
         # species adjusted fitness computation.
-        all_fitnesses = []
-        for sid, s in iteritems(species.species):
+        all_fitnesses = [] # type: List[float]
+        for sid, s in iteritems(species.species): # type: SpeciesKey, Species
             all_fitnesses.extend(m.fitness for m in itervalues(s.members))
-        min_fitness = min(all_fitnesses)
-        max_fitness = max(all_fitnesses)
+        min_fitness = min(all_fitnesses) # type: float
+        max_fitness = max(all_fitnesses) # type: float
         # Do not allow the fitness range to be zero, as we divide by it below.
         fitness_range = max(1.0, max_fitness - min_fitness)
 
@@ -104,42 +136,44 @@ class DefaultReproduction(DefaultClassConfig):
         # The average adjusted fitness scheme (normalized to the interval
         # [0, 1]) allows the use of negative fitness values without
         # interfering with the shared fitness scheme.
-        remaining_species = []
-        for sid, s, stagnant in self.stagnation.update(species, generation):
+        remaining_species = [] # type: List[Species]
+        for stag_sid, stag_s, stagnant in self.stagnation.update(species, generation): # type: SpeciesKey, Species, bool
             if stagnant:
-                self.reporters.species_stagnant(sid, s)
+                self.reporters.species_stagnant(stag_sid, stag_s)
             else:
                 # Compute adjusted fitness.
-                msf = mean([m.fitness for m in itervalues(s.members)])
+                msf = mean([m.fitness for m in itervalues(stag_s.members)])
                 af = (msf - min_fitness) / fitness_range
-                s.adjusted_fitness = af
-                remaining_species.append(s)
+                stag_s.adjusted_fitness = af
+                remaining_species.append(stag_s)
 
         # No species left.
         if not remaining_species:
             species.species = {}
-            return []
+            return {} # CORRECTION
 
-        adjusted_fitnesses = [s.adjusted_fitness for s in remaining_species]
-        avg_adjusted_fitness = mean(adjusted_fitnesses)
+        adjusted_fitnesses = [s.adjusted_fitness for s in remaining_species] # type: List[float]
+        avg_adjusted_fitness = mean(adjusted_fitnesses) # type: float
         self.reporters.info("Average adjusted fitness: {:.3f}".format(avg_adjusted_fitness))
 
         # Compute the number of new memebers for each species in the new generation.
-        previous_sizes = [len(s.members) for s in remaining_species]
-        min_species_size = self.reproduction_config.min_species_size
+        previous_sizes = [len(s.members) for s in remaining_species] # type: List[int]
+        min_species_size = self.reproduction_config.min_species_size # type: ignore
+        # Isn't the effective min_species_size going to be max(min_species_size, self.reproduction_config.elitism)?
+        # That would probably produce more accurate tracking of population sizes and relative fitnesses...
         spawn_amounts = self.compute_spawn(adjusted_fitnesses, previous_sizes,
                                            pop_size, min_species_size)
 
-        new_population = {}
+        new_population = {} # type: Dict[GenomeKey, KnownGenome] # XXX
         species.species = {}
         for spawn, s in zip(spawn_amounts, remaining_species):
             # If elitism is enabled, each species always at least gets to retain its elites.
-            spawn = max(spawn, self.reproduction_config.elitism)
+            spawn = max(spawn, self.reproduction_config.elitism) # type: ignore
 
             assert spawn > 0
 
             # The species has at least one member for the next generation, so retain it.
-            old_members = list(iteritems(s.members))
+            old_members = list(iteritems(s.members)) # type: List[Tuple[GenomeKey, KnownGenome]]
             s.members = {}
             species.species[s.key] = s
 
@@ -147,8 +181,8 @@ class DefaultReproduction(DefaultClassConfig):
             old_members.sort(reverse=True, key=lambda x: x[1].fitness)
 
             # Transfer elites to new generation.
-            if self.reproduction_config.elitism > 0:
-                for i, m in old_members[:self.reproduction_config.elitism]:
+            if self.reproduction_config.elitism > 0: # type: ignore
+                for i, m in old_members[:self.reproduction_config.elitism]: # type: ignore
                     new_population[i] = m
                     spawn -= 1
 
@@ -156,7 +190,7 @@ class DefaultReproduction(DefaultClassConfig):
                 continue
 
             # Only use the survival threshold fraction to use as parents for the next generation.
-            repro_cutoff = int(math.ceil(self.reproduction_config.survival_threshold *
+            repro_cutoff = int(math.ceil(self.reproduction_config.survival_threshold * # type: ignore
                                          len(old_members)))
             # Use at least two parents no matter what the threshold fraction result is.
             repro_cutoff = max(repro_cutoff, 2)
@@ -166,13 +200,13 @@ class DefaultReproduction(DefaultClassConfig):
             while spawn > 0:
                 spawn -= 1
 
-                parent1_id, parent1 = random.choice(old_members)
-                parent2_id, parent2 = random.choice(old_members)
+                parent1_id, parent1 = random.choice(old_members) # type: GenomeKey, KnownGenome # XXX
+                parent2_id, parent2 = random.choice(old_members) # type: GenomeKey, KnownGenome # XXX
 
                 # Note that if the parents are not distinct, crossover will produce a
                 # genetically identical clone of the parent (but with a different ID).
-                gid = self.genome_indexer.get_next()
-                child = config.genome_type(gid)
+                gid = cast(GenomeKey,self.genome_indexer.get_next())
+                child = config.genome_type(gid) # type: KnownGenome # XXX
                 child.configure_crossover(parent1, parent2, config.genome_config)
                 child.mutate(config.genome_config)
                 new_population[gid] = child
