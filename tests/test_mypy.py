@@ -78,8 +78,12 @@ def test_mypy_wrapper():
     """Do testing vs mypy (3.3+ and possibly 2.7)"""
     do_mypy('testing_mypy.ini')
 
-    if ((sys.version_info.major == 3) and (sys.version_info.minor >= 6) and (sys.version_info.releaselevel == 'final')):
-        print("Also doing mypy testing vs 2.7")
+    minor_for_extra = 5
+    if 'TRAVIS' in os.environ:
+        minor_for_extra = 6
+
+    if ((sys.version_info.major == 3) and (sys.version_info.minor >= minor_for_extra) and (sys.version_info.releaselevel == 'final')):
+        print("Also doing mypy testing vs 2.7", file=sys.stderr)
         do_mypy('testing_mypy_2.7.ini')
 
 if __name__ == '__main__':
