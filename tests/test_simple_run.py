@@ -2,6 +2,7 @@ from __future__ import print_function
 import os
 import neat
 
+VERBOSE = True
 
 def eval_dummy_genome_nn(genome, config):
     net = neat.nn.FeedForwardNetwork.create(genome, config)
@@ -37,7 +38,7 @@ def test_serial():
     stats.save()
     # stats.save_genome_fitness(with_cross_validation=True)
 
-    stats.get_fitness_stdev()
+    assert isinstance(stats.get_fitness_stdev(),float)
     # stats.get_average_cross_validation_fitness()
     stats.best_unique_genomes(5)
     stats.best_genomes(5)
@@ -84,14 +85,15 @@ def test_serial_random():
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    print("config.genome_config.__dict__: {!r}".format(
-        config.genome_config.__dict__))
+    if VERBOSE:
+        print("config.genome_config.__dict__: {!r}".format(
+            config.genome_config.__dict__))
 
     # Create the population, which is the top-level object for a NEAT run.
     p = neat.Population(config)
 
     # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(True))
+    p.add_reporter(neat.StdOutReporter(VERBOSE))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(15, 1))
@@ -119,17 +121,18 @@ def test_serial3():
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    print("config.genome_config.__dict__: {!r}".format(
-        config.genome_config.__dict__))
+    if VERBOSE:
+        print("config.genome_config.__dict__: {!r}".format(
+            config.genome_config.__dict__))
 
     # Create the population, which is the top-level object for a NEAT run.
     p = neat.Population(config)
 
     # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(True))
+    p.add_reporter(neat.StdOutReporter(VERBOSE))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(1, 5))
+    p.add_reporter(neat.Checkpointer(15, 1))
 
     # Run for up to 45 generations.
     p.run(eval_dummy_genomes_nn, 45)
@@ -155,17 +158,18 @@ def test_serial4():
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    print("config.genome_config.__dict__: {!r}".format(
-        config.genome_config.__dict__))
+    if VERBOSE:
+        print("config.genome_config.__dict__: {!r}".format(
+            config.genome_config.__dict__))
 
     # Create the population, which is the top-level object for a NEAT run.
     p = neat.Population(config)
 
     # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(True))
+    p.add_reporter(neat.StdOutReporter(VERBOSE))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(1, 5))
+    p.add_reporter(neat.Checkpointer(15, 1))
 
     # Run for up to 45 generations.
     p.run(eval_dummy_genomes_nn, 45)
@@ -190,17 +194,18 @@ def test_serial5():
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    print("config.genome_config.__dict__: {!r}".format(
-        config.genome_config.__dict__))
+    if VERBOSE:
+        print("config.genome_config.__dict__: {!r}".format(
+            config.genome_config.__dict__))
 
     # Create the population, which is the top-level object for a NEAT run.
     p = neat.Population(config)
 
     # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(True))
+    p.add_reporter(neat.StdOutReporter(VERBOSE))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(1, 5))
+    p.add_reporter(neat.Checkpointer(15, 1))
 
     # Run for up to 45 generations.
     p.run(eval_dummy_genomes_nn, 45)
@@ -225,8 +230,9 @@ def test_serial4_bad():
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    print("config.genome_config.__dict__: {!r}".format(
-        config.genome_config.__dict__))
+    if VERBOSE:
+        print("config.genome_config.__dict__: {!r}".format(
+            config.genome_config.__dict__))
 
     # Create the population, which is the top-level object for a NEAT run.
     p = neat.Population(config)
@@ -331,14 +337,6 @@ def test_serial_extinction_no_exception():
     assert reporter.num_extinctions > 0, "No extinctions happened!"
 
     stats.save()
-    # stats.save_genome_fitness(with_cross_validation=True)
-
-    stats.get_fitness_stdev()
-    # stats.get_average_cross_validation_fitness()
-    stats.best_unique_genomes(5)
-    stats.best_genomes(5)
-    stats.best_genome()
-
     p.remove_reporter(stats)
 
 def test_parallel():
@@ -354,7 +352,7 @@ def test_parallel():
     p = neat.Population(config)
 
     # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(True))
+    p.add_reporter(neat.StdOutReporter(VERBOSE))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(1, 5))
@@ -473,7 +471,7 @@ def test_run_nn_recurrent():
     p = neat.Population(config)
 
     # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(True))
+    p.add_reporter(neat.StdOutReporter(VERBOSE))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(1, 5))
@@ -535,7 +533,7 @@ def test_run_ctrnn():
     p = neat.Population(config)
 
     # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(True))
+    p.add_reporter(neat.StdOutReporter(VERBOSE))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(1, 5))
@@ -544,6 +542,12 @@ def test_run_ctrnn():
     p.run(eval_dummy_genomes_ctrnn, 19)
 
     stats.save()
+
+    assert len(stats.best_unique_genomes(5)) == 5
+    assert len(stats.best_genomes(5)) == 5
+    stats.best_genome()
+
+    p.remove_reporter(stats)
 
 
 def eval_dummy_genomes_iznn(genomes, config):
@@ -572,18 +576,24 @@ def test_run_iznn():
     p = neat.Population(config)
 
     # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(False))
+    p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(2, 10))
 
-    # Run for up to 300 generations.
+    # Run for up to 20 generations.
     p.run(eval_dummy_genomes_iznn, 20)
 
     stats.save()
 
+    assert len(stats.best_unique_genomes(5)) == 5
+    assert len(stats.best_genomes(5)) == 5
+    stats.best_genome()
+
+    p.remove_reporter(stats)
 
 if __name__ == '__main__':
+    VERBOSE = False
     test_serial()
     test_serial_random()
     test_serial3()
