@@ -31,14 +31,14 @@ def test_serial():
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(1, 5))
-
+    
     # Run for up to 19 generations.
     p.run(eval_dummy_genomes_nn, 19)
 
     stats.save()
     # stats.save_genome_fitness(with_cross_validation=True)
 
-    assert isinstance(stats.get_fitness_stdev(),float)
+    assert len(stats.get_fitness_stdev())
     # stats.get_average_cross_validation_fitness()
     stats.best_unique_genomes(5)
     stats.best_genomes(5)
@@ -512,7 +512,7 @@ def test_run_nn_recurrent_bad():
 def eval_dummy_genomes_ctrnn(genomes, config):
     for genome_id, genome in genomes:
         net = neat.ctrnn.CTRNN.create(genome, config, 0.01)
-        if genome_id < 150:
+        if genome_id <= 150:
             genome.fitness = 0.0
         else:
             net.reset()
@@ -543,8 +543,10 @@ def test_run_ctrnn():
 
     stats.save()
 
-    assert len(stats.best_unique_genomes(5)) == 5
-    assert len(stats.best_genomes(5)) == 5
+    unique_genomes = stats.best_unique_genomes(5)
+    assert 1 <= len(unique_genomes) <= 5, "Unique genomes: {!r}".format(unique_genomes)
+    genomes = stats.best_genomes(5)
+    assert 1 <= len(genomes) <= 5, "Genomes: {!r}".format(genomes)
     stats.best_genome()
 
     p.remove_reporter(stats)
@@ -556,6 +558,8 @@ def eval_dummy_genomes_iznn(genomes, config):
         if genome_id < 10:
             net.reset()
             genome.fitness = 0.0
+        elif genome_id <= 150:
+            genome.fitness = 0.5
         else:
             genome.fitness = 1.0
 
@@ -563,7 +567,9 @@ def eval_dummy_genomes_iznn(genomes, config):
 def test_run_iznn():
     """
     Basic test of spiking neural network (iznn).
-    TODO: Takes the longest of any of the tests in this file, by far. Why?
+    [TODO: Takes the longest of any of the tests in this file, by far. Why?]
+    Was because had population of 290 thanks to too much speciation -
+    too-high compatibility_weight_coefficient relative to range for weights.
     """
     # Load configuration.
     local_dir = os.path.dirname(__file__)
@@ -586,8 +592,10 @@ def test_run_iznn():
 
     stats.save()
 
-    assert len(stats.best_unique_genomes(5)) == 5
-    assert len(stats.best_genomes(5)) == 5
+    unique_genomes = stats.best_unique_genomes(5)
+    assert 1 <= len(unique_genomes) <= 5, "Unique genomes: {!r}".format(unique_genomes)
+    genomes = stats.best_genomes(5)
+    assert len(genomes) == 5, "Genomes: {!r}".format(genomes)
     stats.best_genome()
 
     p.remove_reporter(stats)
@@ -604,3 +612,9 @@ if __name__ == '__main__':
     test_serial_extinction_exception()
     test_serial_extinction_no_exception()
     test_parallel()
+    test_threaded_evaluation()
+    test_threaded_evaluator()
+    test_run_nn_recurrent()
+    test_run_nn_recurrent_bad()
+    test_run_ctrnn()
+    test_run_iznn()
