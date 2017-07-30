@@ -22,6 +22,7 @@ class BaseGene(object):
         return '{0}({1})'.format(self.__class__.__name__, ", ".join(attrib))
 
     def __lt__(self, other):
+        assert isinstance(self.key,type(other.key)), "Cannot compare keys {0!r} and {1!r}".format(self.key,other.key)
         return self.key < other.key
 
     @classmethod
@@ -90,6 +91,10 @@ class DefaultNodeGene(BaseGene):
                         FuncAttribute('activation', options='sigmoid'),
                         FuncAttribute('aggregation', options='sum')]
 
+    def __init__(self, key):
+        assert isinstance(key, int), "DefaultNodeGene key must be an int, not {!r}".format(key)
+        BaseGene.__init__(self, key)
+
     def distance(self, other, config):
         """Returns the genetic distance between two node genes."""
         d = abs(self.bias - other.bias) + abs(self.response - other.response)
@@ -108,10 +113,17 @@ class DefaultNodeGene(BaseGene):
 
 # TODO: Do an ablation study to determine whether the enabled setting is
 # important--presumably mutations that set the weight to near zero could
-# provide a similar effect depending on the weight range and mutation rate.
+# provide a similar effect depending on the weight range, mutation rate,
+# and aggregation function. (Most obviously, a near-zero weight for the
+# `product` aggregation function is rather more important than one giving
+# an output of 1 from the connection, for instance!)
 class DefaultConnectionGene(BaseGene):
     _gene_attributes = [FloatAttribute('weight'),
                         BoolAttribute('enabled')]
+
+    def __init__(self, key):
+        assert isinstance(key, tuple), "DefaultConnectionGene key must be a tuple, not {!r}".format(key)
+        BaseGene.__init__(self, key)
 
     def distance(self, other, config):
         """Returns the genetic distance between two connection genes."""

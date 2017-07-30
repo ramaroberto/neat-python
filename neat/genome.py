@@ -1,6 +1,8 @@
 """Handles genomes (individuals in the population)."""
 from __future__ import division, print_function
 
+
+from itertools import count
 from random import choice, random, shuffle
 
 import sys
@@ -10,7 +12,6 @@ from neat.aggregations import AggregationFunctionSet
 from neat.config import ConfigParameter, write_pretty_params
 from neat.genes import DefaultConnectionGene, DefaultNodeGene
 from neat.graphs import creates_cycle
-from neat.indexer import Indexer
 from neat.multiparameter import MultiParameterSet
 from neat.six_util import iteritems, iterkeys
 
@@ -111,9 +112,9 @@ class DefaultGenomeConfig(object):
 
     def get_new_node_key(self, node_dict):
         if self.node_indexer is None:
-            self.node_indexer = Indexer(max(list(iterkeys(node_dict)))+1)
+            self.node_indexer = count(max(list(iterkeys(node_dict))) + 1)
 
-        new_id = self.node_indexer.get_next()
+        new_id = next(self.node_indexer)
 
         assert new_id not in node_dict
 
@@ -235,6 +236,8 @@ class DefaultGenome(object):
 
     def configure_crossover(self, genome1, genome2, config):
         """ Configure a new genome by crossover from two parent genomes. """
+        assert isinstance(genome1.fitness, (int, float))
+        assert isinstance(genome2.fitness, (int, float))
         if genome1.fitness > genome2.fitness:
             parent1, parent2 = genome1, genome2
         else:
@@ -324,7 +327,11 @@ class DefaultGenome(object):
         self.add_connection(config, new_node_id, o, conn_to_split.weight, True)
 
     def add_connection(self, config, input_key, output_key, weight, enabled):
-        # TODO: Add validation of this connection addition.
+        # TODO: Add further validation of this connection addition?
+        assert isinstance(input_key, int)
+        assert isinstance(output_key, int)
+        assert output_key >= 0
+        assert isinstance(enabled, bool)
         key = (input_key, output_key)
         connection = config.connection_gene_type(key)
         connection.init_attributes(config)

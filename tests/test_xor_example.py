@@ -41,6 +41,9 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
 
     if uniform_weights:
         config.genome_config.weight_init_type = 'uniform'
+        filename_prefix = 'neat-checkpoint-test_xor_uniform-'
+    else:
+        filename_prefix = 'neat-checkpoint-test_xor-'
 
     if activation_default is not None:
         config.genome_config.activation_default = activation_default
@@ -59,7 +62,7 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    checkpointer = neat.Checkpointer(25, 10)
+    checkpointer = neat.Checkpointer(25, 10, filename_prefix)
     p.add_reporter(checkpointer)
 
     # Run for up to 100 generations, allowing extinction.
@@ -85,7 +88,7 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
             print("input {!r}, expected output {!r}, got {!r}".format(xi, xo, output))
 
     if (checkpointer.last_generation_checkpoint >= 0) and (checkpointer.last_generation_checkpoint < 100):
-        filename = 'neat-checkpoint-{0}'.format(checkpointer.last_generation_checkpoint)
+        filename = '{0}{1}'.format(filename_prefix,checkpointer.last_generation_checkpoint)
         print("Restoring from {!s}".format(filename))
         p2 = neat.checkpoint.Checkpointer.restore_checkpoint(filename)
         p2.add_reporter(neat.StdOutReporter(True))
@@ -110,4 +113,3 @@ if __name__ == '__main__':
     test_xor_example_uniform_weights()
     test_xor_example_multiparam_relu()
     test_xor_example_multiparam_sigmoid_or_relu()
-

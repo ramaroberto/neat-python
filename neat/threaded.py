@@ -1,6 +1,8 @@
 """Threaded evaluation of genomes"""
 from __future__ import print_function
 
+import warnings
+
 try:
     import threading
 except ImportError: # pragma: no cover
@@ -15,8 +17,6 @@ try:
 except ImportError:
     # pylint: disable=import-error
     import queue
-
-from sys import stderr
 
 class ThreadedEvaluator(object):
     """
@@ -36,8 +36,7 @@ class ThreadedEvaluator(object):
         self.outqueue = queue.Queue()
 
         if not HAVE_THREADS: # pragma: no cover
-            print("No threads available; use ParallelEvaluator, not ThreadedEvaluator",
-                  file=stderr)
+            warnings.warn("No threads available; use ParallelEvaluator, not ThreadedEvaluator")
 
     def __del__(self):
         """
@@ -48,7 +47,7 @@ class ThreadedEvaluator(object):
         """
         if self.working:
             self.stop()
-            
+
     def start(self):
         """Starts the worker threads"""
         if self.working:

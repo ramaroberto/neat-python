@@ -15,6 +15,10 @@ def median(values):
     return values[len(values) // 2]
 
 def median2(values):
+    """
+    Returns the median of the input values;
+    if there are an even number of inputs, returns the mean of the middle two.
+    """
     values = list(values)
     n = len(values)
     if n <= 2:
@@ -38,9 +42,8 @@ def stdev(values):
 def softmax(values):
     """
     Compute the softmax of the given value set, v_i = exp(v_i) / s,
-    where s = sum(exp(v_0), exp(v_1), ..).
-    """
-    e_values = map(exp, values)
+    where s = sum(exp(v_0), exp(v_1), ..)."""
+    e_values = list(map(exp, values))
     s = sum(e_values)
     inv_s = 1.0 / s
     return [ev * inv_s for ev in e_values]
