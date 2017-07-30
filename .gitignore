@@ -1,6 +1,7 @@
 .coveralls.yml
 docs/_build/**
 _build/**
+docs/activation-tmp-*
 cover
 .coverage
 neat-checkpoint-*
