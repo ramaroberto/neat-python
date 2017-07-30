@@ -78,7 +78,7 @@ author = u'CodeReclaimers, LLC'
 # The short X.Y version.
 version = '0.92'
 # The full version, including alpha/beta/rc tags.
-release = '0.92'
+release = '0.92-multiparam_funcs'
 
 if version != release:
   tags.add('draft')
