@@ -1,11 +1,13 @@
 from __future__ import print_function
+
 import os
+
 import neat
 
-def test_xor_example_uniform():
-    test_xor_example(True)
+def test_xor_example_uniform_weights():
+    test_xor_example(uniform_weights=True)
 
-def test_xor_example(uniform=False):
+def test_xor_example(uniform_weights=False):
     # 2-input XOR inputs and expected outputs.
     xor_inputs = [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]
     xor_outputs = [(0.0,), (1.0,), (1.0,), (0.0,)]
@@ -29,8 +31,11 @@ def test_xor_example(uniform=False):
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    if uniform:
+    if uniform_weights:
         config.genome_config.weight_init_type = 'uniform'
+        filename_prefix = 'neat-checkpoint-test_xor_uniform-'
+    else:
+        filename_prefix = 'neat-checkpoint-test_xor-'
 
     # Create the population, which is the top-level object for a NEAT run.
     p = neat.Population(config)
@@ -39,10 +44,10 @@ def test_xor_example(uniform=False):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    checkpointer = neat.Checkpointer(25, 10)
+    checkpointer = neat.Checkpointer(25, 10, filename_prefix)
     p.add_reporter(checkpointer)
 
-    # Run for up to 300 generations, allowing extinction.
+    # Run for up to 100 generations, allowing extinction.
     winner = None
     try:
         winner = p.run(eval_genomes, 100)
@@ -52,7 +57,7 @@ def test_xor_example(uniform=False):
     assert len(stats.get_fitness_median()), "Nothing returned from get_fitness_median()"
 
     if winner:
-        if uniform:
+        if uniform_weights:
             print('\nUsing uniform weight initialization:')
         # Display the winning genome.
         print('\nBest genome:\n{!s}'.format(winner))
@@ -65,7 +70,7 @@ def test_xor_example(uniform=False):
             print("input {!r}, expected output {!r}, got {!r}".format(xi, xo, output))
 
     if (checkpointer.last_generation_checkpoint >= 0) and (checkpointer.last_generation_checkpoint < 100):
-        filename = 'neat-checkpoint-{0}'.format(checkpointer.last_generation_checkpoint)
+        filename = '{0}{1}'.format(filename_prefix,checkpointer.last_generation_checkpoint)
         print("Restoring from {!s}".format(filename))
         p2 = neat.checkpoint.Checkpointer.restore_checkpoint(filename)
         p2.add_reporter(neat.StdOutReporter(True))
@@ -84,6 +89,10 @@ def test_xor_example(uniform=False):
         elif winner:
             raise Exception("Had first-try winner without winner2")
 
+
 if __name__ == '__main__':
     test_xor_example()
-    test_xor_example_uniform()
+    test_xor_example_uniform_weights()
+    test_xor_example_multiparam_relu()
+    test_xor_example_multiparam_sigmoid_or_relu()
+    test_xor_example_multiparam_aggregation()
