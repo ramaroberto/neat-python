@@ -12,10 +12,17 @@ def test_xor_example_multiparam_sigmoid_or_relu():
                      activation_default='random',
                      activation_options=['multiparam_sigmoid','relu'])
 
+def test_xor_example_multiparam_aggregation():
+    test_xor_example(uniform_weights=True,
+                     activation_default='multiparam_sigmoid',
+                     aggregation_default='random',
+                     aggregation_options=['sum','max_median_min','maxabs_mean'])
+
 def test_xor_example_uniform_weights():
     test_xor_example(uniform_weights=True)
 
-def test_xor_example(uniform_weights=False, activation_default=None, activation_options=None):
+def test_xor_example(uniform_weights=False, activation_default=None, activation_options=None,
+                     aggregation_default=None, aggregation_options=None):
     # 2-input XOR inputs and expected outputs.
     xor_inputs = [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]
     xor_outputs = [(0.0,), (1.0,), (1.0,), (0.0,)]
@@ -41,9 +48,6 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
 
     if uniform_weights:
         config.genome_config.weight_init_type = 'uniform'
-        filename_prefix = 'neat-checkpoint-test_xor_uniform-'
-    else:
-        filename_prefix = 'neat-checkpoint-test_xor-'
 
     if activation_default is not None:
         config.genome_config.activation_default = activation_default
@@ -55,6 +59,16 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
         if len(activation_options) > 1:
             config.genome_config.activation_mutate_rate = 0.1
 
+    if aggregation_default is not None:
+        config.genome_config.aggregation_default = aggregation_default
+        if aggregation_options is None:
+            config.genome_config.aggregation_options = [aggregation_default]
+
+    if aggregation_options is not None:
+        config.genome_config.aggregation_options = aggregation_options
+        if len(aggregation_options) > 1:
+            config.genome_config.aggregation_mutate_rate = 0.1
+
     # Create the population, which is the top-level object for a NEAT run.
     p = neat.Population(config)
 
@@ -62,7 +76,7 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    checkpointer = neat.Checkpointer(25, 10, filename_prefix)
+    checkpointer = neat.Checkpointer(25, 10)
     p.add_reporter(checkpointer)
 
     # Run for up to 100 generations, allowing extinction.
@@ -88,7 +102,7 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
             print("input {!r}, expected output {!r}, got {!r}".format(xi, xo, output))
 
     if (checkpointer.last_generation_checkpoint >= 0) and (checkpointer.last_generation_checkpoint < 100):
-        filename = '{0}{1}'.format(filename_prefix,checkpointer.last_generation_checkpoint)
+        filename = 'neat-checkpoint-{0}'.format(checkpointer.last_generation_checkpoint)
         print("Restoring from {!s}".format(filename))
         p2 = neat.checkpoint.Checkpointer.restore_checkpoint(filename)
         p2.add_reporter(neat.StdOutReporter(True))
@@ -113,3 +127,4 @@ if __name__ == '__main__':
     test_xor_example_uniform_weights()
     test_xor_example_multiparam_relu()
     test_xor_example_multiparam_sigmoid_or_relu()
+    test_xor_example_multiparam_aggregation()
