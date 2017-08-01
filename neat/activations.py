@@ -100,13 +100,15 @@ def clamped_tanh_step_activation(z, a):
     tanh_weight = 1.0-abs(a)
 
     if a > 0.0:
-        return (((1.0-tanh_weight)*clamped_activation(z)) +
-                (tanh_weight*tanh_activation(z)))
+        to_return = (((1.0-tanh_weight)*clamped_activation(z)) +
+                     (tanh_weight*tanh_activation(z)))
     if a < 0.0:
-        return (((1.0-tanh_weight)*step_activation(z)) +
-                (tanh_weight*tanh_activation(z)))
+        to_return = (((1.0-tanh_weight)*step_activation(z)) +
+                     (tanh_weight*tanh_activation(z)))
     
-    return tanh_activation(z)
+    to_return = tanh_activation(z)
+
+    return max(-1.0,min(1.0,to_return))
 
 
 def multiparam_sigmoid_activation(z, a):
