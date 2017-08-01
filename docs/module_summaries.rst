@@ -15,19 +15,16 @@ Has the built-in :term:`activation functions <activation function>`, code for us
 
   .. py:exception:: InvalidActivationFunction(TypeError)
 
-    Exception called if an activation function being added is invalid according to the `validate_activation` function, or if an unknown activation
+    Exception called if an activation function being added is invalid according to the `MultiParameterSet.add_func` method, or if an unknown activation
     function is requested by name via :py:meth:`get <ActivationFunctionSet.get()>`.
 
     .. versionchanged:: 0.92
       Base of exception changed to more-precise TypeError.
 
-  .. py:function:: validate_activation(function)
-
-    Checks to make sure its parameter is a function that takes a single argument.
-
-    :param function: Object to be checked.
-    :type function: :datamodel:`object <objects-values-and-types>`
-    :raises InvalidActivationFunction: If the object does not pass the tests.
+    .. deprecated:: 0.92-multiparam_funcs
+      This is now an alias for :py:exc:`BadFunctionError`, which is itself based on both TypeError and LookupError. Use either it, or preferably
+      one of its two subclasses, :py:exc:`InvalidFunctionError` (for unusable functions; based on TypeError) or :py:exc:`UnknownFunctionError`
+      (for unknown functions requested by name; based on LookupError).
 
   .. py:class:: ActivationFunctionSet
 
@@ -35,7 +32,7 @@ Has the built-in :term:`activation functions <activation function>`, code for us
 
     .. py:method:: add(name, function)
 
-      After validating the function (via `validate_activation`), adds it to the available activation functions under the given name. Used
+      After validating the function, adds it to the available activation functions under the given name. Used
       by :py:meth:`DefaultGenomeConfig.add_activation <genome.DefaultGenomeConfig.add_activation>`.
 
       :param str name: The name by which the function is to be known in the :ref:`configuration file <activation-function-config-label>`.
@@ -145,20 +142,15 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
 
   .. py:exception:: InvalidAggregationFunction(TypeError)
 
-    Exception called if an aggregation function being added is invalid according to the `validate_aggregation` function, or if an unknown aggregation
+    Exception called if an aggregation function being added is invalid according to the `MultiParameterSet.add_func` method, or if an unknown aggregation
     function is requested by name via :py:meth:`get <AggregationFunctionSet.get()>`.
 
     .. versionadded:: 0.92
 
-  .. py:function:: validate_aggregation(function)
-
-    Checks to make sure its parameter is a function that takes at least one argument.
-
-    :param function: Object to be checked.
-    :type function: :datamodel:`object <objects-values-and-types>`
-    :raises InvalidAggregationFunction: If the object does not pass the tests.
-
-    .. versionadded:: 0.92
+    .. deprecated:: 0.92-multiparam_funcs
+      This is now an alias for :py:exc:`BadFunctionError`, which is itself based on both TypeError and LookupError. Use either it, or preferably
+      one of its two subclasses, :py:exc:`InvalidFunctionError` (for unusable functions; based on TypeError) or :py:exc:`UnknownFunctionError`
+      (for unknown functions requested by name; based on LookupError).
 
   .. py:class:: AggregationFunctionSet
 
@@ -1699,7 +1691,7 @@ functions (such as for the :ref:`species_fitness_func <species-fitness-func-labe
 
   .. py:function:: softmax(values)
 
-    Compute the softmax (a differentiable/smooth approximization of the maximum function) of the given value set.
+    Compute the softmax (a differentiable/smooth approximation of the maximum function, scaled from 0-1) of the given value set.
     (See the `Wikipedia entry <https://en.wikipedia.org/wiki/Softmax_function>`_ for more on softmax. Envisioned as useful for postprocessing of network output.)
 
     :param values: Numbers to get the softmax of.
@@ -1709,6 +1701,13 @@ functions (such as for the :ref:`species_fitness_func <species-fitness-func-labe
 
     .. versionchanged:: 0.92
       Previously not functional on Python 3.X due to changes to map.
+
+.. py:module:: multiparameter
+   :synopsis: The basis for multiparameter activation and aggregation functions.
+
+multiparameter
+--------------------
+The basis for multiparameter activation and aggregation functions.
 
 .. py:module:: nn.feed_forward
    :synopsis: A straightforward feed-forward neural network NEAT implementation.

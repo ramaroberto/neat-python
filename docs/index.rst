@@ -1,6 +1,12 @@
 Welcome to NEAT-Python's documentation!
 =======================================
 
+.. todo::
+  This is a **draft** version of the documentation, for Dr. Allen Smith's `multiparam_funcs branch <https://github.com/drallensmith/neat-python/tree/multiparam_funcs>`_,
+  and is likely to *rapidly* change. Please see `neat-python.readthedocs.io <http://neat-python.readthedocs.io/en/latest/>`_ for an official version for the
+  NEAT-Python `master branch <https://github.com/CodeReclaimers/neat-python/tree/master>`_.
+
+
 :abbr:`NEAT (NeuroEvolution of Augmenting Topologies)` is a method developed by Kenneth O. Stanley for evolving arbitrary neural
 networks. NEAT-Python is a pure Python implementation of NEAT, with no dependencies other than the Python standard library.
 
