@@ -1,6 +1,6 @@
 """
 Enables the use of activation and aggregation functions
-with multiple evolvable numeric parameters.
+with, as well as the usual input, one or more evolvable numeric parameters.
 """
 ##from __future__ import print_function
 
@@ -46,17 +46,19 @@ class MultiParameterFunctionInstance(object):
 
     def distance(self, other):
         if not isinstance(other, MultiParameterFunctionInstance):
-            return 1
+            return 1.0
 
         if self.name != other.name:
-            return 1
+            return 1.0
+        if self.instance_name == other.instance_name:
+            return 0.0
 
         total_diff = 0.0
         for n in self.evolved_param_names:
             diff = abs(self.current_param_values[n] -
                        other.current_param_values[n])
             param_dict = self.evolved_param_dicts[n]
-            total_diff += diff / max(1,abs(param_dict['max_value'] - param_dict['min_value']))
+            total_diff += diff / max(1.0,abs(param_dict['max_value'] - param_dict['min_value']))
         return total_diff
 
     def copy(self):
@@ -74,8 +76,11 @@ class MultiParameterFunctionInstance(object):
         return self.copy()
 
     def get_func(self):
-        return functools.partial(self.user_func, **self.current_param_values)
-        
+        partial = functools.partial(self.user_func, **self.current_param_values)
+        setattr(partial, '__name__', self.instance_name)
+        if hasattr(self.user_func, '__doc__'):
+            setattr(partial, '__doc__', self.user_func.__doc__)
+        return partial
 
 class MultiParameterFunction(object):
     """Holds and initializes configuration information for one multiparameter function."""
@@ -122,7 +127,13 @@ class MultiParameterFunction(object):
     def init_instance(self):
         return MultiParameterFunctionInstance(self.orig_name, self)
 
-class InvalidFunctionError(TypeError):
+class BadFunctionError(Exception):
+    pass
+
+class InvalidFunctionError(TypeError, BadFunctionError):
+    pass
+
+class UnknownFunctionError(LookupError, BadFunctionError):
     pass
 
 class MultiParameterSet(object):
@@ -151,48 +162,61 @@ class MultiParameterSet(object):
             raise InvalidFunctionError("Called with uncertain name '{!s}'".format(name))
         return name in self.multiparam_func_dict[which_type]
 
-    def init_multiparameter(self, name, instance, ignored_config):
+    def init_multiparameter(self, name, instance, ignored_config=None):
         which_type = instance.name
         multiparam_func_dict = self.multiparam_func_dict[which_type]
         multiparam_func = multiparam_func_dict[name]
         return multiparam_func.init_instance()
+
+    def get_MPF(self,
+                name, # type: str
+                which_type # type: str
+                ):
+        # type: (...) -> MultiParameterFunction
+
+        if name in self.multiparam_func_dict[which_type]:
+            mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]
+            return mpfunc_dict[name] # Allows for altering configuration, although tricky re initialization + already-existing ones
+        raise UnknownFunctionError("Unknown {!s} function {!r}".format(which_type,name))
 
     def get_func(self, name, which_type):
         """
         Figures out what function, or function instance for multiparameter functions,
         is needed, and returns it.
         """
+        if isinstance(name, MultiParameterFunctionInstance):
+            return name.get_func()
+        if hasattr(name, 'get_func'):
+            return name.get_func()
+
         if name in self.norm_func_dict[which_type]:
             func_dict = self.norm_func_dict[which_type]
             return func_dict[name]
 
-        if hasattr(name, 'get_func'):
-            return name.get_func()
-
-        if name in self.multiparam_func_dict[which_type]:
-            func_dict = self.multiparam_func_dict[which_type]
-            return func_dict[name] # Allows for altering configuration
-
         if not name.endswith(')'):
-            raise LookupError("Unknown function {!r} - no end )".
-                              format(name))
+            raise UnknownFunctionError("Unknown {!s} function {!r} - no end )".
+                                       format(which_type,name))
 
         param_start = name.find('(')
         if param_start < 0:
-            raise LookupError("Unknown function {!r} - no start (".
-                              format(name))
+            raise UnknownFunctionError("Unknown {!s} function {!r} - no start (".
+                                       format(which_type,name))
 
         func_name = name[:(param_start-1)]
         if not func_name in self.multiparam_func_dict[which_type]:
-            raise LookupError("Unknown function {!r} (from {!r})".
-                              format(func_name,name))
+            raise UnknownFunctionError("Unknown {0!s} function {1!r} (from {2!r})".
+                                       format(which_type,func_name,name))
         multiparam_func = self.multiparam_func_dict[which_type][func_name]
 
         param_nums = map(float, name[(param_start+1):(len(name)-2)].split(','))
 
         params = dict(zip(multiparam_func.evolved_param_names, param_nums))
 
-        return functools.partial(multiparam_func.user_func, **params)
+        partial = functools.partial(multiparam_func.user_func, **params)
+        setattr(partial, '__name__', name)
+        if hasattr(multiparam_func.user_func, '__doc__'):
+            setattr(partial, '__doc__', multiparam_func.user_func.__doc__)
+        return partial
 
     def add_func(self, name, user_func, which_type, **kwargs):
         """Adds a new activation/aggregation function, potentially multiparameter."""
@@ -200,7 +224,22 @@ class MultiParameterSet(object):
                           (types.BuiltinFunctionType,
                            types.FunctionType,
                            types.LambdaType)):
-            raise InvalidFunctionError("A function object is required.")
+            raise InvalidFunctionError("A function object is required, not {0!r} ({1!s})".format(
+                user_func, name))
+
+        if isinstance(user_func, types.BuiltinFunctionType): # TODO: Test!
+            if kwargs:
+                raise InvalidFunctionError(
+                    "Cannot use built-in function {0!r} ({1!s}) as multiparam {2!s} function - needs wrapping".format(
+                        user_func, name, which_type))
+            nfunc_dict = self.norm_func_dict[which_type]
+            nfunc_dict[name] = user_func
+            return
+
+        if not hasattr(user_func, '__code__'):
+            raise InvalidFunctionError(
+                "An object with __code__ attribute is required, not {0!r} ({1!s})".format(user_func,
+                                                                                          name))
         
         func_code = user_func.__code__
         if func_code.co_argcount != (len(kwargs)+1):

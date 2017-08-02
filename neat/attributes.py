@@ -1,10 +1,14 @@
 """Deals with the attributes (variable parameters) of genes"""
 #from __future__ import print_function
-#from copy import deepcopy
+from copy import copy
 from random import choice, gauss, random, uniform
+from sys import version_info
 
 from neat.config import ConfigParameter
 from neat.six_util import iterkeys, iteritems
+
+if version_info.major > 2:
+    unicode = str # pylint: disable=redefined-builtin
 
 # TODO: There is probably a lot of room for simplification of these classes using metaprogramming.
 
@@ -131,8 +135,8 @@ class BoolAttribute(BaseAttribute):
 
 class StringAttribute(BaseAttribute):
     """
-    Class for string attributes such as the aggregation function of a node,
-    which are selected from a list of options.
+    Class for string attributes (such as, previously, the aggregation function of a node)
+    that are selected from a list of options.
     """
     _config_items = {"default": [str, 'random'],
                      "options": [list, None],
@@ -161,11 +165,13 @@ class StringAttribute(BaseAttribute):
     def validate(self, config): # pragma: no cover
         pass
 
-class FuncAttribute(StringAttribute):
+class FuncAttribute(BaseAttribute):
     """
     Handle attributes that may be simple strings
     or may be functions needing multiparameter handling.
     """
+    _config_items = copy(StringAttribute._config_items)
+    
     def init_value(self, config):
         default = getattr(config, self.default_name)
 
@@ -175,6 +181,9 @@ class FuncAttribute(StringAttribute):
 
         if hasattr(default, 'init_value'):
             default.init_value(config)
+        elif not isinstance(value, (str, unicode)): # put in test for
+            raise RuntimeError("Unknown what to do with value {0!r} for {1!s}".format(value,
+                                                                                      self.name))
         elif hasattr(config, 'multiparameterset'):
             multiparam = config.multiparameterset
 
@@ -196,6 +205,9 @@ class FuncAttribute(StringAttribute):
         if hasattr(value, 'mutate_value'):
             #print("Accessing mutate_value function of {!r}".format(value))
             value.mutate_value(config)
+        elif not isinstance(value, (str, unicode)): # put in test for
+            raise RuntimeError("Unknown what to do with value {0!r} for {1!s}".format(value,
+                                                                                      self.name))
         elif hasattr(config, 'multiparameterset'):
             multiparam = config.multiparameterset
             if multiparam.is_multiparameter(value, self.name):

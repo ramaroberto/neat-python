@@ -8,6 +8,7 @@ import warnings
 from operator import mul
 
 from neat.multiparameter import MultiParameterSet
+from neat.multiparameter import BadFunctionError as InvalidAggregationFunction # pylint: disable=unused-import
 from neat.math_util import mean, median2
 
 if sys.version_info[0] > 2:

@@ -95,6 +95,13 @@ class DefaultGenomeConfig(object):
     def add_aggregation(self, name, func, **kwargs):
         self.aggregation_function_defs.add(name, func, **kwargs)
 
+    def get_activation_MPF(self, name):
+        return self.multiparameterset.get_MPF(name, 'activation')
+
+    def get_aggregation_MPF(self, name):
+        return self.multiparameterset.get_MPF(name, 'aggregation')
+
+
     def save(self, f):
         if 'partial' in self.initial_connection:
             if not (0 <= self.connection_fraction <= 1):
