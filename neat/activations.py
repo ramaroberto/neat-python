@@ -8,6 +8,7 @@ from __future__ import division
 import math
 import warnings
 from neat.multiparameter import MultiParameterSet
+from neat.multiparameter import BadFunctionError as InvalidActivationFunction # pylint: disable=unused-import
 
 def sigmoid_activation(z):
     z = max(-60.0, min(60.0, 5.0 * z))
