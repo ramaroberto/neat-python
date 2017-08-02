@@ -1,3 +1,4 @@
+.. index:: examples
 
 Overview of the basic XOR example (xor2.py)
 ===========================================

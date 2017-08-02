@@ -156,6 +156,8 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
 
     Contains the list of current valid aggregation functions, including methods for adding and getting them.
 
+    .. index:: TODO
+
     .. py:method:: add(name, function)
 
       After validating the function (via `validate_aggregation`), adds it to the available activation functions under the given name. Used
@@ -376,6 +378,7 @@ Deals with :term:`attributes` used by :term:`genes <gene>`.
     .. index:: ! mutation
     .. index:: mutate_rate
     .. index:: ! X_options
+    .. index:: TODO
 
     .. py:method:: mutate_value(value, config)
 
@@ -525,6 +528,8 @@ Does general configuration parsing; used by other classes for their configuratio
     :param params: List of :py:class:`ConfigParameter` instances giving the names of interest and the types of parameters.
     :type params: list(:datamodel:`instance <index-48>`)
 
+  .. index:: TODO
+
   .. py:exception:: UnknownConfigItemError(NameError)
 
     Error for unknown configuration option(s) - partially to catch typos. TODO: :py:class:`genome.DefaultGenomeConfig` does not currently check for these.
@@ -671,6 +676,8 @@ distributed
 --------------
   Distributed evaluation of genomes.
 
+  .. index:: TODO
+
   .. note::
 
     This module is in a **beta** state, and still *unstable* even in single-machine testing. Reliability is likely to vary, including depending on the Python version
@@ -774,6 +781,8 @@ distributed
     :param int mode: Specifies the mode to run in - must be one of :py:data:`MODE_AUTO`, :py:data:`MODE_PRIMARY`, or :py:data:`MODE_SECONDARY`. Processed by :py:func:`_determine_mode()`.
     :param bool start: Whether to call the :py:meth:`start()` method after initialization.
 
+    .. index:: TODO
+
     .. py:method:: __reduce__()
 
       Used by `pickle` to serialize instances of this class. TODO: Appears to assume that ``start`` (for initialization) should be true; perhaps ``self.manager``
@@ -785,6 +794,8 @@ distributed
     .. py:method:: start()
 
       Starts (if in :py:data:`MODE_PRIMARY`) or connects to (if in :py:data:`MODE_SECONDARY`) the manager.
+
+    .. index:: TODO
 
     .. py:method:: stop()
 
@@ -899,6 +910,8 @@ distributed
       :param bool force_secondary_shutdown: Causes secondaries to shutdown even if started with ``reconnect`` true (via setting the ``secondary_state`` to :py:data:`_STATE_FORCED_SHUTDOWN` instead of :py:data:`_STATE_SHUTDOWN`).
       :raises ModeError: If not the :term:`primary node` (not in :py:data:`MODE_PRIMARY`).
       :raises RuntimeError: If not yet :py:meth:`started <start()>`.
+
+    .. index:: TODO
 
     .. py:method:: evaluate(genomes, config)
 
@@ -1076,6 +1089,7 @@ Handles genomes (individuals in the population).
   .. index:: num_hidden
   .. index:: num_outputs
   .. index:: num_inputs
+  .. index:: TODO
 
   .. py:class:: DefaultGenomeConfig(params)
 
@@ -1128,11 +1142,15 @@ Handles genomes (individuals in the population).
 
     .. index:: ! key
 
+    .. index:: TODO
+
     .. py:method:: get_new_node_key(node_dict)
 
       Finds the next unused node :term:`key`. TODO: Explore using the same :term:`node` key if a particular connection is replaced in more than
       one genome in the same generation (use a :py:meth:`reporting.BaseReporter.end_generation` method to wipe a dictionary of connection tuples
-      versus node keys).
+      versus node keys). One could even extend this beyond one generation, with the removal of the old keys from further use triggered by one of the
+      existing nodes with that key acquiring a new connection. Question: If two nodes are otherwise very different (perhaps as measured by
+      :term:`genetic distance`, treating them as homologous for purposes of the check), should they still have the same key, even if they replaced the same connection?
 
       :param node_dict: A dictionary of node keys vs nodes
       :type node_dict: dict(int, :datamodel:`instance <index-48>`)
@@ -1249,6 +1267,7 @@ Handles genomes (individuals in the population).
     .. index:: node
     .. index:: structural_mutation_surer
     .. index:: check_structural_mutation_surer()
+    .. index:: TODO
 
     .. py:method:: mutate_add_node(config)
 
@@ -1257,6 +1276,7 @@ Handles genomes (individuals in the population).
       roughly the same behavior as the original connection, although this will depend on the :term:`activation function`, :term:`bias`, and
       :term:`response` multiplier of the new node. If there are no connections available, may call :py:meth:`mutate_add_connection` instead,
       depending on the result from :py:meth:`check_structural_mutation_surer <genome.DefaultGenomeConfig.check_structural_mutation_surer>`.
+      TODO: Perhaps exactly how the new connection weights are set up should be configurable, such as each being copysign(old_weight)*sqrt(abs(old_weight))?
 
       :param config: Genome configuration object.
       :type config: :datamodel:`instance <index-48>`
@@ -1265,6 +1285,7 @@ Handles genomes (individuals in the population).
         Potential addition of connection instead added.
 
     .. index:: ! connection
+    .. index:: TODO
 
     .. py:method:: add_connection(config, input_key, output_key, weight, enabled)
 
@@ -1303,6 +1324,8 @@ Handles genomes (individuals in the population).
       :param config: Genome configuration object
       :type config: :datamodel:`instance <index-48>`
 
+    .. index:: TODO
+
     .. py:method:: mutate_delete_connection()
 
       Deletes a randomly-chosen connection. TODO: If the connection is :term:`enabled`, have an option to - possibly with a :term:`weight`-dependent
@@ -1311,6 +1334,7 @@ Handles genomes (individuals in the population).
     .. index:: ! compatibility_disjoint_coefficient
     .. index:: ! genomic distance
     .. index:: genetic distance
+    .. index:: TODO
 
     .. py:method:: distance(other, config)
 
@@ -1319,7 +1343,10 @@ Handles genomes (individuals in the population).
       :py:meth:`genes.DefaultNodeGene.distance` and :py:meth:`genes.DefaultConnectionGene.distance` methods for
       :term:`homologous` pairs, and the configured :ref:`compatibility_disjoint_coefficient <compatibility-disjoint-coefficient-label>` for
       disjoint/excess genes. (Note that this is one of the most time-consuming portions of the library; optimization - such as using
-      `cython <http://cython.org>`_ - may be needed if using an unusually fast fitness function and/or an unusually large population.)
+      `cython <http://cython.org>`_ - may be needed if using an unusually fast fitness function and/or an unusually large population.
+      The latter is due to, if the fitness function does not involve interactions between genomes, that there will be only
+      :ref:`pop_size <pop-size-label>` invocations of the fitness function, but :ref:`pop_size <pop-size-label>` squared invocations of
+      the distance function. TODO: Enable cython to work better with this function, while retaining compatibility with cpython, pypy, etc.)
 
       :param other: The other DefaultGenome instance (genome) to be compared to.
       :type other: :datamodel:`instance <index-48>`
@@ -1528,6 +1555,7 @@ See http://www.izhikevich.org/publications/spikes.pdf.
 
   .. index:: node
   .. index:: gene
+  .. index:: TODO
 
   .. py:class:: IZNodeGene(BaseGene)
 
@@ -1562,6 +1590,8 @@ See http://www.izhikevich.org/publications/spikes.pdf.
     :type inputs: list(tuple(int, float))
     :raises RuntimeError: If the number of inputs does not match the number of input nodes.
 
+    .. index:: TODO
+
     .. py:method:: advance(dt_msec)
 
       Advances simulation time for the neuron by the given time step in milliseconds. TODO: Currently has some numerical stability problems.
@@ -1593,6 +1623,8 @@ See http://www.izhikevich.org/publications/spikes.pdf.
     .. py:method:: reset()
 
       Resets all neurons to their default state.
+
+    .. index:: TODO
 
     .. py:method:: get_time_step_msec()
 
@@ -2089,6 +2121,8 @@ reproduction
 -----------------
 Handles creation of genomes, either from scratch or by sexual or asexual reproduction from parents. For class requirements, see :ref:`reproduction-interface-label`. Implements the default NEAT-python reproduction scheme: explicit fitness sharing with fixed-time species stagnation. 
 
+  .. index:: TODO
+
   .. py:class:: DefaultReproduction(config, reporters, stagnation)
 
     Implements the default NEAT-python reproduction scheme: explicit fitness sharing with fixed-time species stagnation. Inherits
@@ -2158,6 +2192,7 @@ Handles creation of genomes, either from scratch or by sexual or asexual reprodu
     .. index:: ! species_stagnant()
     .. index:: stagnation
     .. index:: ! info()
+    .. index:: TODO
 
     .. py:method:: reproduce(config, species, pop_size, generation)
 
@@ -2305,6 +2340,7 @@ Divides the population into species based on :term:`genomic distances <genomic d
     .. index:: ! genomic distance
     .. index:: compatibility_threshold
     .. index:: info()
+    .. index:: TODO
 
     .. py:method:: speciate(config, population, generation)
 
@@ -2351,6 +2387,7 @@ Keeps track of whether species are making progress and helps remove ones that ar
   .. index:: fitness_criterion
   .. index:: fitness_threshold
   .. index:: fitness
+  .. index:: TODO
 
   .. note::
 
@@ -2388,6 +2425,7 @@ Keeps track of whether species are making progress and helps remove ones that ar
 
     .. index:: fitness
     .. index:: species_elitism
+    .. index:: TODO
 
     .. py:method:: update(species_set, generation)
 
@@ -2414,6 +2452,8 @@ Keeps track of whether species are making progress and helps remove ones that ar
 
 statistics
 -------------
+
+  .. index:: TODO
 
   .. note::
     There are two design decisions to be aware of:
@@ -2555,6 +2595,8 @@ Runs evaluation functions in parallel threads (using the python library module `
     :param int num_workers: How many worker threads to use.
     :param eval_function: The eval_function should take two arguments - a genome object and a config object - and return a single :pytypes:`float <typesnumeric>` (the genome's fitness) Note that this is not the same as how a fitness function is called by :py:meth:`Population.run <population.Population.run>`, nor by :py:class:`ParallelEvaluator <parallel.ParallelEvaluator>` (although it is more similar to the latter).
     :type eval_function: `function`
+
+    .. index:: TODO
 
     .. py:method:: __del__()
 

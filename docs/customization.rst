@@ -68,9 +68,13 @@ Speciation scheme
 To use a different speciation scheme, you can create a custom class whose interface matches that of
 :py:class:`DefaultSpeciesSet <species.DefaultSpeciesSet>` and pass this as the ``species_set_type`` argument to the `Config` constructor.
 
+.. index:: TODO
+
 .. note::
 
   TODO: Further document species set interface (some done in module_summaries)
+
+.. index:: TODO
 
 .. note::
 
@@ -102,6 +106,8 @@ The default reproduction scheme uses explicit fitness sharing.  This behavior is
 
 To use a different reproduction scheme, you must create a custom class whose interface matches that
 of `DefaultReproduction`, and provide it as the ``reproduction_type`` argument to the `Config` constructor.
+
+.. index:: TODO
 
 .. note:: 
 
