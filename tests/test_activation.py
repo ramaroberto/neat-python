@@ -17,6 +17,10 @@ def assert_almost_equal(a, b):
         if abs_rel_err > 1e-6:
             raise NotAlmostEqualException("{0:.6f} !~= {1:.6f}".format(a, b))
 
+def assert_equal(a, b):
+    if a != b:
+        raise Exception("{0!r} != {1!r}".format(a, b))
+
 
 def test_sigmoid():
     assert activations.sigmoid_activation(0.0) == 0.5
@@ -122,9 +126,9 @@ def dud_function():
     return 0.0
 
 def test_multiparam_relu():
-    assert activations.multiparam_relu_activation(1.0,1.0) == 1.0
-    assert activations.multiparam_relu_activation(0.0,1.0) == 0.0
-    assert activations.multiparam_relu_activation(-1.0,1.0) == -1.0
+    assert_equal(activations.multiparam_relu_activation(1.0,1.0), 1.0)
+    assert_equal(activations.multiparam_relu_activation(0.0,1.0), 0.0)
+    assert_equal(activations.multiparam_relu_activation(-1.0,1.0), -1.0)
     assert activations.multiparam_relu_activation(1.0,0.0) == 1.0
     assert activations.multiparam_relu_activation(0.0,0.0) == 0.0
     assert activations.multiparam_relu_activation(-1.0,0.0) == 0.0
@@ -134,7 +138,7 @@ def test_multiparam_relu():
 
 
 def test_clamped_tanh_step():
-    assert activations.clamped_tanh_step_activation(2.0,1.0) == 1.0 # clamped
+    assert_equal(activations.clamped_tanh_step_activation(2.0,1.0), 1.0) # clamped
     assert activations.clamped_tanh_step_activation(2.0,-1.0) == 1.0 # step
     assert activations.clamped_tanh_step_activation(1.0,1.0) == 1.0 # clamped
     assert activations.clamped_tanh_step_activation(1.0,-1.0) == 1.0 # step
@@ -149,7 +153,7 @@ def test_clamped_tanh_step():
 
 
 def test_multiparam_sigmoid():
-    assert activations.multiparam_sigmoid_activation(2.0,1.0) == 1.0
+    assert_equal(activations.multiparam_sigmoid_activation(2.0,1.0), 1.0)
     assert activations.multiparam_sigmoid_activation(2.0,-1.0) == 1.0
     assert activations.multiparam_sigmoid_activation(1.0,1.0) == 1.0
     assert activations.multiparam_sigmoid_activation(1.0,-1.0) == 1.0

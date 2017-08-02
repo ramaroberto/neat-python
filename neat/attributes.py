@@ -201,8 +201,8 @@ class FuncAttribute(BaseAttribute):
 
         if hasattr(default, 'init_value'):
             default.init_value(config)
-        elif not isinstance(value, (str, unicode)): # put in test for
-            raise RuntimeError("Unknown what to do with value {0!r} for {1!s}".format(value,
+        elif not isinstance(default, (str, unicode)): # put in test for
+            raise RuntimeError("Unknown what to do with value {0!r} for {1!s}".format(default,
                                                                                       self.name))
         elif hasattr(config, 'multiparameterset'):
             multiparam = config.multiparameterset

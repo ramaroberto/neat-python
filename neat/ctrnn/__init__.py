@@ -35,8 +35,8 @@ class CTRNN(object):
                  outputs, # type: List[NodeKey]
                  node_evals # type: Dict[NodeKey, CTRNNNodeEval]
                  ):
-        """Sets up the ctrnn network itself."""
         # type: (...) -> None
+        """Sets up the ctrnn network itself."""
         self.input_nodes = inputs
         self.output_nodes = outputs
         self.node_evals = node_evals

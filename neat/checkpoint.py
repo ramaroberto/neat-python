@@ -24,7 +24,6 @@ class Checkpointer(BaseReporter):
     A reporter class that performs checkpointing using `pickle`
     to save and restore populations (and other aspects of the simulation state).
     """
-<<<<<<< HEAD
     def __init__(self,
                  generation_interval=100, # type: Optional[int]
                  time_interval_seconds=300, # type: Optional[float]
