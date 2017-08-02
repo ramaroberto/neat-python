@@ -6,9 +6,9 @@ from __future__ import division
 
 import math
 import random
+from itertools import count
 
 from neat.config import ConfigParameter, DefaultClassConfig
-from neat.indexer import Indexer
 from neat.math_util import mean
 from neat.six_util import iteritems, itervalues
 
@@ -50,7 +50,7 @@ class DefaultReproduction(DefaultClassConfig):
         # pylint: disable=super-init-not-called
         self.reproduction_config = config
         self.reporters = reporters
-        self.genome_indexer = Indexer(1)
+        self.genome_indexer = count(1)
         self.stagnation = stagnation
         self.ancestors = {} # type: Dict[GenomeKey, Union[tuple, Tuple[GenomeKey, GenomeKey]]]
 
@@ -62,7 +62,7 @@ class DefaultReproduction(DefaultClassConfig):
         # type: (...) -> Dict[GenomeKey, KnownGenome] # XXX
         new_genomes = {} # Dict[GenomeKey, KnownGenome] # XXX
         for i in range(num_genomes):
-            key = cast(GenomeKey,self.genome_indexer.get_next())
+            key = cast(GenomeKey,next(self.genome_indexer))
             g = genome_type(key) # type: KnownGenome # XXX
             g.configure_new(genome_config)
             new_genomes[key] = g
@@ -140,12 +140,13 @@ class DefaultReproduction(DefaultClassConfig):
         # No species left.
         if not remaining_species:
             species.species = {}
-            return {} # CORRECTION
+            return {}
         
         # Find minimum/maximum fitness across the entire population, for use in
         # species adjusted fitness computation.
         min_fitness = min(all_fitnesses) # type: float
         max_fitness = max(all_fitnesses) # type: float
+
         # Do not allow the fitness range to be zero, as we divide by it below.
         # TODO: The ``1.0`` below is rather arbitrary, and should be configurable.
         fitness_range = max(1.0, max_fitness - min_fitness)
@@ -163,7 +164,7 @@ class DefaultReproduction(DefaultClassConfig):
         previous_sizes = [len(s.members) for s in remaining_species] # type: List[int]
         min_species_size = self.reproduction_config.min_species_size # type: ignore
         # Isn't the effective min_species_size going to be max(min_species_size, self.reproduction_config.elitism)?
-        # That would probably produce more accurate tracking of population sizes and relative fitnesses... doing; will document.
+        # That would probably produce more accurate tracking of population sizes and relative fitnesses... doing.
         min_species_size = max(min_species_size,self.reproduction_config.elitism) # type: ignore
         spawn_amounts = self.compute_spawn(adjusted_fitnesses, previous_sizes,
                                            pop_size, min_species_size)
@@ -209,7 +210,7 @@ class DefaultReproduction(DefaultClassConfig):
 
                 # Note that if the parents are not distinct, crossover will produce a
                 # genetically identical clone of the parent (but with a different ID).
-                gid = cast(GenomeKey,self.genome_indexer.get_next())
+                gid = cast(GenomeKey,next(self.genome_indexer))
                 child = config.genome_type(gid) # type: KnownGenome # XXX
                 child.configure_crossover(parent1, parent2, config.genome_config)
                 child.mutate(config.genome_config)

@@ -33,16 +33,16 @@ def required_for_output(inputs, # type: Sequence[NodeKey]
                         outputs, # type: Sequence[NodeKey]
                         connections # type: Iterable[ConnKey]
                         ):
-    # type: (...) -> Set[NodeKey] # NOTE DOCS CORRECTION
+    # type: (...) -> Set[NodeKey]
     """
     Collect the nodes whose state is required to compute the final network output(s).
     :param inputs: list of the input identifiers
     :param outputs: list of the output node identifiers
     :param connections: list of (input, output) connections in the network.
+    :return: set of identifiers of needed nodes.
+    :rtype: set(int)
     NOTE: It is assumed that the input identifier set and the node identifier set are disjoint.
     By convention, the output node ids are always the same as the output index.
-
-    Returns a set of identifiers of needed nodes.
     """
 
     required = set(outputs)

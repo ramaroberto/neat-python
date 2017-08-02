@@ -19,7 +19,6 @@ if MYPY: # pragma: no cover
 if version_info.major > 2:
     unicode = str # pylint: disable=redefined-builtin
 
-
 # TODO: There is probably a lot of room for simplification of these classes using metaprogramming.
 
 
@@ -152,8 +151,8 @@ class BoolAttribute(BaseAttribute):
 
 class StringAttribute(BaseAttribute):
     """
-    Class for string attributes such as the aggregation function of a node,
-    which are selected from a list of options.
+    Class for string attributes (such as, previously, the aggregation function of a node)
+    that are selected from a list of options.
     """
     _config_items = {"default": [str, 'random'],
                      "options": [list, None],
@@ -202,9 +201,9 @@ class FuncAttribute(BaseAttribute):
 
         if hasattr(default, 'init_value'):
             default.init_value(config)
-        elif not isinstance(default, (str, unicode)):
-            raise RuntimeError("Unknown what to do with default {0!r} for {1!s}".format(default,
-                                                                                        self.name))
+        elif not isinstance(value, (str, unicode)): # put in test for
+            raise RuntimeError("Unknown what to do with value {0!r} for {1!s}".format(value,
+                                                                                      self.name))
         elif hasattr(config, 'multiparameterset'):
             multiparam = config.multiparameterset
 
@@ -230,7 +229,7 @@ class FuncAttribute(BaseAttribute):
         if hasattr(value, 'mutate_value'):
             #print("Accessing mutate_value function of {!r}".format(value))
             value.mutate_value(config) # type: ignore
-        elif not isinstance(value, (str, unicode)):
+        elif not isinstance(value, (str, unicode)): # put in test for
             raise RuntimeError("Unknown what to do with value {0!r} for {1!s}".format(value,
                                                                                       self.name))
         elif hasattr(config, 'multiparameterset'):

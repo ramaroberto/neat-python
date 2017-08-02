@@ -27,8 +27,9 @@ class BaseGene(object):
         attrib = ['{0}={1}'.format(a, getattr(self, a)) for a in attrib]
         return '{0}({1})'.format(self.__class__.__name__, ", ".join(attrib))
 
+
     def __lt__(self, other): # type: (BaseGene) -> bool
-        assert isinstance(self,type(other))
+        assert isinstance(self.key,type(other.key)), "Cannot compare keys {0!r} and {1!r}".format(self.key,other.key)
         return self.key < other.key # type: ignore
 
     @classmethod
@@ -101,7 +102,7 @@ class DefaultNodeGene(BaseGene):
                         FuncAttribute('aggregation', options='sum')]
 
     def __init__(self, key): # type: (NodeKey) -> None
-        assert isinstance(key, int)
+        assert isinstance(key, int), "DefaultNodeGene key must be an int, not {!r}".format(key)
         BaseGene.__init__(self, key)
 
     def distance(self, other, config): # type: (DefaultNodeGene, DefaultGenomeConfig) -> float
@@ -122,16 +123,16 @@ class DefaultNodeGene(BaseGene):
 
 # TODO: Do an ablation study to determine whether the enabled setting is
 # important--presumably mutations that set the weight to near zero could
-# provide a similar effect depending on the weight range, mutation rate, and
-# aggregation function. (Near-zero weight for the `product` aggregation function
-# is rather more important than one giving an output of 1 from the connection,
-# for instance!)
+# provide a similar effect depending on the weight range, mutation rate,
+# and aggregation function. (Most obviously, a near-zero weight for the
+# `product` aggregation function is rather more important than one giving
+# an output of 1 from the connection, for instance!)
 class DefaultConnectionGene(BaseGene):
     _gene_attributes = [FloatAttribute('weight'),
                         BoolAttribute('enabled')]
 
     def __init__(self, key): # type: (ConnKey) -> None
-        assert isinstance(key, tuple)
+        assert isinstance(key, tuple), "DefaultConnectionGene key must be a tuple, not {!r}".format(key)
         BaseGene.__init__(self, key)
 
     def distance(self,
@@ -144,4 +145,3 @@ class DefaultConnectionGene(BaseGene):
         if self.enabled != other.enabled: # type: ignore
             d += 1.0
         return d * config.compatibility_weight_coefficient # type: ignore
-

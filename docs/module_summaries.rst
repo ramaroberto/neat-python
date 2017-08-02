@@ -15,23 +15,16 @@ Has the built-in :term:`activation functions <activation function>`, code for us
 
   .. py:exception:: InvalidActivationFunction(TypeError)
 
-    Exception called if an activation function being added is invalid according to the `validate_activation` function, or if an unknown activation
+    Exception called if an activation function being added is invalid according to the `MultiParameterSet.add_func` method, or if an unknown activation
     function is requested by name via :py:meth:`get <ActivationFunctionSet.get()>`.
 
-    .. versionchanged:: 0.91-github
+    .. versionchanged:: 0.92
       Base of exception changed to more-precise TypeError.
 
-    .. deprecated:: 0.91-mypy_checking
-      Use (from multiparameter) InvalidFunctionError for ones not passing tests, UnknownFunctionError for unknown ones requested by name, or
-      BadFunctionError for either. InvalidFunctionError is based on TypeError; UnknownFunctionError is based on LookupError.
-
-  .. py:function:: validate_activation(function)
-
-    Checks to make sure its parameter is a function that takes a single argument.
-
-    :param function: Object to be checked.
-    :type function: :datamodel:`object <objects-values-and-types>`
-    :raises InvalidActivationFunction: If the object does not pass the tests.
+    .. deprecated:: 0.92-multiparam_funcs
+      This is now an alias for :py:exc:`BadFunctionError`. Use either it, or preferably
+      one of its two subclasses, :py:exc:`InvalidFunctionError` (for unusable functions; based on TypeError) or :py:exc:`UnknownFunctionError`
+      (for unknown functions requested by name; based on LookupError).
 
   .. py:class:: ActivationFunctionSet
 
@@ -39,7 +32,7 @@ Has the built-in :term:`activation functions <activation function>`, code for us
 
     .. py:method:: add(name, function)
 
-      After validating the function (via `validate_activation`), adds it to the available activation functions under the given name. Used
+      After validating the function, adds it to the available activation functions under the given name. Used
       by :py:meth:`DefaultGenomeConfig.add_activation <genome.DefaultGenomeConfig.add_activation>`.
 
       :param str name: The name by which the function is to be known in the :ref:`configuration file <activation-function-config-label>`.
@@ -122,7 +115,7 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
     :return: :math:`x_i, i = \text{argmax}\lvert\mathbf{x}\rvert`
     :rtype: :pytypes:`float <typesnumeric>`
 
-    .. versionadded:: 0.91-config_work
+    .. versionadded:: 0.92
 
   .. py:function:: median_aggregation(x)
 
@@ -133,7 +126,7 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
     :return: The median; if there are an even number of inputs, takes the mean of the middle two.
     :rtype: :pytypes:`float <typesnumeric>`
 
-    .. versionadded:: 0.91-config_work
+    .. versionadded:: 0.92
 
   .. py:function:: mean_aggregation(x)
 
@@ -145,28 +138,25 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
     :return: The arithmetic mean.
     :rtype: :pytypes:`float <typesnumeric>`
 
-    .. versionadded:: 0.91-config_work
+    .. versionadded:: 0.92
 
   .. py:exception:: InvalidAggregationFunction(TypeError)
 
-    Exception called if an aggregation function being added is invalid according to the `validate_aggregation` function, or if an unknown aggregation
+    Exception called if an aggregation function being added is invalid according to the `MultiParameterSet.add_func` method, or if an unknown aggregation
     function is requested by name via :py:meth:`get <AggregationFunctionSet.get()>`.
 
-    .. versionadded:: 0.91-config_work
+    .. versionadded:: 0.92
 
-  .. py:function:: validate_aggregation(function)
-
-    Checks to make sure its parameter is a function that takes at least one argument.
-
-    :param function: Object to be checked.
-    :type function: :datamodel:`object <objects-values-and-types>`
-    :raises InvalidAggregationFunction: If the object does not pass the tests.
-
-    .. versionadded:: 0.91-config_work
+    .. deprecated:: 0.92-multiparam_funcs
+      This is now an alias for :py:exc:`BadFunctionError`. Use either it, or preferably
+      one of its two subclasses, :py:exc:`InvalidFunctionError` (for unusable functions; based on TypeError) or :py:exc:`UnknownFunctionError`
+      (for unknown functions requested by name; based on LookupError).
 
   .. py:class:: AggregationFunctionSet
 
     Contains the list of current valid aggregation functions, including methods for adding and getting them.
+
+    .. index:: TODO
 
     .. py:method:: add(name, function)
 
@@ -179,7 +169,7 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
       :param function: The function to be added.
       :type function: `function`
 
-      .. versionadded:: 0.91-config_work
+      .. versionadded:: 0.92
 
     .. py:method:: get(name)
 
@@ -190,7 +180,7 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
       :rtype: `function`
       :raises InvalidAggregationFunction: If the function is not known.
 
-      .. versionadded:: 0.91-config_work
+      .. versionadded:: 0.92
 
     .. py:method:: __getitem__(index)
 
@@ -203,7 +193,10 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
       :raises InvalidAggregationFunction: If the function is not known.
       :raises DeprecationWarning: Always.
 
-      .. deprecated:: 0.91-config_work
+      .. versionchanged:: 0.92
+        Originally a dictionary in :py:mod:`genome`.
+
+      .. deprecated:: 0.92
         Use :py:meth:`get(index) <AggregationFunctionSet.get()>` instead.
 
     .. py:method:: is_valid(name)
@@ -214,9 +207,9 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
       :return: Whether or not the function is known.
       :rtype: :pytypes:`bool <typesnumeric>`
 
-      .. versionadded:: 0.91-config_work
+      .. versionadded:: 0.92
 
-  .. versionchanged:: 0.91-config_work
+  .. versionchanged:: 0.92
     Moved from :py:mod:`genome` and expanded to match `activations` (plus the ``maxabs``, ``median``, and ``mean`` functions added).
 
 .. py:module:: attributes
@@ -237,7 +230,7 @@ Deals with :term:`attributes` used by :term:`genes <gene>`.
     :param default_dict: An optional dictionary of defaults for the configuration items.
     :type default_dict: dict(str, str)
 
-    .. versionchanged:: 0.91-config_work
+    .. versionchanged:: 0.92
       Default_dict capability added.
 
     .. py:method:: config_item_name(config_item_base_name)
@@ -248,8 +241,8 @@ Deals with :term:`attributes` used by :term:`genes <gene>`.
       :return: The configuration item's full name.
       :rtype: str
 
-      .. versionchanged:: 0.91-config_work
-        Originally did not take any input and returned a list based on the ``_config_items`` subclass attribute.
+      .. versionchanged:: 0.92
+        Originally (as ``config_item_names``) did not take any input and returned a list based on the ``_config_items`` subclass attribute.
 
     .. py:method:: get_config_params()
 
@@ -259,7 +252,7 @@ Deals with :term:`attributes` used by :term:`genes <gene>`.
       :return: A list of ``ConfigParameter`` instances.
       :rtype: list(:datamodel:`instance <index-48>`)
 
-      .. versionchanged:: 0.91-config_work
+      .. versionchanged:: 0.92
         Was originally specific for the attribute subclass, since it did not pick up the appropriate type from the ``_config_items`` list; default capability
         also added.
 
@@ -295,7 +288,7 @@ Deals with :term:`attributes` used by :term:`genes <gene>`.
       :return: The new value.
       :rtype: :pytypes:`float <typesnumeric>`
 
-      .. versionchanged:: 0.91-config_work
+      .. versionchanged:: 0.92
         Uniform distribution initialization option added.
 
     .. index:: ! mutation
@@ -325,10 +318,10 @@ Deals with :term:`attributes` used by :term:`genes <gene>`.
 
       Initializes the attribute's value, either using a configured ``default``, or (if the default is "random") with a 50/50 chance of `True` or `False`.
 
-      .. deprecated:: 0.91-config_work
+      .. deprecated:: 0.92
         While it is possible to use "None" as an equivalent to "random", this is too easily confusable with an actual `None`.
 
-      .. versionchanged:: 0.91-config_work
+      .. versionchanged:: 0.92
         Ability to use "random" for a 50/50 chance of `True` or `False` added.
 
       :param config: The configuration object from which the default parameter is to be retrieved.
@@ -354,7 +347,7 @@ Deals with :term:`attributes` used by :term:`genes <gene>`.
       :return: Either the original value, if unchanged, or the new value.
       :rtype: :pytypes:`bool <typesnumeric>`
 
-      .. versionchanged:: 0.91-config_work
+      .. versionchanged:: 0.92
         Added the ``rate_to_false_add`` and ``rate_to_true_add`` parameters.
 
   .. py:class:: StringAttribute(BaseAttribute)
@@ -374,7 +367,7 @@ Deals with :term:`attributes` used by :term:`genes <gene>`.
       randomly-chosen member of the ``options`` (each having an equal chance). Note: It is possible for the default value, if specifically configured, to
       **not** be one of the options.
 
-      .. deprecated:: 0.91-config_work
+      .. deprecated:: 0.92
         While it is possible to use "None" as an equivalent to "random", this is too easily confusable with an actual `None`.
 
       :param config: The configuration object from which the default and, if necessary, ``options`` parameters are to be retrieved.
@@ -385,6 +378,7 @@ Deals with :term:`attributes` used by :term:`genes <gene>`.
     .. index:: ! mutation
     .. index:: mutate_rate
     .. index:: ! X_options
+    .. index:: TODO
 
     .. py:method:: mutate_value(value, config)
 
@@ -402,7 +396,7 @@ Deals with :term:`attributes` used by :term:`genes <gene>`.
       :return: The new value.
       :rtype: str
 
-  .. versionchanged:: 0.91-config_work
+  .. versionchanged:: 0.92
     ``__config_items__`` changed to ``_config_items``, since it is not a Python internal variable.
 
 .. py:module:: checkpoint
@@ -412,22 +406,28 @@ checkpoint
 ---------------
 Uses :py:mod:`pickle` to save and restore populations (and other aspects of the simulation state).
 
-  .. py:class:: Checkpointer(generation_interval=100, time_interval_seconds=300)
+  .. note::
+
+    The speed of this module can vary widely between python implementations (and perhaps versions).
+
+  .. py:class:: Checkpointer(generation_interval=100, time_interval_seconds=300, filename_prefix='neat-checkpoint-')
 
     A reporter class that performs checkpointing, saving and restoring the simulation state (including population, randomization, and other aspects).
     It saves the current state every ``generation_interval`` generations or ``time_interval_seconds`` seconds, whichever happens first.
-    Subclasses :py:class:`reporting.BaseReporter`. (The potential save point is at the end of a generation.) If there is a need to check the
-    last generation for which a checkpoint was saved, such as to determine which file to load, access ``last_generation_checkpoint``; if -1, none have
-    been saved.
+    Subclasses :py:class:`reporting.BaseReporter`. (The potential save point is at the end of a generation.) The start of the filename will be equal
+    to ``filename_prefix``, followed by the generation number. If there is a need to check the last generation for which a checkpoint was saved, such as to
+    determine which file to load, access ``last_generation_checkpoint``; if -1, none have been saved.
 
     :param generation_interval: If not None, maximum number of generations between checkpoints.
     :type generation_interval: :pytypes:`int <typesnumeric>` or None
     :param time_interval_seconds: If not None, maximum number of seconds between checkpoints.
     :type time_interval_seconds: :pytypes:`float <typesnumeric>` or None
+    :param str filename_prefix: The prefix for the checkpoint file names.
 
-    .. py:staticmethod:: save_checkpoint(config, population, species, generation)
+    .. py:method:: save_checkpoint(config, population, species, generation)
 
-      Saves the current simulation (including randomization) state to :file:`neat-checkpoint-{generation}`, with ``generation`` being the generation number.
+      Saves the current simulation (including randomization) state to (if using the default ``neat-checkpoint-`` for ``filename_prefix``)
+      :file:`neat-checkpoint-{generation}`, with ``generation`` being the generation number.
 
       :param config: The `config.Config` configuration instance to be used.
       :type config: :datamodel:`instance <index-48>`
@@ -470,7 +470,7 @@ Does general configuration parsing; used by other classes for their configuratio
     :param default: If given, the default to use for the configuration parameter.
     :type default: str or None
 
-    .. versionchanged:: 0.91-config_work
+    .. versionchanged:: 0.92
       Default capability added.
 
     .. py:method:: __repr__()
@@ -504,7 +504,7 @@ Does general configuration parsing; used by other classes for their configuratio
       :raises RuntimeError: If there is a problem with the configuration parameter.
       :raises DeprecationWarning: If a default is used.
 
-      .. versionchanged:: 0.91-config_work
+      .. versionchanged:: 0.92
         Default capability added.
 
     .. py:method:: format(value)
@@ -528,11 +528,13 @@ Does general configuration parsing; used by other classes for their configuratio
     :param params: List of :py:class:`ConfigParameter` instances giving the names of interest and the types of parameters.
     :type params: list(:datamodel:`instance <index-48>`)
 
+  .. index:: TODO
+
   .. py:exception:: UnknownConfigItemError(NameError)
 
-    Error for unknown configuration option(s) - partially to catch typos.
+    Error for unknown configuration option(s) - partially to catch typos. TODO: :py:class:`genome.DefaultGenomeConfig` does not currently check for these.
 
-    .. versionadded:: 0.91-config_work
+    .. versionadded:: 0.92
 
   .. py:class:: DefaultClassConfig(param_dict, param_list)
 
@@ -553,7 +555,7 @@ Does general configuration parsing; used by other classes for their configuratio
       :param config: DefaultClassConfig instance.
       :type config: :datamodel:`instance <index-48>`
 
-    .. versionadded:: 0.91-config_work
+    .. versionadded:: 0.92
 
   .. index:: fitness criterion
   .. index:: fitness_threshold
@@ -584,7 +586,7 @@ Does general configuration parsing; used by other classes for their configuratio
     :raises UnknownConfigItemError: If an option in the ``NEAT`` section of the configuration file is not recognized.
     :raises DeprecationWarning: If a default is used for one of the ``NEAT`` section options.
 
-    .. versionchanged:: 0.91-config_work
+    .. versionchanged:: 0.92
       Added default capabilities, UnknownConfigItemError, no_fitness_termination.
 
     .. py:method:: save(filename)
@@ -645,7 +647,7 @@ ctrnn
       :raises NotImplementedError: If a ``time_step`` is not given.
       :raises RuntimeError: If the number of ``inputs`` does not match the number of :term:`input nodes <input node>`
 
-      .. versionchanged:: 0.91-config_work
+      .. versionchanged:: 0.92
         Exception changed to more-specific RuntimeError.
 
     .. py:staticmethod:: create(genome, config, time_constant)
@@ -674,16 +676,23 @@ distributed
 --------------
   Distributed evaluation of genomes.
 
-  .. versionchanged:: 0.91-config_work
-    
+  .. index:: TODO
+
+  .. note::
+
+    This module is in a **beta** state, and still *unstable* even in single-machine testing. Reliability is likely to vary, including depending on the Python version
+    and implementation (e.g., cpython vs pypy) in use and the likelihoods of timeouts (due to machine and/or network slowness). In particular, while the code can try
+    to reconnect between between :term:`primary <primary node>` and :term:`secondary <secondary node>` nodes, as noted in the `multiprocessing` documentation
+    this may not work due to data loss/corruption. Note also that this module is not responsible for starting the script copies on the different
+    :term:`compute nodes <compute node>`, since this is very site/configuration-dependent.
 
   .. rubric:: About :term:`compute nodes <compute node>`:
 
-  The :term:`primary compute node` (the node that creates and mutates genomes) and the :term:`secondary compute nodes <secondary node>` (the
-  nodes that evaluate genomes) can execute the same script. The role of a compute node is determined using the ``mode`` argument of the
-  DistributedEvaluator. If the mode is :py:data:`MODE_AUTO`, the `host_is_local()` function is used to check if the ``addr`` argument points to the
-  localhost. If it does, the compute node starts as a primary node, and otherwise as a secondary node. If ``mode`` is :py:data:`MODE_PRIMARY`, the
-  compute node always starts as a primary node. If ``mode`` is :py:data:`MODE_SECONDARY`, the compute node will always start as a secondary node.
+  The :term:`primary compute node` (the node which creates and mutates genomes) and the :term:`secondary compute nodes <secondary node>` (the nodes which
+  evaluate genomes) can execute the same script. The role of a compute node is determined using the ``mode`` argument of the DistributedEvaluator. If the
+  mode is :py:data:`MODE_AUTO`, the `host_is_local()` function is used to check if the ``addr`` argument points to the localhost. If it does, the compute
+  node starts as a :term:`primary node`, and otherwise as a :term:`secondary node`. If ``mode`` is :py:data:`MODE_PRIMARY`, the compute node always starts
+  as a primary node. If ``mode`` is :py:data:`MODE_SECONDARY`, the compute node will always start as a secondary node.
 
   There can only be one primary node per NEAT, but any number of secondary nodes. The primary node will not evaluate any genomes, which means
   you will always need at least two compute nodes (one primary and at least one secondary).
@@ -700,17 +709,27 @@ distributed
   5. Call :py:meth:`de.start(exit_on_stop=True) <distributed.DistributedEvaluator.start>`. The ``start()`` call will block on the secondary nodes and call :pylib:`sys.exit(0) <sys.html#sys.exit>` when the NEAT evolution finishes. This means that the following code will only be executed on the primary node.
   6. Start the evaluation using :py:meth:`p.run(de.evaluate, number_of_generations) <population.Population.run>`.
   7. Stop the secondary nodes using :py:meth:`de.stop() <distributed.DistributedEvaluator.stop>`.
-  8. You are done. You may want to save the winning genome or show some statistics.
+  8. You are done. You may want to save the winning genome(s) or show some :py:mod:`statistics`.
 
-  See :file:`examples/xor/evolve-feedforward-distributed.py` for a complete example. Note: Contains a number of private methods (starting with ``_``),
-  which are not documented below.
+  See :file:`examples/xor/evolve-feedforward-distributed.py` for a complete example.
+
+  .. note::
+
+    The below contains some (but not complete) information about private functions, classes, and similar (starting with ``_``); this documentation is meant to help with
+    maintaining and improving the code, not for enabling external use, and the interface may change **rapidly** with no warning.
 
   .. py:data:: MODE_AUTO
   .. py:data:: MODE_PRIMARY
   .. py:data:: MODE_SECONDARY
 
-    Values - which should be treated as constants - that are used for the ``mode`` argument of :py:class:`DistributedEvaluator`. MODE_AUTO
-    uses :py:func:`host_is_local()` and the specified ``addr`` of the :term:`primary node` to decide the mode; the other two specify it.
+    Values - which should be treated as constants - that are used for the ``mode`` argument of :py:class:`DistributedEvaluator`. If MODE_AUTO,
+    :py:func:`_determine_mode()` uses :py:func:`host_is_local()` and the specified ``addr`` of the :term:`primary node` to decide the mode; the other two specify it.
+
+  .. py:data:: _STATE_RUNNING
+  .. py:data:: _STATE_SHUTDOWN
+  .. py:data:: _STATE_FORCED_SHUTDOWN
+
+    Values - which should be treated as constants - that are used to determine the current state (whether the secondaries should be continuing the run or not).
 
   .. py:exception:: ModeError(RuntimeError)
 
@@ -727,6 +746,17 @@ distributed
     :return: Whether the hostname appears to be equivalent to that of the localhost.
     :rtype: :pytypes:`bool <typesnumeric>`
 
+  .. py:function:: _determine_mode(addr, mode)
+
+    Returns the mode that should be used.  If ``mode`` is :py:data:`MODE_AUTO`, this is determined by checking (via :py:func:`host_is_local()`) if ``addr`` points
+    to the localhost; if it does, it returns :py:data:`MODE_PRIMARY`, else it returns :py:data:`MODE_SECONDARY`. If mode is either MODE_PRIMARY or
+    MODE_SECONDARY, it returns the ``mode`` argument. Otherwise, a ValueError is raised.
+
+    :param addr: Either a tuple of (hostname, port) pointing to the machine that has the :term:`primary node`, or the hostname (as ``bytes`` if on 3.X).
+    :type addr: tuple(str, int) or bytes
+    :param int mode: Specifies the mode to run in - must be one of :py:data:`MODE_AUTO`, :py:data:`MODE_PRIMARY`, or :py:data:`MODE_SECONDARY`.
+    :raises ValueError: If the mode is not one of the above.
+
   .. py:function:: chunked(data, chunksize)
 
      Splits up ``data`` and returns it as a list of chunks containing at most ``chunksize`` elements of data.
@@ -738,6 +768,76 @@ distributed
     :return: A list of chunks containing (as a list) at most ``chunksize`` elements of data.
     :rtype: list(list(object))
     :raises ValueError: If ``chunksize`` is not 1+ or is not an integer
+
+  .. py:class:: _ExtendedManager(addr, authkey, mode, start=False)
+
+    Manages the :pylib:`multiprocessing.managers.SyncManager <multiprocessing.html#multiprocessing.managers.SyncManager>` instance. Initializes
+    ``self._secondary_state`` to :py:data:`_STATE_RUNNING`.
+
+    :param addr: Should be a tuple of (hostname, port) pointing to the machine running the DistributedEvaluator in primary mode. If mode is :py:data:`MODE_AUTO`, the mode is determined by checking whether the hostname points to this host or not (via :py:func:`_determine_mode()` and :py:func:`host_is_local()`).
+    :type addr: tuple(str, int)
+    :param authkey:  The password used to restrict access to the manager. All DistributedEvaluators need to use the same authkey. Note that this needs to be a :pytypes:`bytes` object for Python 3.X, and should be in 2.7 for compatibility (identical in 2.7 to a `str` object). For more information, see under :py:class:`DistributedEvaluator`.
+    :type authkey: :pytypes:`bytes`
+    :param int mode: Specifies the mode to run in - must be one of :py:data:`MODE_AUTO`, :py:data:`MODE_PRIMARY`, or :py:data:`MODE_SECONDARY`. Processed by :py:func:`_determine_mode()`.
+    :param bool start: Whether to call the :py:meth:`start()` method after initialization.
+
+    .. index:: TODO
+
+    .. py:method:: __reduce__()
+
+      Used by `pickle` to serialize instances of this class. TODO: Appears to assume that ``start`` (for initialization) should be true; perhaps ``self.manager``
+      should be checked? (This may require :py:meth::`stop()` to set ``self.manager`` to ``None``, incidentally.)
+
+      :return: Information about the class instance; a tuple of (class name, tuple(addr, authkey, mode, True)).
+      :rtype: tuple(str, tuple(tuple(str, int), bytes, int, bool))
+
+    .. py:method:: start()
+
+      Starts (if in :py:data:`MODE_PRIMARY`) or connects to (if in :py:data:`MODE_SECONDARY`) the manager.
+
+    .. index:: TODO
+
+    .. py:method:: stop()
+
+      Stops the manager using :pylib:`shutdown <multiprocessing.html#multiprocessing.managers.BaseManager.shutdown>` .
+      TODO: Should this set ``self.manager`` to None?
+
+    .. py:method:: set_secondary_state(value)
+
+      Sets the value for the ``secondary_state``, shared between the nodes via :pylib:`multiprocessing.managers.Value <multiprocessing.html#multiprocessing.managers.SyncManager.Value>`.
+
+      :param int value: The desired secondary state; must be one of :py:data:`_STATE_RUNNING`, :py:data:`_STATE_SHUTDOWN`, or :py:data:`_STATE_FORCED_SHUTDOWN`.
+      :raises ValueError: If the ``value`` is not one of the above.
+      :raises RuntimeError: If the manager has not been :py:meth:`started <start()>`.
+
+    .. py:attribute:: secondary_state
+
+      The :pylib:`property <functions.html#property>` ``secondary_state`` - whether the secondary nodes should still be processing elements.
+
+    .. py:method:: get_inqueue()
+
+      Returns the inqueue.
+
+      :return: The incoming :pylib:`queue <multiprocessing.html#multiprocessing.Queue>`.
+      :rtype: :datamodel:`instance <index-48>`
+      :raises RuntimeError: If the manager has not been :py:meth:`started <start()>`.
+
+    .. py:method:: get_outqueue()
+
+      Returns the outqueue.
+
+      :return: The outgoing :pylib:`queue <multiprocessing.html#multiprocessing.Queue>`.
+      :rtype: :datamodel:`instance <index-48>`
+      :raises RuntimeError: If the manager has not been :py:meth:`started <start()>`.
+
+    .. py:method:: get_namespace()
+
+      Returns the manager's namespace instance.
+
+      :return: The :pylib:`namespace <argparse.html#argparse.Namespace>`.
+      :rtype: :datamodel:`instance <index-48>`
+      :raises RuntimeError: If the manager has not been :py:meth:`started <start()>`.
+
 
   .. index:: fitness function
   .. index:: fitness
@@ -786,35 +886,40 @@ distributed
       :rtype: :pytypes:`bool <typesnumeric>`
       :raises DeprecationWarning: Always.
 
-      .. deprecated:: 0.91-config_work
+      .. deprecated:: 0.92
 
-    .. py:method:: start(exit_on_stop=True, secondary_wait=0)
+    .. py:method:: start(exit_on_stop=True, secondary_wait=0, reconnect=False)
 
       If the DistributedEvaluator is in primary mode, starts the manager process and returns. If the DistributedEvaluator is in secondary mode, it connects
       to the manager and waits for tasks.
 
-      :param exit_on_stop: If a secondary node, whether to exit upon the calling of `stop()` in the :term:`primary node`.
+      :param exit_on_stop: If a secondary node, whether to exit if (unless ``reconnect`` is ``True``) the connection is lost, the primary calls for a shutdown (via :py:meth:`stop()`), or - even if ``reconnect`` is True - the primary calls for a forced shutdown (via calling :py:meth:`stop()` with ``force_secondary_shutdown`` set to ``True``).
       :type exit_on_stop: :pytypes:`bool <typesnumeric>`
       :param secondary_wait: Specifies the time (in seconds) to sleep before actually starting, if a :term:`secondary node`.
       :type secondary_wait: :pytypes:`float <typesnumeric>`
+      :param bool reconnect: If a secondary node, whether it should try to reconnect if the connection is lost.
       :raises RuntimeError: If already started.
       :raises ValueError: If the mode is invalid.
 
-    .. py:method:: stop(wait=1, shutdown=True)
+    .. py:method:: stop(wait=1, shutdown=True, force_secondary_shutdown=False)
 
       Stops all secondaries.
 
       :param wait: Time (in seconds) to wait after telling the secondaries to stop.
       :type wait: :pytypes:`float <typesnumeric>`
-      :param shutdown: Whether to :pylib:`shutdown <multiprocessing.html#multiprocessing.managers.BaseManager.shutdown>` the :pylib:`multiprocessing.manager.SyncManager <multiprocessing.html#multiprocessing.managers.SyncManager>` also (after the wait, if any).
+      :param shutdown: Whether to :pylib:`shutdown <multiprocessing.html#multiprocessing.managers.BaseManager.shutdown>` the :pylib:`multiprocessing.managers.SyncManager <multiprocessing.html#multiprocessing.managers.SyncManager>` also (after the wait, if any).
       :type shutdown: :pytypes:`bool <typesnumeric>`
+      :param bool force_secondary_shutdown: Causes secondaries to shutdown even if started with ``reconnect`` true (via setting the ``secondary_state`` to :py:data:`_STATE_FORCED_SHUTDOWN` instead of :py:data:`_STATE_SHUTDOWN`).
       :raises ModeError: If not the :term:`primary node` (not in :py:data:`MODE_PRIMARY`).
       :raises RuntimeError: If not yet :py:meth:`started <start()>`.
+
+    .. index:: TODO
 
     .. py:method:: evaluate(genomes, config)
 
       Evaluates the genomes. Distributes the genomes to the secondary nodes, then gathers the fitnesses from the secondary nodes and assigns them to the
-      genomes. Must not be called by :term:`secondary nodes <secondary node>`.
+      genomes. Must not be called by :term:`secondary nodes <secondary node>`. TODO: Improved handling of errors from broken connections with
+      the secondary nodes may be needed.
 
       :param genomes: Dictionary of (:term:`genome_id <key>`, genome) 
       :type genomes: dict(int, :datamodel:`instance <index-48>`)
@@ -822,12 +927,7 @@ distributed
       :type config: :datamodel:`instance <index-48>`
       :raises ModeError: If not the :term:`primary node` (not in :py:data:`MODE_PRIMARY`).
 
-  .. versionadded:: 0.91-github
-
-  .. versionchanged:: 0.91-config_work
-    Pylint, documentation, other changes (e.g., RoleError to ModeError).
-    Master/Slave terminology changed to Primary/Secondary, to keep up with more modern usage
-    (according to a google search) plus issues of sensitivity.
+  .. versionadded:: 0.92
 
 .. py:module:: genes
    :synopsis: Handles node and connection genes.
@@ -965,7 +1065,7 @@ Handles node and connection genes.
       :return: The contribution of this pair to the :term:`genomic distance` between the source genomes.
       :rtype: :pytypes:`float <typesnumeric>`
 
-    .. versionchanged:: 0.91-config_work
+    .. versionchanged:: 0.92
       ``__gene_attributes__`` changed to ``_gene_attributes``, since it is not a Python internal variable. Updates also made due to addition of
       default capabilities to :py:mod:`attributes`.
 
@@ -991,6 +1091,7 @@ Handles genomes (individuals in the population).
   .. index:: num_hidden
   .. index:: num_outputs
   .. index:: num_inputs
+  .. index:: TODO
 
   .. py:class:: DefaultGenomeConfig(params)
 
@@ -1005,7 +1106,7 @@ Handles genomes (individuals in the population).
     :type params: dict(str, str)
     :raises RuntimeError: If ``initial_connection`` or :ref:`structural_mutation_surer <structural-mutation-surer-label>` is invalid.
 
-    .. versionchanged:: 0.91-config_work
+    .. versionchanged:: 0.92
       Aggregation functions moved to :py:mod:`aggregations`; additional configuration parameters added.
 
     .. index:: ! activation function
@@ -1030,7 +1131,7 @@ Handles genomes (individuals in the population).
       :param func: A function meeting the requirements of :py:func:`aggregations.validate_aggregation`.
       :type func: `function`
 
-      .. versionadded:: 0.91-config_work
+      .. versionadded:: 0.92
 
     .. py:method:: save(f)
 
@@ -1043,11 +1144,15 @@ Handles genomes (individuals in the population).
 
     .. index:: ! key
 
+    .. index:: TODO
+
     .. py:method:: get_new_node_key(node_dict)
 
       Finds the next unused node :term:`key`. TODO: Explore using the same :term:`node` key if a particular connection is replaced in more than
       one genome in the same generation (use a :py:meth:`reporting.BaseReporter.end_generation` method to wipe a dictionary of connection tuples
-      versus node keys).
+      versus node keys). One could even extend this beyond one generation, with the removal of the old keys from further use triggered by one of the
+      existing nodes with that key acquiring a new connection. Question: If two nodes are otherwise very different (perhaps as measured by
+      :term:`genetic distance`, treating them as homologous for purposes of the check), should they still have the same key, even if they replaced the same connection?
 
       :param node_dict: A dictionary of node keys vs nodes
       :type node_dict: dict(int, :datamodel:`instance <index-48>`)
@@ -1055,7 +1160,7 @@ Handles genomes (individuals in the population).
       :rtype: :pytypes:`int <typesnumeric>`
       :raises AssertionError: If a newly-created id is already in the node_dict.
 
-      .. versionchanged:: 0.91-github
+      .. versionchanged:: 0.92
         Moved from DefaultGenome so no longer only single-genome-instance unique.
 
     .. index:: structural_mutation_surer
@@ -1069,7 +1174,7 @@ Handles genomes (individuals in the population).
       :returns: If should have a structural mutation under a wider set of circumstances.
       :rtype: :pytypes:`bool <typesnumeric>`
 
-      .. versionadded:: 0.91-config_work
+      .. versionadded:: 0.92
 
   .. index:: key
   .. index:: ! pin
@@ -1158,12 +1263,13 @@ Handles genomes (individuals in the population).
       :param config: Genome configuration object.
       :type config: :datamodel:`instance <index-48>`
 
-      .. versionchanged:: 0.91-config_work
+      .. versionchanged:: 0.92
         ``single_structural_mutation`` config parameter added.
 
     .. index:: node
     .. index:: structural_mutation_surer
     .. index:: check_structural_mutation_surer()
+    .. index:: TODO
 
     .. py:method:: mutate_add_node(config)
 
@@ -1172,18 +1278,20 @@ Handles genomes (individuals in the population).
       roughly the same behavior as the original connection, although this will depend on the :term:`activation function`, :term:`bias`, and
       :term:`response` multiplier of the new node. If there are no connections available, may call :py:meth:`mutate_add_connection` instead,
       depending on the result from :py:meth:`check_structural_mutation_surer <genome.DefaultGenomeConfig.check_structural_mutation_surer>`.
+      TODO: Perhaps exactly how the new connection weights are set up should be configurable, such as each being copysign(old_weight)*sqrt(abs(old_weight))?
 
       :param config: Genome configuration object.
       :type config: :datamodel:`instance <index-48>`
 
-      .. versionchanged:: 0.91-config_work
+      .. versionchanged:: 0.92
         Potential addition of connection instead added.
 
     .. index:: ! connection
+    .. index:: TODO
 
     .. py:method:: add_connection(config, input_key, output_key, weight, enabled)
 
-      Adds a specified new connection; its :term:`key` is the `tuple` of ``(input_key, output_key)``. TODO: Add validation of this connection addition.
+      Adds a specified new connection; its :term:`key` is the `tuple` of ``(input_key, output_key)``. TODO: Add further validation of this connection addition?
 
       :param config: Genome configuration object.
       :type config: :datamodel:`instance <index-48>`
@@ -1208,10 +1316,8 @@ Handles genomes (individuals in the population).
       :param config: Genome configuration object
       :type config: :datamodel:`instance <index-48>`
 
-      .. versionchanged:: 0.91-github
-        Output nodes not allowed to be connected together.
-      .. versionchanged:: 0.91-config_work
-        Possibility of enabling existing connection added.
+      .. versionchanged:: 0.92
+        Output nodes not allowed to be connected together. Possibility of enabling existing connection added.
 
     .. py:method:: mutate_delete_node(config)
 
@@ -1219,6 +1325,8 @@ Handles genomes (individuals in the population).
 
       :param config: Genome configuration object
       :type config: :datamodel:`instance <index-48>`
+
+    .. index:: TODO
 
     .. py:method:: mutate_delete_connection()
 
@@ -1228,6 +1336,7 @@ Handles genomes (individuals in the population).
     .. index:: ! compatibility_disjoint_coefficient
     .. index:: ! genomic distance
     .. index:: genetic distance
+    .. index:: TODO
 
     .. py:method:: distance(other, config)
 
@@ -1236,7 +1345,10 @@ Handles genomes (individuals in the population).
       :py:meth:`genes.DefaultNodeGene.distance` and :py:meth:`genes.DefaultConnectionGene.distance` methods for
       :term:`homologous` pairs, and the configured :ref:`compatibility_disjoint_coefficient <compatibility-disjoint-coefficient-label>` for
       disjoint/excess genes. (Note that this is one of the most time-consuming portions of the library; optimization - such as using
-      `cython <http://cython.org>`_ - may be needed if using an unusually fast fitness function and/or an unusually large population.)
+      `cython <http://cython.org>`_ - may be needed if using an unusually fast fitness function and/or an unusually large population.
+      The latter is due to, if the fitness function does not involve interactions between genomes, that there will be only
+      :ref:`pop_size <pop-size-label>` invocations of the fitness function, but :ref:`pop_size <pop-size-label>` squared invocations of
+      the distance function. TODO: Enable cython to work better with this function, while retaining compatibility with cpython, pypy, etc.)
 
       :param other: The other DefaultGenome instance (genome) to be compared to.
       :type other: :datamodel:`instance <index-48>`
@@ -1297,7 +1409,7 @@ Handles genomes (individuals in the population).
       :param config: The genome configuration object.
       :type config: :datamodel:`instance <index-48>`
 
-      .. versionchanged:: 0.91-github
+      .. versionchanged:: 0.92
         Connect_fs_neat, connect_full, connect_partial split up - documentation vs program conflict.
 
     .. py:method:: connect_fs_neat_hidden(config)
@@ -1308,7 +1420,7 @@ Handles genomes (individuals in the population).
       :param config: The genome configuration object.
       :type config: :datamodel:`instance <index-48>`
 
-      .. versionchanged:: 0.91-github
+      .. versionchanged:: 0.92
         Connect_fs_neat, connect_full, connect_partial split up - documentation vs program conflict.
 
     .. py:method:: compute_full_connections(config, direct)
@@ -1322,7 +1434,7 @@ Handles genomes (individuals in the population).
       :return: The list of connections, as (input :term:`key`, output key) tuples
       :rtype: list(tuple(int,int))
 
-      .. versionchanged:: 0.91-github
+      .. versionchanged:: 0.92
         "Direct" added to help with documentation vs program conflict for ``initial_connection`` of ``full`` or ``partial``.
 
     .. py:method:: connect_full_nodirect(config)
@@ -1333,7 +1445,7 @@ Handles genomes (individuals in the population).
       :param config: The genome configuration object.
       :type config: :datamodel:`instance <index-48>`
 
-      .. versionchanged:: 0.91-github
+      .. versionchanged:: 0.92
         Connect_fs_neat, connect_full, connect_partial split up - documentation vs program conflict.
 
     .. py:method:: connect_full_direct(config)
@@ -1343,7 +1455,7 @@ Handles genomes (individuals in the population).
       :param config: The genome configuration object.
       :type config: :datamodel:`instance <index-48>`
 
-      .. versionchanged:: 0.91-github
+      .. versionchanged:: 0.92
         Connect_fs_neat, connect_full, connect_partial split up - documentation vs program conflict.
 
     .. py:method:: connect_partial_nodirect(config)
@@ -1353,7 +1465,7 @@ Handles genomes (individuals in the population).
       :param config: The genome configuration object.
       :type config: :datamodel:`instance <index-48>`
 
-      .. versionchanged:: 0.91-github
+      .. versionchanged:: 0.92
         Connect_fs_neat, connect_full, connect_partial split up - documentation vs program conflict.
 
     .. py:method:: connect_partial_direct(config)
@@ -1363,7 +1475,7 @@ Handles genomes (individuals in the population).
       :param config: The genome configuration object.
       :type config: :datamodel:`instance <index-48>`
 
-      .. versionchanged:: 0.91-github
+      .. versionchanged:: 0.92
         Connect_fs_neat, connect_full, connect_partial split up - documentation vs program conflict.
 
 .. index:: feed_forward
@@ -1418,32 +1530,6 @@ Directed graph algorithm implementations.
     :return: A list of layers, with each layer consisting of a set of :term:`identifiers <key>`; only includes nodes returned by `required_for_output`.
     :rtype: list(set(int))
 
-.. py:module:: indexer
-   :synopsis: Contains the Indexer class, to help with creating new identifiers/keys.
-
-.. index:: ! key
-.. index::
-  see: id; key
-
-indexer
-----------
-Helps with creating new :term:`identifiers/keys <key>`.
-
-  .. py:class:: Indexer(first)
-
-    Initializes an Indexer instance with the internal ID counter set to ``first``. This class functions to help with creating new (unique) identifiers/keys.
-
-    :param int first: The initial identifier (:term:`key`) to be used.
-
-    .. py:method:: get_next(result=None)
-
-      If ``result`` is not `None`, then we return it unmodified.  Otherwise, we return the next ID and increment our internal counter.
-
-      :param result: Returned unmodified unless `None`.
-      :type result: :pytypes:`int <typesnumeric>` or None
-      :return: Identifier/:term:`key` to use.
-      :rtype: :pytypes:`int <typesnumeric>`
-
 .. py:module:: iznn
    :synopsis: Implements a spiking neural network (closer to in vivo neural networks) based on Izhikevich's 2003 model.
 
@@ -1471,16 +1557,27 @@ See http://www.izhikevich.org/publications/spikes.pdf.
 
   .. index:: node
   .. index:: gene
+  .. index:: TODO
 
   .. py:class:: IZNodeGene(BaseGene)
 
     Contains attributes for the iznn :term:`node` genes and determines :term:`genomic distances <genomic distance>`.
+    TODO: Genomic distance currently does not take into account the node's :term:`bias`.
+
+    .. py:method:: distance(other, config)
+
+      Determines the :term:`genomic distance` between this node gene and the other node gene.
+
+      :param other: The other IZNodeGene instance.
+      :type other: :datamodel:`instance <index-48>`
+      :param config: Configuration object, in this case a :py:class:`genome.DefaultGenomeConfig` instance.
+      :type config: :datamodel:`instance <index-48>`
 
   .. index:: genome
 
   .. py:class:: IZGenome(DefaultGenome)
 
-    Contains the parse_config class method for iznn genome configuration.
+    Contains the parse_config class method for iznn genome configuration, which returns a :py:class:`genome.DefaultGenomeConfig` instance.
 
   .. py:class:: IZNeuron(bias, a, b, c, d, inputs)
 
@@ -1493,6 +1590,9 @@ See http://www.izhikevich.org/publications/spikes.pdf.
     :param float d: The after-spike reset of the recovery variable.
     :param inputs: A list of (input key, weight) pairs for incoming connections.
     :type inputs: list(tuple(int, float))
+    :raises RuntimeError: If the number of inputs does not match the number of input nodes.
+
+    .. index:: TODO
 
     .. py:method:: advance(dt_msec)
 
@@ -1526,6 +1626,8 @@ See http://www.izhikevich.org/publications/spikes.pdf.
 
       Resets all neurons to their default state.
 
+    .. index:: TODO
+
     .. py:method:: get_time_step_msec()
 
       Returns a suggested time step; currently hardwired to 0.05. TODO: Investigate this (particularly effects on numerical stability issues).
@@ -1547,12 +1649,12 @@ See http://www.izhikevich.org/publications/spikes.pdf.
 
       :param genome: An IZGenome instance.
       :type genome: :datamodel:`instance <index-48>`
-      :param config: Configuration object.
+      :param config: Configuration object, in this implementation a :py:class:`config.Config` instance.
       :type config: :datamodel:`instance <index-48>`
       :return: An IZNN instance.
       :rtype: :datamodel:`instance <index-48>`
 
-    .. versionchanged:: 0.91-config_work
+    .. versionchanged:: 0.92
       ``__gene_attributes__`` changed to ``_gene_attributes``, since it is not a Python internal variable. 
 
 .. py:module:: math_util
@@ -1571,7 +1673,7 @@ functions (such as for the :ref:`species_fitness_func <species-fitness-func-labe
     Lookup table for commonly used ``{value} -> value`` functions, namely `max`, `min`, `mean`, `median`, and `median2`.
     The :ref:`species_fitness_func <species-fitness-func-label>` (used for :py:class:`stagnation.DefaultStagnation`) is required to be one of these.
 
-    .. versionchanged:: 0.91-config_work
+    .. versionchanged:: 0.92
       `median2` added.
 
   .. py:function:: mean(values)
@@ -1601,7 +1703,7 @@ functions (such as for the :ref:`species_fitness_func <species-fitness-func-labe
     :return: The median.
     :rtype: :pytypes:`float <typesnumeric>`
 
-    .. versionadded:: 0.91-config_work
+    .. versionadded:: 0.92
 
   .. py:function:: variance(values)
 
@@ -1623,12 +1725,23 @@ functions (such as for the :ref:`species_fitness_func <species-fitness-func-labe
 
   .. py:function:: softmax(values)
 
-    Compute the softmax (a differentiable/smooth approximization of the maximum function) of the given value set.
+    Compute the softmax (a differentiable/smooth approximation of the maximum function, scaled from 0-1) of the given value set.
+    (See the `Wikipedia entry <https://en.wikipedia.org/wiki/Softmax_function>`_ for more on softmax. Envisioned as useful for postprocessing of network output.)
 
     :param values: Numbers to get the softmax of.
     :type values: list(float) or set(float) or tuple(float)
     :return: :math:`\begin{equation}v_i = \exp(v_i) / s \text{, where } s = \sum(\exp(v_0), \exp(v_1), \dotsc)\end{equation}`
-    :rtype: :pytypes:`float <typesnumeric>`
+    :rtype: list(:pytypes:`float <typesnumeric>`)
+
+    .. versionchanged:: 0.92
+      Previously not functional on Python 3.X due to changes to map.
+
+.. py:module:: multiparameter
+   :synopsis: The basis for multiparameter activation and aggregation functions.
+
+multiparameter
+--------------------
+The basis for multiparameter activation and aggregation functions.
 
 .. py:module:: nn.feed_forward
    :synopsis: A straightforward feed-forward neural network NEAT implementation.
@@ -1655,6 +1768,7 @@ nn.feed_forward
       :type inputs: list(float)
       :return: The values for the :term:`output nodes <output node>`.
       :rtype: list(float)
+      :raises RuntimeError: If the number of inputs is not the same as the number of input nodes.
 
     .. py:staticmethod:: create(genome, config)
 
@@ -1696,6 +1810,7 @@ nn.recurrent
       :type inputs: list(float)
       :return: The values for the :term:`output nodes <output node>`.
       :rtype: list(float)
+      :raises RuntimeError: If the number of inputs is not the same as the number of input nodes.
 
     .. py:staticmethod:: create(genome, config)
 
@@ -1721,7 +1836,7 @@ Runs evaluation functions in parallel subprocesses in order to evaluate multiple
   .. py:class:: ParallelEvaluator(num_workers, eval_function, timeout=None)
 
     Runs evaluation functions in parallel subprocesses in order to evaluate multiple genomes at once. The analogous :py:mod:`threaded` is probably preferable
-    for python implementations without a :pygloss:`GIL` (Global Interpreter Lock).
+    for python implementations without a :pygloss:`GIL` (Global Interpreter Lock); note that neat-python is not currently tested vs any such implementations.
 
     :param int num_workers: How many workers to have in the `Pool <python:multiprocessing.pool.Pool>`.
     :param eval_function: The eval_function should take one argument - a `tuple` of (genome object, config object) - and return a single :pytypes:`float <typesnumeric>` (the genome's fitness) Note that this is not the same as how a fitness function is called by :py:meth:`Population.run <population.Population.run>`, nor by :py:class:`ThreadedEvaluator <threaded.ThreadedEvaluator>` (although it is more similar to the latter).
@@ -1737,8 +1852,8 @@ Runs evaluation functions in parallel subprocesses in order to evaluate multiple
 
       Distributes the evaluation jobs among the subprocesses, then assigns each fitness back to the appropriate genome.
 
-      :param genomes: A dictionary of :term:`genome_id <key>` (not used) to genome instances.
-      :type genomes: dict(int, :datamodel:`instance <index-48>`)
+      :param genomes: A list of tuples of :term:`genome_id <key>` (not used), genome.
+      :type genomes: list(tuple(int, :datamodel:`instance <index-48>`))
       :param config: A `config.Config` instance.
       :type config: :datamodel:`instance <index-48>`
       
@@ -1798,8 +1913,7 @@ Implements the core evolution algorithm.
       The return value of the fitness function is ignored, but it must assign
       a Python :pytypes:`float <typesnumeric>` to the ``fitness`` member of each genome.
 
-      The fitness function is free to maintain external state, perform
-      evaluations in :py:mod:`parallel`, etc.
+      The fitness function is free to maintain external state, perform evaluations in :py:mod:`parallel`, etc.
 
       It is assumed that the fitness function does not modify the list of genomes,
       the genomes themselves (apart from updating the fitness member),
@@ -1813,6 +1927,9 @@ Implements the core evolution algorithm.
       :rtype: :datamodel:`instance <index-48>`
       :raises RuntimeError: If ``None`` for n but :ref:`no_fitness_termination <no-fitness-termination-label>` is ``True``.
       :raises CompleteExtinctionException: If all species go extinct due to `stagnation` but :ref:`reset_on_extinction <reset-on-extinction-label>` is ``False``.
+
+      .. versionchanged:: 0.92
+        :ref:`no_fitness_termination <no-fitness-termination-label>` capability added.
 
 .. py:module:: reporting
    :synopsis: Makes possible reporter classes, which are triggered on particular events and may provide information to the user, may do something else such as checkpointing, or may do both.
@@ -1975,6 +2092,9 @@ Makes possible reporter classes, which are triggered on particular events and ma
       :param best: The currently highest-fitness :term:`genome`. (Ties are resolved pseudorandomly by `dictionary <dict>` ordering.)
       :type best: :datamodel:`instance <index-48>`
 
+      .. versionchanged:: 0.92
+        :ref:`no_fitness_termination <no-fitness-termination-label>` capability added.
+
     .. py:method:: species_stagnant(sid, species)
 
       Called via :py:class:`ReporterSet` (by :py:meth:`reproduction.DefaultReproduction.reproduce`) for each species considered stagnant by the
@@ -2003,6 +2123,8 @@ reproduction
 -----------------
 Handles creation of genomes, either from scratch or by sexual or asexual reproduction from parents. For class requirements, see :ref:`reproduction-interface-label`. Implements the default NEAT-python reproduction scheme: explicit fitness sharing with fixed-time species stagnation. 
 
+  .. index:: TODO
+
   .. py:class:: DefaultReproduction(config, reporters, stagnation)
 
     Implements the default NEAT-python reproduction scheme: explicit fitness sharing with fixed-time species stagnation. Inherits
@@ -2017,7 +2139,7 @@ Handles creation of genomes, either from scratch or by sexual or asexual reprodu
     :param stagnation: A :py:class:`DefaultStagnation <stagnation.DefaultStagnation>` instance - the current code partially depends on internals of this class (a TODO is noted to correct this).
     :type stagnation: :datamodel:`instance <index-48>`
 
-    .. versionchanged:: 0.91-config_work
+    .. versionchanged:: 0.92
       Configuration changed to use DefaultClassConfig, instead of a dictionary, and inherit write_config.
 
     .. py:classmethod:: parse_config(param_dict)
@@ -2030,7 +2152,7 @@ Handles creation of genomes, either from scratch or by sexual or asexual reprodu
       :return: Reproduction configuration object; considered opaque by rest of code, so current type returned is not required for interface.
       :rtype: DefaultClassConfig :datamodel:`instance <index-48>`
 
-      .. versionchanged:: 0.91-config_work
+      .. versionchanged:: 0.92
         Configuration changed to use DefaultClassConfig instead of a dictionary.
 
     .. index:: genome
@@ -2061,7 +2183,7 @@ Handles creation of genomes, either from scratch or by sexual or asexual reprodu
       :param previous_sizes: Number of members of species in population prior to reproduction.
       :type previous_sizes: list(int)
       :param int pop_size: Desired population size, as input to :py:meth:`reproduce` and :ref:`set <pop-size-label>` in the configuration file.
-      :param int min_species_size: Minimum number of members per species, set via the :ref:`min_species_size <min-species-size-label>` configuration parameter; can result in population size being above ``pop_size``.
+      :param int min_species_size: Minimum number of members per species, set via the :ref:`min_species_size <min-species-size-label>` configuration parameter (or the :ref:`elitism <elitism-label>` configuration parameter, if higher); can result in population size being above ``pop_size``.
 
     .. index:: pop_size
     .. index:: ! fitness function
@@ -2072,6 +2194,7 @@ Handles creation of genomes, either from scratch or by sexual or asexual reprodu
     .. index:: ! species_stagnant()
     .. index:: stagnation
     .. index:: ! info()
+    .. index:: TODO
 
     .. py:method:: reproduce(config, species, pop_size, generation)
 
@@ -2090,6 +2213,12 @@ Handles creation of genomes, either from scratch or by sexual or asexual reprodu
       :param int generation: :term:`Generation <generation>` count.
       :return: New population, as a dict of unique genome :term:`ID/key <key>` vs :term:`genome`.
       :rtype: dict(int, :datamodel:`instance <index-48>`)
+
+      .. versionchanged:: 0.92
+        Previously, the minimum and maximum relative fitnesses were determined (contrary to the comments in the code) including members of species being removed due to
+        stagnation; it is now determined using only the non-stagnant species. The minimum size of species was (and is) the greater of the
+        :ref:`min_species_size <min-species-size-label>` and :ref:`elitism <elitism-label>` configuration parameters; previously, this was not taken into account for 
+        :py:meth:`compute_spawn`; this made it more likely to have a population size above the :ref:`configured population size <pop-size-label>`.
 
 .. py:module:: six_util
    :synopsis: Provides Python 2/3 portability with three dictionary iterators; copied from the `six` module.
@@ -2189,12 +2318,12 @@ Divides the population into species based on :term:`genomic distances <genomic d
     :py:class:`reproduction.DefaultReproduction` currently depends on this having a ``species`` attribute consisting of a dictionary of species keys to species.
     Inherits from :py:class:`config.DefaultClassConfig` the required class method :py:meth:`write_config <config.DefaultClassConfig.write_config>`.
 
-    :param config: A configuration object, in this implementation a :py:class:`config.DefaultClassConfig` :datamodel:`instance <index-48>`.
+    :param config: A configuration object, in this implementation a :py:class:`config.Config` :datamodel:`instance <index-48>`.
     :type config: :datamodel:`instance <index-48>`
     :param reporters: A :py:class:`ReporterSet <reporting.ReporterSet>` instance giving reporters to be notified about :term:`genomic distance` statistics.
     :type reporters: :datamodel:`instance <index-48>`
 
-    .. versionchanged:: 0.91-config_work
+    .. versionchanged:: 0.92
       Configuration changed to use DefaultClassConfig, instead of a dictionary, and inherit write_config.
 
     .. py:classmethod:: parse_config(param_dict)
@@ -2207,12 +2336,13 @@ Divides the population into species based on :term:`genomic distances <genomic d
       :return: SpeciesSet configuration object; considered opaque by rest of code, so current type returned is not required for interface.
       :rtype: DefaultClassConfig :datamodel:`instance <index-48>`
 
-      .. versionchanged:: 0.91-config_work
+      .. versionchanged:: 0.92
         Configuration changed to use DefaultClassConfig instead of a dictionary.
 
     .. index:: ! genomic distance
     .. index:: compatibility_threshold
     .. index:: info()
+    .. index:: TODO
 
     .. py:method:: speciate(config, population, generation)
 
@@ -2245,7 +2375,6 @@ Divides the population into species based on :term:`genomic distances <genomic d
       :rtype: :datamodel:`instance <index-48>`
 
 
-
 .. index:: ! max_stagnation
 .. index:: ! species_elitism
 
@@ -2260,6 +2389,7 @@ Keeps track of whether species are making progress and helps remove ones that ar
   .. index:: fitness_criterion
   .. index:: fitness_threshold
   .. index:: fitness
+  .. index:: TODO
 
   .. note::
 
@@ -2278,7 +2408,7 @@ Keeps track of whether species are making progress and helps remove ones that ar
     :param reporters: A :py:class:`ReporterSet <reporting.ReporterSet>` instance with reporters that may need activating; not currently used.
     :type reporters: :datamodel:`instance <index-48>`
 
-    .. versionchanged:: 0.91-config_work
+    .. versionchanged:: 0.92
       Configuration changed to use DefaultClassConfig, instead of a dictionary, and inherit write_config.
 
     .. py:classmethod:: parse_config(param_dict)
@@ -2292,11 +2422,12 @@ Keeps track of whether species are making progress and helps remove ones that ar
       :return: Stagnation configuration object; considered opaque by rest of code, so current type returned is not required for interface.
       :rtype: DefaultClassConfig :datamodel:`instance <index-48>`
 
-      .. versionchanged:: 0.91-config_work
+      .. versionchanged:: 0.92
         Configuration changed to use DefaultClassConfig instead of a dictionary.
 
     .. index:: fitness
     .. index:: species_elitism
+    .. index:: TODO
 
     .. py:method:: update(species_set, generation)
 
@@ -2315,14 +2446,16 @@ Keeps track of whether species are making progress and helps remove ones that ar
       :return: A list of tuples of (species :term:`id/key <key>`, :py:class:`Species <species.Species>` instance, is_stagnant).
       :rtype: list(tuple(int, :datamodel:`instance <index-48>`, bool))
 
-      .. versionchanged:: 0.91-github
-        Species sorted to avoid marking best-performing as stagnant even with ``species_elitism``.
+      .. versionchanged:: 0.92
+        Species sorted (by the species fitness according to the ``species_fitness_func``) to avoid marking best-performing as stagnant even with ``species_elitism``.
 
 .. py:module:: statistics
    :synopsis: Gathers and provides (to callers and/or to a file) information on genome and species fitness, which are the most-fit genomes, and similar.
 
 statistics
 -------------
+
+  .. index:: TODO
 
   .. note::
     There are two design decisions to be aware of:
@@ -2361,7 +2494,9 @@ statistics
 
     .. py:method:: get_fitness_median()
 
-      Gets the per-generation median fitness. A wrapper for :py:meth:`get_fitness_stat` with the function being `median2`.
+      Gets the per-generation median fitness. A wrapper for :py:meth:`get_fitness_stat` with the function being `median2`. Not currently used internally.
+
+      .. versionadded:: 0.92
 
     .. py:method:: get_fitness_stdev()
 
@@ -2450,7 +2585,7 @@ statistics
 
 threaded
 ----------
-Runs evaluation functions in parallel threads (using the python library module `threading <https://docs.python.org/3.5/library/threading.html>`_) in order to evaluate multiple genomes at once. Probably preferable to :py:mod:`parallel` for python implementations without a :pygloss:`GIL` (Global Interpreter Lock).
+Runs evaluation functions in parallel threads (using the python library module `threading <https://docs.python.org/3.5/library/threading.html>`_) in order to evaluate multiple genomes at once. Probably preferable to :py:mod:`parallel` for python implementations without a :pygloss:`GIL` (Global Interpreter Lock); note, however, that neat-python is not currently tested on any such implementation.
 
   .. index:: fitness function
   .. index:: fitness
@@ -2462,6 +2597,8 @@ Runs evaluation functions in parallel threads (using the python library module `
     :param int num_workers: How many worker threads to use.
     :param eval_function: The eval_function should take two arguments - a genome object and a config object - and return a single :pytypes:`float <typesnumeric>` (the genome's fitness) Note that this is not the same as how a fitness function is called by :py:meth:`Population.run <population.Population.run>`, nor by :py:class:`ParallelEvaluator <parallel.ParallelEvaluator>` (although it is more similar to the latter).
     :type eval_function: `function`
+
+    .. index:: TODO
 
     .. py:method:: __del__()
 
@@ -2485,9 +2622,11 @@ Runs evaluation functions in parallel threads (using the python library module `
 
       Starts the worker threads if need be, queues the evaluation jobs for the worker threads, then assigns each fitness back to the appropriate genome.
 
-      :param genomes: A dictionary of :term:`genome_id <key>` to genome instances.
-      :type genomes: dict(int, :datamodel:`instance <index-48>`)
+      :param genomes: A list of tuples of :term:`genome_id <key>`, genome instances.
+      :type genomes: list(tuple(int, :datamodel:`instance <index-48>`))
       :param config: A `config.Config` instance.
       :type config: :datamodel:`instance <index-48>`
+
+  .. versionadded:: 0.92
 
 :ref:`Table of Contents <toc-label>`

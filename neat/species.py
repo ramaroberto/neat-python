@@ -1,13 +1,16 @@
 """Divides the population into species based on genomic distances."""
-from neat.config import ConfigParameter, DefaultClassConfig
-from neat.indexer import Indexer
+from itertools import count
+
 from neat.math_util import mean, stdev
 from neat.six_util import iteritems, iterkeys, itervalues
+from neat.config import ConfigParameter
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 if MYPY: # pragma: no cover
     from neat.mypy_util import DefaultGenome, DefaultGenomeConfig, Config # pylint: disable=unused-import
     from neat.reporting import ReporterSet # pylint: disable=unused-import
+else:
+    from neat.config import DefaultClassConfig
 
 class Species(object):
     def __init__(self,
@@ -65,7 +68,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
         # pylint: disable=super-init-not-called
         self.species_set_config = config
         self.reporters = reporters
-        self.indexer = Indexer(1)
+        self.indexer = count(1)
         self.species = {} # type: Dict[SpeciesKey, Species]
         self.genome_to_species = {} # type: Dict[GenomeKey, SpeciesKey]
 
@@ -132,7 +135,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
             else:
                 # No species is similar enough, create a new species, using
                 # this genome as its representative.
-                sid = self.indexer.get_next()
+                sid = cast(SpeciesKey,next(self.indexer))
                 new_representatives[sid] = gid
                 new_members[sid] = [gid]
 

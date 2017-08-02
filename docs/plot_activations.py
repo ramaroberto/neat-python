@@ -2,11 +2,17 @@ from __future__ import print_function
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+try:
+    from Pillow import Image, ImageChops
+except ImportError:
+    from PIL import Image, ImageChops
+
 from neat.activations import ActivationFunctionSet
 
 num_subfigures = 5
 
-x = np.linspace(-5.0, 5.0, 5000)
+x = np.linspace(-2.5, 2.5, 5000)
 
 afs = ActivationFunctionSet()
 mps = afs.multiparameterset
@@ -42,5 +48,14 @@ for n, mpf in mps.multiparam_func_dict['activation'].items():
         plt.xlim(-2.0, 2.0)
         plt.ylim(-2.0, 2.0)
         plt.gca().set_aspect(1)
-    plt.savefig('activation-{0}.png'.format(n))
+    plt.savefig('activation-tmp-{0}.png'.format(n))
     plt.close()
+    img = Image.open("activation-tmp-{0}.png".format(n))
+    bg = Image.new(img.mode, img.size, img.getpixel((0,0)))
+    diff = ImageChops.difference(img, bg)
+    bbox = diff.getbbox()
+    if bbox:
+        new_img = img.crop(bbox)
+        new_img.save("activation-{0}.png".format(n))
+    else:
+        img.save("activation-{0}.png".format(n))

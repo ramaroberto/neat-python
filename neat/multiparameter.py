@@ -217,8 +217,8 @@ class MultiParameterSet(object):
 
         if name in self.multiparam_func_dict[which_type]:
             mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]
-            return mpfunc_dict[name] # Allows for altering configuration...
-        raise UnknownFunctionError("Unknown function {!r}".format(name))
+            return mpfunc_dict[name] # Allows for altering configuration, although tricky re initialization + already-existing ones
+        raise UnknownFunctionError("Unknown {!s} function {!r}".format(which_type,name))
 
     def get_func(self,
                  name, # type: Union[str, MultiParameterFunctionInstance]
@@ -240,18 +240,19 @@ class MultiParameterSet(object):
             return nfunc_dict[name]
 
         if not name.endswith(')'):
-            raise LookupError("Unknown function {!r} - no end )".
-                              format(name))
+            raise UnknownFunctionError("Unknown {!s} function {!r} - no end )".
+                                       format(which_type,name))
 
         param_start = name.find('(')
         if param_start < 0:
-            raise UnknownFunctionError("Unknown function {!r} - no start (".
-                                       format(name))
+            raise UnknownFunctionError("Unknown {!s} function {!r} - no start (".
+                                       format(which_type,name))
 
         func_name = name[:(param_start-1)]
         if not func_name in self.multiparam_func_dict[which_type]:
-            raise UnknownFunctionError("Unknown function {!r} (from {!r})".
-                                       format(func_name,name))
+            raise UnknownFunctionError("Unknown {0!s} function {1!r} (from {2!r})".
+                                       format(which_type,func_name,name))
+
         multiparam_func = self.multiparam_func_dict[which_type][func_name]
 
         param_nums = map(float, name[(param_start+1):(len(name)-2)].split(','))
@@ -273,10 +274,17 @@ class MultiParameterSet(object):
         # type: (...) -> None
         """Adds a new activation/aggregation function, potentially multiparameter."""
         if not isinstance(user_func,
-                          (types.FunctionType,
+                          (types.BuiltinFunctionType,
+                           types.FunctionType,
                            types.LambdaType)):
             raise InvalidFunctionError(
-                "A function object is required, not {0!r} ({1!s})".format(user_func,name))
+                "A {0!s} function object is required, not {0!r} ({1!s})".format(which_type,user_func,name))
+
+        if isinstance(user_func, types.BuiltinFunctionType): # TODO: Test!
+            if kwargs:
+                raise InvalidFunctionError(
+                    "Cannot use built-in function {0!r} ({1!s}) as multiparam {2!s} function - needs wrapping".format(
+                        user_func, name, which_type))
 
         if isinstance(user_func, types.BuiltinFunctionType):
             if kwargs:

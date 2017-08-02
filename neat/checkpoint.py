@@ -2,9 +2,13 @@
 from __future__ import print_function
 
 import gzip
-import pickle
 import random
 import time
+
+try:
+    import cPickle as pickle # pylint: disable=import-error
+except ImportError:
+    import pickle # pylint: disable=import-error
 
 from neat.population import Population
 from neat.reporting import BaseReporter
@@ -20,9 +24,11 @@ class Checkpointer(BaseReporter):
     A reporter class that performs checkpointing using `pickle`
     to save and restore populations (and other aspects of the simulation state).
     """
+<<<<<<< HEAD
     def __init__(self,
                  generation_interval=100, # type: Optional[int]
-                 time_interval_seconds=300 # type: Optional[float]
+                 time_interval_seconds=300, # type: Optional[float]
+                 filename_prefix='neat-checkpoint-' # type: Optional[str]
                  ):
         # type: (...) -> None
         """
@@ -33,9 +39,11 @@ class Checkpointer(BaseReporter):
         :type generation_interval: int or None
         :param time_interval_seconds: If not None, maximum number of seconds between checkpoint attempts
         :type time_interval_seconds: float or None
+        :param str filename_prefix: Prefix for the filename (the end will be the generation number)
         """
         self.generation_interval = generation_interval
         self.time_interval_seconds = time_interval_seconds
+        self.filename_prefix = filename_prefix
 
         self.current_generation = None # type: Optional[int]
         self.last_generation_checkpoint = -1 # type: int
@@ -67,15 +75,15 @@ class Checkpointer(BaseReporter):
             self.last_generation_checkpoint = self.current_generation
             self.last_time_checkpoint = time.time()
 
-    @staticmethod
-    def save_checkpoint(config, # type: Config
+    def save_checkpoint(self,
+                        config, # type: Config
                         population, # type: Dict[GenomeKey, KnownGenome] # XXX
                         species_set, # type: DefaultSpeciesSet # XXX
                         generation # type: int
                         ):
         # type: (...) -> None
         """ Save the current simulation state. """
-        filename = 'neat-checkpoint-{0}'.format(generation) # type: str
+        filename = '{0}{1}'.format(self.filename_prefix,generation)
         print("Saving checkpoint to {0}".format(filename))
 
         with gzip.open(filename, 'w', compresslevel=5) as f:

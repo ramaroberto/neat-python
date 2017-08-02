@@ -47,13 +47,14 @@ class FeedForwardNetwork(object):
         for layer in layers:
             for node in layer:
                 inputs = [] # type: List[Tuple[NodeKey, float]]
-                node_expr = [] # type: List[str] # unused?
+                node_expr = [] # type: List[str] # currently unused
                 for conn_key in connections:
                     inode, onode = conn_key
                     if onode == node:
                         cg = genome.connections[conn_key]
                         inputs.append((inode, cg.weight)) # type: ignore
                         node_expr.append("v[{}] * {:.7e}".format(inode, cg.weight)) # type: ignore
+
 
                 ng = genome.nodes[node]
                 aggregation_function = config.genome_config.aggregation_function_defs.get(ng.aggregation) # type: ignore

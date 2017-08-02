@@ -1,6 +1,8 @@
 """Handles genomes (individuals in the population)."""
 from __future__ import division, print_function
 
+
+from itertools import count
 from random import choice, random, shuffle
 
 import sys
@@ -10,7 +12,6 @@ from neat.aggregations import AggregationFunctionSet
 from neat.config import ConfigParameter, write_pretty_params
 from neat.genes import DefaultConnectionGene, DefaultNodeGene
 from neat.graphs import creates_cycle
-from neat.indexer import Indexer
 from neat.multiparameter import MultiParameterSet
 from neat.six_util import iteritems, iterkeys
 
@@ -138,9 +139,9 @@ class DefaultGenomeConfig(object):
 
     def get_new_node_key(self, node_dict): # type: (Dict[NodeKey, BaseGene]) -> NodeKey
         if self.node_indexer is None:
-            self.node_indexer = Indexer(max(list(iterkeys(node_dict)))+1)
+            self.node_indexer = count(max(list(iterkeys(node_dict))) + 1)
 
-        new_id = self.node_indexer.get_next() # type: NodeKey
+        new_id = next(self.node_indexer) # type: NodeKey
 
         assert new_id not in node_dict
 
@@ -499,7 +500,7 @@ class DefaultGenome(object):
         return len(self.nodes), num_enabled_connections # c_type: Tuple[c_uint, c_uinit]
 
     def __str__(self): # type: () -> str
-        s = "Nodes:"
+        s = "Key: {0}\nFitness: {1}\nNodes:".format(self.key, self.fitness)
         for k, ng in iteritems(self.nodes):
             s += "\n\t{0} {1!s}".format(k, ng)
         s += "\nConnections:"

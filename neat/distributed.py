@@ -20,6 +20,13 @@ However, if a machine has both a primary node and one or more secondary nodes,
 MODE_AUTO cannot be used for those secondary nodes - MODE_SECONDARY will need to be
 specified.
 
+NOTE:
+    This module is in a **beta** state, and still *unstable* even in single-machine testing. Reliability is likely to vary, including depending on the Python version
+    and implementation (e.g., cpython vs pypy) in use and the likelihoods of timeouts (due to machine and/or network slowness). In particular, while the code can try
+    to reconnect between between primary and secondary nodes, as noted in the `multiprocessing` documentation this may not work due to data loss/corruption. Note also
+    that this module is not responsible for starting the script copies on the different compute nodes, since this is very site/configuration-dependent.
+
+
 Usage:
 1. Import modules and define the evaluation logic (the eval_genome function).
   (After this, check for ``if __name__ == '__main__'``, and put the rest of
@@ -50,10 +57,10 @@ from __future__ import print_function
 
 import socket
 import sys
-import threading
 import time
 import warnings
 
+# below still needed for queue.Empty
 try:
     # pylint: disable=import-error
     import Queue as queue
@@ -64,7 +71,6 @@ except ImportError:
 import multiprocessing
 from multiprocessing import managers
 from argparse import Namespace
-
 
 # Some of this code is based on
 # http://eli.thegreenplace.net/2012/01/24/distributed-computing-in-python-with-multiprocessing
@@ -78,10 +84,14 @@ from argparse import Namespace
 # the primary handles the evolution of the genomes
 # the secondary handles the evaluation of the genomes
 MODE_AUTO = 0  # auto-determine mode
-MODE_PRIMARY = 1  # enforce primary mode
-MODE_SECONDARY = 2  # enforce secondary mode
-MODE_MASTER = MODE_PRIMARY # backward compatibility
-MODE_SLAVE = MODE_SECONDARY # ditto
+MODE_PRIMARY = MODE_MASTER = 1  # enforce primary mode
+MODE_SECONDARY = MODE_SLAVE = 2  # enforce secondary mode
+
+# states to determine whether the secondaries should shut down
+_STATE_RUNNING = 0
+_STATE_SHUTDOWN = 1
+_STATE_FORCED_SHUTDOWN = 2
+
 
 class ModeError(RuntimeError):
     """
@@ -114,6 +124,31 @@ def host_is_local(hostname, port=22): # no port specified, just use the ssh port
     return False
 
 
+def _determine_mode(addr, mode):
+    """
+    Returns the mode which should be used.
+    If mode is MODE_AUTO, this is determined by checking if 'addr' points to the
+    local host. If it does, return MODE_PRIMARY, else return MODE_SECONDARY.
+    If mode is either MODE_PRIMARY or MODE_SECONDARY,
+    return the 'mode' argument. Otherwise, a ValueError is raised.
+    """
+    if isinstance(addr, tuple):
+        host = addr[0]
+    elif type(addr) == type(b"binary_string"):
+        host = addr
+    else:
+        raise TypeError("'addr' needs to be a tuple or an bytestring!")
+    if mode == MODE_AUTO:
+        if host_is_local(host):
+            return MODE_PRIMARY
+
+        return MODE_SECONDARY
+    elif mode in (MODE_SECONDARY, MODE_PRIMARY):
+        return mode
+    else:
+        raise ValueError("Invalid mode {!r}!".format(mode))
+
+
 def chunked(data, chunksize):
     """
     Returns a list of chunks containing at most ``chunksize`` elements of data.
@@ -132,6 +167,157 @@ def chunked(data, chunksize):
     if cur:
         res.append(cur)
     return res
+
+
+class _ExtendedManager(object):
+    """A class for managing the multiprocessing.managers.SyncManager"""
+    __safe_for_unpickling__ = True  # this may not be safe for unpickling,
+                                    # but this is required by pickle.
+
+    def __init__(self, addr, authkey, mode, start=False):
+        self.addr = addr
+        self.authkey = authkey
+        self.mode = _determine_mode(addr, mode)
+        self.manager = None
+        self._secondary_state= multiprocessing.managers.Value(int, _STATE_RUNNING)
+        if start:
+            self.start()
+
+    def __reduce__(self):
+        """
+        This method is used by pickle to serialize instances of this class.
+        """
+        return (
+            self.__class__,
+            (self.addr, self.authkey, self.mode, True),
+            )
+
+    def start(self):
+        """Starts or connects to the manager."""
+        if self.mode == MODE_PRIMARY:
+            i = self._start()
+        else:
+            i = self._connect()
+        self.manager = i
+
+    def stop(self):
+        """Stops the manager."""
+        self.manager.shutdown()
+
+    def set_secondary_state(self, value):
+        """Sets the value for 'secondary_state'."""
+        if value not in (_STATE_RUNNING, _STATE_SHUTDOWN, _STATE_FORCED_SHUTDOWN):
+            raise ValueError(
+                "State {!r} is invalid - needs to be one of _STATE_RUNNING, _STATE_SHUTDOWN, or _STATE_FORCED_SHUTDOWN".format(
+                    value)
+                )
+        if self.manager is None:
+            raise RuntimeError("Manager not started")
+        self.manager.set_state(value)
+
+    def _get_secondary_state(self):
+        """
+        Returns the value for 'secondary_state'.
+        This is required for the manager.
+        """
+        return self._secondary_state
+
+    def _get_manager_class(self, register_callables=False):
+        """
+        Returns a new 'Manager' subclass with registered methods.
+        If 'register_callable' is True, defines the 'callable' arguments.
+        """
+
+        class _EvaluatorSyncManager(managers.BaseManager):
+            """
+            A custom BaseManager.
+            Please see the documentation of `multiprocessing` for more
+            information.
+            """
+            pass
+
+        inqueue = queue.Queue()
+        outqueue = queue.Queue()
+        namespace = Namespace()
+
+        if register_callables:
+            _EvaluatorSyncManager.register(
+                "get_inqueue",
+                callable=lambda: inqueue,
+                )
+            _EvaluatorSyncManager.register(
+                "get_outqueue",
+                callable=lambda: outqueue,
+                )
+            _EvaluatorSyncManager.register(
+                "get_state",
+                callable=self._get_secondary_state,
+                )
+            _EvaluatorSyncManager.register(
+                "set_state",
+                callable=lambda v: self._secondary_state.set(v),
+                )
+            _EvaluatorSyncManager.register(
+                "get_namespace",
+                callable=lambda: namespace,
+                )
+
+
+        else:
+            _EvaluatorSyncManager.register(
+                "get_inqueue",
+                )
+            _EvaluatorSyncManager.register(
+                "get_outqueue",
+                )
+            _EvaluatorSyncManager.register(
+                "get_state",
+                )
+            _EvaluatorSyncManager.register(
+                "set_state",
+                )
+            _EvaluatorSyncManager.register(
+                "get_namespace",
+                )
+        return _EvaluatorSyncManager
+
+    def _connect(self):
+        """Connects to the manager."""
+        cls = self._get_manager_class(register_callables=False)
+        ins = cls(address=self.addr, authkey=self.authkey)
+        ins.connect()
+        return ins
+
+    def _start(self):
+        """Starts the manager."""
+        cls = self._get_manager_class(register_callables=True)
+        ins = cls(address=self.addr, authkey=self.authkey)
+        ins.start()
+        return ins
+
+    @property
+    def secondary_state(self):
+        """Whether the secondary nodes should still process elements."""
+        v = self.manager.get_state()
+        return v.get()
+
+    def get_inqueue(self):
+        """Returns the inqueue."""
+        if self.manager is None:
+            raise RuntimeError("Manager not started")
+        return self.manager.get_inqueue()
+
+    def get_outqueue(self):
+        """Returns the outqueue."""
+        if self.manager is None:
+            raise RuntimeError("Manager not started")
+        return self.manager.get_outqueue()
+
+    def get_namespace(self):
+        """Returns the namespace."""
+        if self.manager is None:
+            raise RuntimeError("Manager not started")
+        return self.manager.get_namespace()
 
 
 class DistributedEvaluator(object):
@@ -178,34 +364,38 @@ class DistributedEvaluator(object):
         else:
             try:
                 self.num_workers = max(1,multiprocessing.cpu_count())
-            except (RuntimeError, AttributeError):
+            except (RuntimeError, AttributeError): # pragma: no cover
                 print("multiprocessing.cpu_count() gave an error; assuming 1",
                       file=sys.stderr)
                 self.num_workers = 1
         self.worker_timeout = worker_timeout
-        if mode == MODE_AUTO:
-            if host_is_local(self.addr[0]):
-                mode = MODE_PRIMARY
-            else:
-                mode = MODE_SECONDARY
-        elif mode not in (MODE_SECONDARY, MODE_PRIMARY):
-            raise ValueError("Invalid mode {!r}!".format(mode))
-        self.mode = mode
-        self.manager = None
+        self.mode = _determine_mode(self.addr, mode)
+        self.em = _ExtendedManager(self.addr, self.authkey, mode=self.mode, start=False)
         self.inqueue = None
         self.outqueue = None
+        self.namespace = None
         self.started = False
+
+    def __getstate__(self):
+        """Required by the pickle protocol."""
+        # we do not actually save any state, but we need __getstate__ to be
+        # called.
+        return True  # return some nonzero value
+
+    def __setstate__(self, state):
+        """Called when instances of this class are unpickled."""
+        self._set_shared_instances()
 
     def is_primary(self):
         """Returns True if the caller is the primary node"""
         return (self.mode == MODE_PRIMARY)
 
-    def is_master(self):
+    def is_master(self): # pragma: no cover
         """Returns True if the caller is the primary (master) node"""
         warnings.warn("Use is_primary, not is_master", DeprecationWarning)
         return self.is_primary()
 
-    def start(self, exit_on_stop=True, secondary_wait=0):
+    def start(self, exit_on_stop=True, secondary_wait=0, reconnect=False):
         """
         If the DistributedEvaluator is in primary mode, starts the manager
         process and returns. In this case, the ``exit_on_stop`` argument will
@@ -216,6 +406,10 @@ class DistributedEvaluator(object):
         when the connection is lost.
         ``secondary_wait`` specifies the time (in seconds) to sleep before actually
         starting when in secondary mode.
+        If 'reconnect' is True, the secondary nodes will try to reconnect when
+        the connection is lost. In this case, sys.exit() will only be called
+        when 'exit_on_stop' is True and the primary node send a forced shutdown
+        command.
         """
         if self.started:
             raise RuntimeError("DistributedEvaluator already started!")
@@ -225,139 +419,149 @@ class DistributedEvaluator(object):
         elif self.mode == MODE_SECONDARY:
             time.sleep(secondary_wait)
             self._start_secondary()
-            self._secondary_loop()
+            self._secondary_loop(reconnect=reconnect)
             if exit_on_stop:
                 sys.exit(0)
         else:
             raise ValueError("Invalid mode {!r}!".format(self.mode))
 
-    def stop(self, wait=1, shutdown=True):
-        """Stops all secondaries."""
+    def stop(self, wait=1, shutdown=True, force_secondary_shutdown=False):
+        """
+        Stops all secondaries.
+        'wait' specifies the time (in seconds) to wait before shutting down the
+        manager or returning.
+        If 'shutdown', shutdown the manager.
+        If 'force_secondary_shutdown', shutdown the secondary nodes even if
+        they are started with 'reconnect=True'.
+        """
         if self.mode != MODE_PRIMARY:
             raise ModeError("Not in primary mode!")
         if not self.started:
             raise RuntimeError("Not yet started!")
-        stopevent = self.manager.get_stopevent()
-        stopevent.set()
+        if force_secondary_shutdown:
+            state = _STATE_FORCED_SHUTDOWN
+        else:
+            state = _STATE_SHUTDOWN
+        self.em.set_secondary_state(state)
         time.sleep(wait)
         if shutdown:
-            self.manager.shutdown()
+            self.em.stop()
         self.started = False
+        self.inqueue = self.outqueue = self.namespace = None
 
     def _start_primary(self):
         """Start as the primary"""
-        inqueue = queue.Queue()
-        outqueue = queue.Queue()
-        namespace = Namespace()
-        stop_event = threading.Event()
-
-        class _EvaluatorSyncManager(managers.SyncManager):
-            """
-            A custom SyncManager.
-            Please see the documentation of `multiprocessing` for more
-            information.
-            """
-            pass
-
-        _EvaluatorSyncManager.register(
-            "get_inqueue",
-            callable=lambda: inqueue,
-            )
-        _EvaluatorSyncManager.register(
-            "get_outqueue",
-            callable=lambda: outqueue,
-            )
-        _EvaluatorSyncManager.register(
-            "get_namespace",
-            callable=lambda: namespace,
-            )
-        _EvaluatorSyncManager.register(
-            "get_stopevent",
-            callable=lambda: stop_event,
-            )
-
-        if self.manager:
-            self.manager.shutdown()
-
-        self.manager = _EvaluatorSyncManager(
-            address=self.addr,
-            authkey=self.authkey,
-            )
-        self.manager.start()
-
-        self.inqueue = self.manager.get_inqueue()
-        self.outqueue = self.manager.get_outqueue()
+        self.em.start()
+        self.em.set_secondary_state(_STATE_RUNNING)
+        self._set_shared_instances()
 
     def _start_secondary(self):
         """Start as a secondary."""
+        self.em.start()
+        self._set_shared_instances()
 
-        class _EvaluatorSyncManager(managers.SyncManager):
-            """
-            A custom SyncManager.
-            Please see the documentation of `multiprocessing` for more
-            information.
-            """
-            pass
+    def _set_shared_instances(self):
+        """Sets attributes from the shared instances."""
+        self.inqueue = self.em.get_inqueue()
+        self.outqueue = self.em.get_outqueue()
+        self.namespace = self.em.get_namespace()
 
-        _EvaluatorSyncManager.register("get_inqueue")
-        _EvaluatorSyncManager.register("get_outqueue")
-        _EvaluatorSyncManager.register("get_namespace")
-        _EvaluatorSyncManager.register("get_stopevent")
+    def _reset_em(self):
+        """Resets self.em and the shared instances."""
+        self.em = _ExtendedManager(self.addr, self.authkey, mode=self.mode, start=False)
+        self.em.start()
+        self._set_shared_instances()
 
-        if self.manager: # XXX - not sure if this is right - drallensmith
-            self.manager.shutdown()
-
-        self.manager = _EvaluatorSyncManager(
-            address=self.addr,
-            authkey=self.authkey,
-            )
-        self.manager.connect()
-
-    def _secondary_loop(self):
-        """The worker loop for the secondary"""
-        inqueue = self.manager.get_inqueue()
-        outqueue = self.manager.get_outqueue()
-        stopevent = self.manager.get_stopevent()
+    def _secondary_loop(self, reconnect=False):
+        """The worker loop for the secondary nodes."""
         if self.num_workers > 1:
             pool = multiprocessing.Pool(self.num_workers)
         else:
             pool = None
-        while not stopevent.is_set():
+        should_reconnect = True
+        while should_reconnect:
+            i = 0
+            running = True
             try:
-                tasks = inqueue.get(block=True, timeout=0.2)
-            except (managers.RemoteError, queue.Empty):
+                self._reset_em()
+            except (socket.error, EOFError, IOError, OSError, socket.gaierror, TypeError):
                 continue
-            if pool is None:
-                res = []
-                for genome_id, genome, config in tasks:
-                    fitness = self.eval_function(genome, config)
-                    res.append((genome_id, fitness))
-                outqueue.put(res)
-            else:
-                genome_ids = []
-                jobs = []
-                for genome_id, genome, config in tasks:
-                    genome_ids.append(genome_id)
-                    jobs.append(
-                        pool.apply_async(
-                            self.eval_function, (genome, config)
+            while running:
+                i += 1
+                if i % 5 == 0:
+                    # for better performance, only check every 5 cycles
+                    try:
+                        state = self.em.secondary_state
+                    except (socket.error, EOFError, IOError, OSError, socket.gaierror, TypeError):
+                        if not reconnect:
+                            raise
+                        else:
+                            break
+                    if state == _STATE_FORCED_SHUTDOWN:
+                        running = False
+                        should_reconnect = False
+                    elif state == _STATE_SHUTDOWN:
+                        running = False
+                    if not running:
+                        continue
+                try:
+                    tasks = self.inqueue.get(block=True, timeout=0.2)
+                except queue.Empty:
+                    continue
+                except (socket.error, EOFError, IOError, OSError, socket.gaierror, TypeError):
+                    break
+                except (managers.RemoteError, multiprocessing.ProcessError) as e:
+                    if ('Empty' in repr(e)) or ('TimeoutError' in repr(e)):
+                        continue
+                    if (('EOFError' in repr(e)) or ('PipeError' in repr(e)) or
+                        ('AuthenticationError' in repr(e))): # Second for Python 3.X, Third for 3.6+
+                        break
+                    raise
+                if pool is None:
+                    res = []
+                    for genome_id, genome, config in tasks:
+                        fitness = self.eval_function(genome, config)
+                        res.append((genome_id, fitness))
+                else:
+                    genome_ids = []
+                    jobs = []
+                    for genome_id, genome, config in tasks:
+                        genome_ids.append(genome_id)
+                        jobs.append(
+                            pool.apply_async(
+                                self.eval_function, (genome, config)
+                                )
                             )
-                        )
-                results = [
-                    job.get(timeout=self.worker_timeout) for job in jobs
-                    ]
-                zipped = zip(genome_ids, results)
-                outqueue.put(zipped)
+                    results = [
+                        job.get(timeout=self.worker_timeout) for job in jobs
+                        ]
+                    res = zip(genome_ids, results)
+                try:
+                    self.outqueue.put(res)
+                except (socket.error, EOFError, IOError, OSError, socket.gaierror, TypeError):
+                    break
+                except (managers.RemoteError, multiprocessing.ProcessError) as e:
+                    if ('Empty' in repr(e)) or ('TimeoutError' in repr(e)):
+                        continue
+                    if (('EOFError' in repr(e)) or ('PipeError' in repr(e)) or
+                        ('AuthenticationError' in repr(e))): # Second for Python 3.X, Third for 3.6+
+                        break
+                    raise
+
+            if not reconnect:
+                should_reconnect = False
+                break
+        if pool is not None:
+            pool.terminate()
 
     def evaluate(self, genomes, config):
         """
         Evaluates the genomes.
-        This method raises a RoleError when this
+        This method raises a ModeError if the
         DistributedEvaluator is not in primary mode.
         """
         if self.mode != MODE_PRIMARY:
             raise ModeError("Not in primary mode!")
-        stopevent = self.manager.get_stopevent()
         tasks = [(genome_id, genome, config) for genome_id, genome in genomes]
         id2genome = {genome_id: genome for genome_id, genome in genomes}
         tasks = chunked(tasks, self.secondary_chunksize)
@@ -369,8 +573,6 @@ class DistributedEvaluator(object):
             try:
                 sr = self.outqueue.get(block=True, timeout=0.2)
             except (queue.Empty, managers.RemoteError):
-                if stopevent.is_set():
-                    raise SystemExit("Received stop event.")
                 continue
             tresults.append(sr)
         results = []
