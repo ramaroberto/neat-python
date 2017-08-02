@@ -5,10 +5,6 @@ import gzip
 import random
 import time
 
-try:
-    import cPickle as pickle # pylint: disable=import-error
-except ImportError:
-    import pickle # pylint: disable=import-error
 
 from neat.population import Population
 from neat.reporting import BaseReporter
@@ -16,8 +12,14 @@ from neat.reporting import BaseReporter
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 if MYPY: # pragma: no cover
+    import pickle
     from neat.species import DefaultSpeciesSet # pylint: disable=unused-import
     from neat.config import Config # pylint: disable=unused-import
+else:
+    try:
+        import cPickle as pickle # pylint: disable=import-error
+    except ImportError:
+        import pickle # pylint: disable=import-error
 
 class Checkpointer(BaseReporter):
     """

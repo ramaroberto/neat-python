@@ -7,7 +7,7 @@ from neat.config import ConfigParameter
 from neat.mypy_util import * # pylint: disable=unused-wildcard-import
 
 if MYPY: # pragma: no cover
-    from neat.mypy_util import DefaultGenome, DefaultGenomeConfig, Config # pylint: disable=unused-import
+    from neat.mypy_util import DefaultGenome, DefaultGenomeConfig, DefaultClassConfig, Config # pylint: disable=unused-import
     from neat.reporting import ReporterSet # pylint: disable=unused-import
 else:
     from neat.config import DefaultClassConfig

@@ -20,18 +20,15 @@ def get_file_list(neat_path):
     ./attributes.py
     ./checkpoint.py
     ./config.py
-    ./ctrnn/__init__.py
+    ./ctrnn
     ./genes.py
     ./genome.py
     ./graphs.py
-    ./indexer.py
-    ./iznn/__init__.py
+    ./iznn
     ./math_util.py
     ./multiparameter.py
     ./mypy_util.py
-    ./nn/__init__.py
-    ./nn/feed_forward.py
-    ./nn/recurrent.py
+    ./nn
     ./parallel.py
     ./population.py
     ./reporting.py

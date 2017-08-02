@@ -18,6 +18,7 @@ from neat.six_util import iteritems, iterkeys
 from neat.mypy_util import (cast, NodeKey, GenomeKey, ConnKey, MYPY) # pylint: disable=unused-import
 
 if MYPY: # pragma: no cover
+    from typing import Iterator # pylint: disable=unused-import
     from neat.mypy_util import (Dict, Any, List, Optional, Union, TextIO, Tuple) # pylint: disable=unused-import
     from neat.activations import ActFunc # pylint: disable=unused-import
     from neat.aggregations import AgFunc # pylint: disable=unused-import
@@ -98,7 +99,7 @@ class DefaultGenomeConfig(object):
                 self.structural_mutation_surer)
             raise RuntimeError(error_string)
 
-        self.node_indexer = None # type: Optional[Indexer]
+        self.node_indexer = None # type: Optional[Iterator[int]]
 
     def add_activation(self,
                        name, # type: str
@@ -141,7 +142,7 @@ class DefaultGenomeConfig(object):
         if self.node_indexer is None:
             self.node_indexer = count(max(list(iterkeys(node_dict))) + 1)
 
-        new_id = next(self.node_indexer) # type: NodeKey
+        new_id = cast(NodeKey,next(self.node_indexer))
 
         assert new_id not in node_dict
 
