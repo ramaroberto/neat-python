@@ -2,9 +2,13 @@
 from __future__ import print_function
 
 import gzip
-import pickle
 import random
 import time
+
+try:
+    import cPickle as pickle # pylint: disable=import-error
+except ImportError:
+    import pickle # pylint: disable=import-error
 
 from neat.population import Population
 from neat.reporting import BaseReporter
@@ -67,7 +71,7 @@ class Checkpointer(BaseReporter):
 
     @staticmethod
     def restore_checkpoint(filename):
-        '''Resumes the simulation from a previous saved point.'''
+        """Resumes the simulation from a previous saved point."""
         with gzip.open(filename) as f:
             generation, config, population, species_set, rndstate = pickle.load(f)
             random.setstate(rndstate)
