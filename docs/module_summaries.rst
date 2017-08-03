@@ -46,7 +46,7 @@ Has the built-in :term:`activation functions <activation function>`, code for us
       :param str name: The name of the function.
       :return: The function of interest
       :rtype: `function`
-      :raises InvalidActivationFunction: If the function is not known.
+      :raises UnknownFunctionError: If the function is not known.
 
     .. py:method:: is_valid(name)
 
@@ -160,8 +160,8 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
 
     .. py:method:: add(name, function)
 
-      After validating the function (via `validate_aggregation`), adds it to the available activation functions under the given name. Used
-      by :py:meth:`DefaultGenomeConfig.add_activation <genome.DefaultGenomeConfig.add_activation>`. TODO: Check for whether
+      After validating the function (via `validate_aggregation`), adds it to the available aggregation functions under the given name. Used
+      by :py:meth:`DefaultGenomeConfig.add_aggregation <genome.DefaultGenomeConfig.add_aggregation>`. TODO: Check for whether
       the function needs `reduce <functools.reduce>`, or at least offer a form of this function (or extra argument for it, defaulting to false)
       and/or its interface in :py:mod:`genome`, that will appropriately "wrap" the input function.
 
@@ -178,9 +178,12 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
       :param str name: The name of the function.
       :return: The function of interest
       :rtype: `function`
-      :raises InvalidAggregationFunction: If the function is not known.
+      :raises UnknownFunctionError: If the function is not known.
 
       .. versionadded:: 0.92
+
+      .. versionchanged:: 0.92-multiparam_funcs
+        Changed from :py:exc:`InvalidAggregationFunction` to :py:exc:`UnknownFunctionError`.
 
     .. py:method:: __getitem__(index)
 
@@ -190,7 +193,7 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
       :param str index: The name of the function.
       :return: The function of interest.
       :rtype: `function`
-      :raises InvalidAggregationFunction: If the function is not known.
+      :raises UnknownFunctionError: If the function is not known.
       :raises DeprecationWarning: Always.
 
       .. versionchanged:: 0.92
@@ -1785,6 +1788,25 @@ functions (such as for the :ref:`species_fitness_func <species-fitness-func-labe
 multiparameter
 --------------------
 The basis for multiparameter activation and aggregation functions.
+
+  .. py:exception:: BadFunctionError(Exception)
+
+    Base exception class for errors related to unusable or unknown activation/aggregation functions.
+
+  .. py:exception:: InvalidFunctionError(TypeError, BadFunctionError)
+
+    Exception raised if an object to be added as a function is not usable. TODO: Add examples of why.
+
+  .. py:exception:: UnknownFunctionError(LookupError, BadFunctionError)
+
+    Exception raised if an unknown function is requested by name, such as via :py:meth:`activations.ActivationFunctionSet.get()`,
+    :py:meth:`aggregations.AggregationFunctionSet.get()`, or :py:meth:`MultiParameterSet.get_MPF()`.
+
+  .. py:class:: MultiParameterSet(*which_types)
+
+    Holds the set of (potentially multiparameter) functions and contains methods for dealing with them.
+
+    :param str which_types: What types of functions to hold; initialized by :py:class:`DefaultGenomeConfig` to ['activation', 'aggregation']. Determines the valid types for ``which_type`` parameters in the class methods.
 
 .. py:module:: nn.feed_forward
    :synopsis: A straightforward feed-forward neural network NEAT implementation.
