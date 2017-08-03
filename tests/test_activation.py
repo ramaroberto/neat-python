@@ -180,9 +180,9 @@ def test_function_set():
     assert s.get('hat') is not None
     assert s.get('square') is not None
     assert s.get('cube') is not None
-    assert s.get_MPF('multiparam_relu', 'activation') is not None
-    assert s.get_MPF('clamped_tanh_step', 'activation') is not None
-    assert s.get_MPF('multiparam_sigmoid', 'activation') is not None
+    assert m.get_MPF('multiparam_relu', 'activation') is not None
+    assert m.get_MPF('clamped_tanh_step', 'activation') is not None
+    assert m.get_MPF('multiparam_sigmoid', 'activation') is not None
 
     assert s.is_valid('sigmoid')
     assert s.is_valid('tanh')

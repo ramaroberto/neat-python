@@ -87,9 +87,9 @@ def product_mean_aggregation(x, a):
     tmp_product = product_aggregation(input_list)
 
     if a > 0.5:
-        return math.copysign(tmp_product)*math.pow(abs(tmp_product), power)
+        return math.copysign(math.pow(abs(tmp_product), power), tmp_product)
 
-    return math.copysign(median2(input_list))*math.pow(abs(tmp_product), power)
+    return math.copysign(math.pow(abs(tmp_product), power), median2(input_list))
 
 def sum_product_mean_aggregation(x, a, b):
     assert a <= 1.0
