@@ -167,6 +167,26 @@ def test_bad_add2():
     else:
         raise Exception("Should have had a TypeError/derived for dud_function")
 
+def test_get_MPF():
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, 'test_configuration')
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_path)
+
+    assert config.genome_config.get_aggregation_MPF('max_median_min') is not None
+    assert config.genome_config.get_aggregation_MPF('maxabs_mean') is not None
+    assert config.genome_config.get_aggregation_MPF('sum_mean') is not None
+    assert config.genome_config.get_aggregation_MPF('product_mean') is not None
+    assert config.genome_config.get_aggregation_MPF('sum_product_mean') is not None
+
+    try:
+        ignored = config.genome_config.get_aggregation_MPF('foo')
+    except LookupError:
+        pass
+    else:
+        raise Exception("Should have had a LookupError/derived for get_aggregation_MPF 'foo'")
+
 if __name__ == '__main__':
     test_sum()
     test_product()
@@ -177,5 +197,11 @@ if __name__ == '__main__':
     test_mean()
     test_max_median_min()
     test_maxabs_mean()
+    test_sum_mean()
+    test_product_mean()
+    test_sum_product_mean()
     test_add_minabs()
     test_function_set()
+    test_get_MPF()
+    test_bad_add1()
+    test_bad_add2()
