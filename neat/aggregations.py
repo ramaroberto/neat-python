@@ -2,6 +2,9 @@
 Has the built-in aggregation functions, methods for using them,
 and methods for adding new user-defined ones.
 """
+from __future__ import division
+
+import math
 import sys
 import warnings
 
@@ -53,6 +56,51 @@ def maxabs_mean_aggregation(x, a):
     assert a >= 0.0
     return ((1.0-a)*mean(x))+(a*maxabs_aggregation(x))
 
+def sum_mean_aggregation(x, a):
+    assert a <= 1.0
+    assert a >= 0.0
+
+    input_list = list(map(float,x))
+
+    num_input = len(input_list)
+
+    if num_input == 1:
+        return input_list[0]
+
+    mult = (1+(a*(num_input - 1)))/num_input
+
+    return sum(input_list)*mult
+
+def product_mean_aggregation(x, a):
+    assert a <= 1.0
+    assert a >= 0.0
+
+    input_list = list(map(float,x))
+
+    num_input = len(input_list)
+
+    if num_input == 1:
+        return input_list[0]
+
+    power = (1+(a*(num_input - 1)))/num_input
+
+    tmp_product = product_aggregation(input_list)
+
+    if a > 0.5:
+        return math.copysign(tmp_product)*math.pow(abs(tmp_product), power)
+
+    return math.copysign(median2(input_list))*math.pow(abs(tmp_product), power)
+
+def sum_product_mean_aggregation(x, a, b):
+    assert a <= 1.0
+    assert a >= 0.0
+    assert b <= 1.0
+    assert b >= 0.0
+
+    return ((b*sum_mean_aggregation(x, a))+
+            ((1.0-b)*product_mean_aggregation(x, a)))
+    
+
 class AggregationFunctionSet(object):
     """Contains aggregation functions and methods to add and retrieve them."""
     def __init__(self, multiparameterset=None):
@@ -73,6 +121,13 @@ class AggregationFunctionSet(object):
                  a={'min_value':-1.0, 'max_value':1.0})
         self.add('maxabs_mean', maxabs_mean_aggregation,
                  a={'min_value':0.0, 'max_value':1.0})
+        self.add('sum_mean', sum_mean_aggregation,
+                 a={'min_value':0.0, 'max_value':1.0})
+        self.add('product_mean', product_mean_aggregation,
+                 a={'min_value':0.0, 'max_value':1.0})
+        self.add('sum_product_mean', sum_product_mean_aggregation,
+                 a={'min_value':0.0, 'max_value':1.0},
+                 b={'min_value':0.0, 'max_value':1.0})
 
     def add(self, name, function, **kwargs):
         self.multiparameterset.add_func(name, function, 'aggregation', **kwargs)
