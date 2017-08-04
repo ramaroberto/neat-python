@@ -41,7 +41,7 @@ class DefaultReproduction(DefaultClassConfig):
         self.stagnation = stagnation
         self.ancestors = {}
 
-        if config.fitness_min_divisor < 0.0: # TEST NEEDED!
+        if config.fitness_min_divisor < 0.0:
             raise RuntimeError(
                 "Fitness_min_divisor cannot be negative ({0:n})".format(
                     config.fitness_min_divisor))
