@@ -91,7 +91,7 @@ def product_mean_aggregation(x, a):
 
     return math.copysign(math.pow(abs(tmp_product), power), median2(input_list))
 
-def sum_product_aggregation(x, a): # TEST NEEDED!
+def sum_product_aggregation(x, a):
     assert a <= 1.0
     assert a >= 0.0
 

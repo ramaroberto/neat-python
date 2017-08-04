@@ -83,9 +83,9 @@ class DefaultGenomeConfig(object):
         elif self.structural_mutation_surer.lower() == 'default':
             self.structural_mutation_surer = 'default'
         else:
-            error_string = "Invalid structural_mutation_surer {!r}".format(
-                self.structural_mutation_surer)
-            raise RuntimeError(error_string)
+            raise RuntimeError(
+                "Invalid structural_mutation_surer {!r}".format(
+                    self.structural_mutation_surer))
 
         self.node_indexer = None
 
@@ -101,6 +101,11 @@ class DefaultGenomeConfig(object):
     def get_aggregation_MPF(self, name):
         return self.multiparameterset.get_MPF(name, 'aggregation')
 
+    def get_activation_MPF_Instance(self, name):
+        return self.multiparameterset.get_MPF_Instance(name, 'activation')
+
+    def get_aggregation_MPF_Instance(self, name):
+        return self.multiparameterset.get_MPF_Instance(name, 'aggregation')
 
     def save(self, f):
         if 'partial' in self.initial_connection:

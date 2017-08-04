@@ -21,11 +21,13 @@ from neat import aggregations, multiparameter
 
 def test_sum():
     assert aggregations.sum_aggregation([1.0,2.0,0.5]) == 3.5
+    assert aggregations.sum_aggregation([1.0,0.5,0.0]) == 1.5
     assert aggregations.sum_aggregation([1.0,-1.0,0.0]) == 0.0
 
 def test_product():
     assert aggregations.product_aggregation([1.0,2.0,0.5]) == 1.0
     assert aggregations.product_aggregation([1.0,0.5,0.0]) == 0.0
+    assert aggregations.product_aggregation([4.0,2.0,-1.0]) == -8.0
     
 def test_max():
     assert aggregations.max_aggregation([0.0,1.0,2.0]) == 2.0
@@ -83,6 +85,14 @@ def test_sum_product_mean():
     assert aggregations.sum_product_mean_aggregation([2.0,2.0], 0.0, 0.0) == 2.0
     assert aggregations.sum_product_mean_aggregation([4.0,2.0,1.0], 0.0, 0.0) == 2.0
 
+def test_sum_product():
+    assert aggregations.sum_product_aggregation([1.0,2.0,0.5], 1.0) == 3.5
+    assert aggregations.sum_product_aggregation([1.0,0.5,0.0], 1.0) == 1.5
+    assert aggregations.sum_product_aggregation([1.0,-1.0,0.0], 1.0) == 0.0
+    assert aggregations.sum_product_aggregation([1.0,2.0,0.5], 0.0) == 1.0
+    assert aggregations.sum_product_aggregation([1.0,0.5,0.0], 0.0) == 0.0
+    assert aggregations.sum_product_aggregation([4.0,2.0,-1.0], 0.0) == -8.0
+
 def minabs_aggregation(x):
     """Not particularly useful - just a check that can load in via genome_config."""
     return min(x, key=abs)
@@ -116,6 +126,7 @@ def test_function_set():
     assert m.get_MPF('sum_mean', 'aggregation') is not None
     assert m.get_MPF('product_mean', 'aggregation') is not None
     assert m.get_MPF('sum_product_mean', 'aggregation') is not None
+    assert m.get_MPF('sum_product', 'aggregation') is not None
 
     assert s.is_valid('sum')
     assert s.is_valid('product')
@@ -129,6 +140,7 @@ def test_function_set():
     assert s.is_valid('sum_mean')
     assert s.is_valid('product_mean')
     assert s.is_valid('sum_product_mean')
+    assert s.is_valid('sum_product')
 
     assert not s.is_valid('foo')
 
@@ -179,6 +191,7 @@ def test_get_MPF():
     assert config.genome_config.get_aggregation_MPF('sum_mean') is not None
     assert config.genome_config.get_aggregation_MPF('product_mean') is not None
     assert config.genome_config.get_aggregation_MPF('sum_product_mean') is not None
+    assert config.genome_config.get_aggregation_MPF('sum_product') is not None
 
     try:
         ignored = config.genome_config.get_aggregation_MPF('foo')
@@ -186,6 +199,59 @@ def test_get_MPF():
         pass
     else:
         raise Exception("Should have had a LookupError/derived for get_aggregation_MPF 'foo'")
+
+def test_get_MPF_Instance_simple():
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, 'test_configuration')
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_path)
+
+    assert config.genome_config.get_aggregation_MPF_Instance('max_median_min') is not None
+    assert config.genome_config.get_aggregation_MPF_Instance('maxabs_mean') is not None
+    assert config.genome_config.get_aggregation_MPF_Instance('sum_mean') is not None
+    assert config.genome_config.get_aggregation_MPF_Instance('product_mean') is not None
+    assert config.genome_config.get_aggregation_MPF_Instance('sum_product_mean') is not None
+    assert config.genome_config.get_aggregation_MPF_Instance('sum_product') is not None
+
+    try:
+        ignored = config.genome_config.get_aggregation_MPF_Instance('foo')
+    except LookupError:
+        pass
+    else:
+        raise Exception(
+            "Should have had a LookupError/derived for get_aggregation_MPF_Instance 'foo'")
+
+def test_get_MPF_Instance_complex():
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, 'test_configuration')
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_path)
+
+    assert config.genome_config.get_aggregation_MPF_Instance('max_median_min(0.5)') is not None
+    assert config.genome_config.get_aggregation_MPF_Instance('maxabs_mean(0.5)') is not None
+    assert config.genome_config.get_aggregation_MPF_Instance('sum_mean(0.5)') is not None
+    assert config.genome_config.get_aggregation_MPF_Instance('product_mean(0.5)') is not None
+    assert config.genome_config.get_aggregation_MPF_Instance('sum_product_mean(0.5,0.5)') is not None
+    assert config.genome_config.get_aggregation_MPF_Instance('sum_product(0.5)') is not None
+    assert config.genome_config.get_aggregation_MPF_Instance('sum_product(1)') is not None
+
+    try:
+        ignored = config.genome_config.get_aggregation_MPF_Instance('foo(0.5)')
+    except LookupError:
+        pass
+    else:
+        raise Exception(
+            "Should have had a LookupError/derived for get_aggregation_MPF_Instance 'foo(0.5)'")
+
+    try:
+        ignored = config.genome_config.get_aggregation_MPF_Instance('maxabs_mean(0.5,0.5,0.5)')
+    except RuntimeError:
+        pass
+    else:
+        raise Exception(
+            "Should have had a RuntimeError/derived for get_aggregation_MPF_Instance 'maxabs_mean(0.5,0.5,0.5)'")
 
 if __name__ == '__main__':
     test_sum()
@@ -200,8 +266,11 @@ if __name__ == '__main__':
     test_sum_mean()
     test_product_mean()
     test_sum_product_mean()
+    test_sum_product()
     test_add_minabs()
     test_function_set()
     test_get_MPF()
+    test_get_MPF_Instance_simple()
+    test_get_MPF_Instance_complex()
     test_bad_add1()
     test_bad_add2()

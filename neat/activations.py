@@ -92,25 +92,25 @@ def step_activation(z):
 def multiparam_relu_activation(z, a):
     return max(z, (z*a))
 
-def multiparam_elu_activation(z, a, b): # TEST NEEDED!
+def multiparam_elu_activation(z, a, b):
     z = min(60.0, max(-60.0, (5*z)))
     return 0.2 * min(abs(z), max(z, (math.exp(a)*(math.exp(z+b)-math.exp(b)))))
 
-def multiparam_lu_activation(z, a, b, c): # TEST NEEDED!
-    z = min(60.0, max(-60.0, (5*z)))
-    return 0.2 * min(abs(z), max(z, (z*a), (math.exp(b)*(math.exp(z+c)-math.exp(c)))))
+##def multiparam_lu_activation(z, a, b, c): # TEST NEEDED!
+##    z = min(60.0, max(-60.0, (5*z)))
+##    return 0.2 * min(abs(z), max(z, (z*a), (math.exp(b)*(math.exp(z+c)-math.exp(c)))))
 
 ##def multiparam_lu_partial_activation(z, a, b): # TEST NEEDED!
 ##    return multiparam_lu_activation(z, a, b, 0.0)
 
-def multiparam_weighted_lu_activation(z, a, b): # TEST NEEDED!
+def weighted_lu_activation(z, a, b):
     assert a <= 1.0
     assert a >= 0.0
 
     return ((a*multiparam_relu_activation(z, b))+
             ((1-a)*multiparam_elu_activation(z, b, 0.0)))
 
-def multiparam_relu_softplus_activation(z, a, b): # TEST NEEDED!
+def multiparam_relu_softplus_activation(z, a, b):
     assert a <= 1.0
     assert a >= 0.0
     assert b <= 1.0
@@ -174,14 +174,14 @@ class ActivationFunctionSet(object):
         self.add('multiparam_elu', multiparam_elu_activation,
                  a={'min_value':-1.0, 'max_value':1.0},
                  b={'min_value':-1.0, 'max_value':1.0})
-        self.add('multiparam_lu', multiparam_lu_activation,
-                 a={'min_value':-1.0, 'max_value':1.0},
-                 b={'min_value':-1.0, 'max_value':1.0},
-                 c={'min_value':-1.0, 'max_value':1.0})
+##        self.add('multiparam_lu', multiparam_lu_activation,
+##                 a={'min_value':-1.0, 'max_value':1.0},
+##                 b={'min_value':-1.0, 'max_value':1.0},
+##                 c={'min_value':-1.0, 'max_value':1.0})
 ##        self.add('multiparam_lu_partial', multiparam_lu_partial_activation,
 ##                 a={'min_value':-1.0, 'max_value':1.0},
 ##                 b={'min_value':-1.0, 'max_value':1.0})
-        self.add('multiparam_weighted_lu', multiparam_weighted_lu_activation,
+        self.add('weighted_lu', weighted_lu_activation,
                  a={'min_value':0.0, 'max_value':1.0},
                  b={'min_value':-1.0, 'max_value':1.0})
         self.add('multiparam_relu_softplus', multiparam_relu_softplus_activation,
