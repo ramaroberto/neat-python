@@ -282,7 +282,7 @@ class MultiParameterSet(object):
                                        format(which_type,func_name,name))
         multiparam_func = self.multiparam_func_dict[which_type][func_name]
 
-        param_nums = map(float, name[(param_start+1):(len(name)-1)].split(','))
+        param_nums = list(map(float, name[(param_start+1):(len(name)-1)].split(',')))
 
         if len(multiparam_func.evolved_param_names) < len(param_nums):
             raise RuntimeError(
@@ -331,7 +331,7 @@ class MultiParameterSet(object):
                                        format(which_type,func_name,name))
         multiparam_func = self.multiparam_func_dict[which_type][func_name]
 
-        param_nums = map(float, name[(param_start+1):(len(name)-1)].split(','))
+        param_nums = list(map(float, name[(param_start+1):(len(name)-1)].split(',')))
 
         params = dict(zip(multiparam_func.evolved_param_names, param_nums))
 
