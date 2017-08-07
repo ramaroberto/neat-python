@@ -1,8 +1,6 @@
 """Handles genomes (individuals in the population)."""
 from __future__ import division, print_function
 
-
-from itertools import count
 from random import choice, random, shuffle
 
 import sys
@@ -12,6 +10,7 @@ from neat.aggregations import AggregationFunctionSet
 from neat.config import ConfigParameter, write_pretty_params
 from neat.genes import DefaultConnectionGene, DefaultNodeGene
 from neat.graphs import creates_cycle
+from neat.indexer import Indexer
 from neat.six_util import iteritems, iterkeys
 
 
@@ -21,6 +20,24 @@ class DefaultGenomeConfig(object):
                             'full_nodirect', 'full', 'full_direct',
                             'partial_nodirect', 'partial', 'partial_direct']
 
+
+    # the configuration signature of the DefaultGenomeConfig
+    _params_sig = [ConfigParameter('num_inputs', int),
+                    ConfigParameter('num_outputs', int),
+                    ConfigParameter('num_hidden', int),
+                    ConfigParameter('feed_forward', bool),
+                    ConfigParameter('compatibility_disjoint_coefficient', float),
+                    ConfigParameter('compatibility_weight_coefficient', float),
+                    ConfigParameter('conn_add_prob', float),
+                    ConfigParameter('conn_delete_prob', float),
+                    ConfigParameter('node_add_prob', float),
+                    ConfigParameter('node_delete_prob', float),
+                    ConfigParameter('single_structural_mutation', bool, 'false'),
+                    ConfigParameter('structural_mutation_surer', str, 'default'),
+                    ConfigParameter('initial_connection', str, 'unconnected'),
+                   ]
+
+
     def __init__(self, params):
         # Create full set of available activation functions.
         self.activation_defs = ActivationFunctionSet()
@@ -28,19 +45,7 @@ class DefaultGenomeConfig(object):
         self.aggregation_function_defs = AggregationFunctionSet()
         self.aggregation_defs = self.aggregation_function_defs
 
-        self._params = [ConfigParameter('num_inputs', int),
-                        ConfigParameter('num_outputs', int),
-                        ConfigParameter('num_hidden', int),
-                        ConfigParameter('feed_forward', bool),
-                        ConfigParameter('compatibility_disjoint_coefficient', float),
-                        ConfigParameter('compatibility_weight_coefficient', float),
-                        ConfigParameter('conn_add_prob', float),
-                        ConfigParameter('conn_delete_prob', float),
-                        ConfigParameter('node_add_prob', float),
-                        ConfigParameter('node_delete_prob', float),
-                        ConfigParameter('single_structural_mutation', bool, 'false'),
-                        ConfigParameter('structural_mutation_surer', str, 'default'),
-                        ConfigParameter('initial_connection', str, 'unconnected')]
+        self._params = list(self._params_sig)  # create a copy
 
         # Gather configuration data from the gene classes.
         self.node_gene_type = params['node_gene_type']
@@ -109,9 +114,9 @@ class DefaultGenomeConfig(object):
 
     def get_new_node_key(self, node_dict):
         if self.node_indexer is None:
-            self.node_indexer = count(max(list(iterkeys(node_dict))) + 1)
+            self.node_indexer = Indexer(max(list(iterkeys(node_dict)))+1)
 
-        new_id = next(self.node_indexer)
+        new_id = self.node_indexer.get_next()
 
         assert new_id not in node_dict
 
@@ -171,6 +176,9 @@ class DefaultGenome(object):
 
         # Fitness results.
         self.fitness = None
+
+        # fitness function; used by HyperNEAT
+        self.fitness_function = None
 
     def configure_new(self, config):
         """Configure a new genome based on the given configuration."""
@@ -264,6 +272,9 @@ class DefaultGenome(object):
                 # Homologous gene: combine genes from both parents.
                 self.nodes[key] = ng1.crossover(ng2)
 
+        # inherit fitness function
+        self.fitness_function = parent1.fitness_function
+
     def mutate(self, config):
         """ Mutates this genome. """
 
@@ -322,6 +333,7 @@ class DefaultGenome(object):
         i, o = conn_to_split.key
         self.add_connection(config, i, new_node_id, 1.0, True)
         self.add_connection(config, new_node_id, o, conn_to_split.weight, True)
+        return ng
 
     def add_connection(self, config, input_key, output_key, weight, enabled):
         # TODO: Add further validation of this connection addition?
@@ -335,6 +347,7 @@ class DefaultGenome(object):
         connection.weight = weight
         connection.enabled = enabled
         self.connections[key] = connection
+        return connection
 
     def mutate_add_connection(self, config):
         """
@@ -368,6 +381,7 @@ class DefaultGenome(object):
 
         cg = self.create_connection(config, in_node, out_node)
         self.connections[cg.key] = cg
+        return cg
 
     def mutate_delete_node(self, config):
         # Do nothing if there are no non-output nodes.
@@ -454,7 +468,7 @@ class DefaultGenome(object):
         return len(self.nodes), num_enabled_connections
 
     def __str__(self):
-        s = "Key: {0}\nFitness: {1}\nNodes:".format(self.key, self.fitness)
+        s = "Nodes:"
         for k, ng in iteritems(self.nodes):
             s += "\n\t{0} {1!s}".format(k, ng)
         s += "\nConnections:"

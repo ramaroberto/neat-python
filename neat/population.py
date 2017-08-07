@@ -79,6 +79,10 @@ class Population(object):
         if self.config.no_fitness_termination and (n is None):
             raise RuntimeError("Cannot have no generational limit with no fitness termination")
 
+        # set fitness_function for initial genomes
+        for g in itervalues(self.population):
+            g.fitness_function = fitness_function
+
         k = 0
         while n is None or k < n:
             k += 1
