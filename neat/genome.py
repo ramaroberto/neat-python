@@ -129,6 +129,9 @@ class DefaultGenomeConfig(object):
                 self.structural_mutation_surer)
             raise RuntimeError(error_string)
 
+class ControlledMutationError(TypeError, RuntimeError):
+    pass
+
 class DefaultGenome(object):
     """
     A genome for generalized neural networks.
@@ -302,14 +305,17 @@ class DefaultGenome(object):
         for ng in self.nodes.values():
             ng.mutate(config)
 
-    def mutate_add_node(self, config):
-        if not self.connections:
+    def mutate_add_node(self, config, conn_to_split=None):
+        if (conn_to_split is not None) and (conn_to_split not in self.connections):
+            self.mutate_add_connection(config, conn_to_add=conn_to_split)
+        elif not self.connections:
             if config.check_structural_mutation_surer():
                 self.mutate_add_connection(config)
-            return
+            return None
 
         # Choose a random connection to split
-        conn_to_split = choice(list(self.connections.values()))
+        if conn_to_split is None:
+            conn_to_split = choice(list(self.connections.values()))
         new_node_id = config.get_new_node_key(self.nodes)
         ng = self.create_node(config, new_node_id)
         self.nodes[new_node_id] = ng
@@ -322,6 +328,7 @@ class DefaultGenome(object):
         i, o = conn_to_split.key
         self.add_connection(config, i, new_node_id, 1.0, True)
         self.add_connection(config, new_node_id, o, conn_to_split.weight, True)
+        return ng
 
     def add_connection(self, config, input_key, output_key, weight, enabled):
         # TODO: Add further validation of this connection addition?
@@ -336,20 +343,34 @@ class DefaultGenome(object):
         connection.enabled = enabled
         self.connections[key] = connection
 
-    def mutate_add_connection(self, config):
+    def mutate_add_connection(self, config, conn_to_create=None):
         """
         Attempt to add a new connection, the only restriction being that the output
         node cannot be one of the network input pins.
         """
         possible_outputs = list(iterkeys(self.nodes))
-        out_node = choice(possible_outputs)
-
         possible_inputs = possible_outputs + config.input_keys
-        in_node = choice(possible_inputs)
+
+        if conn_to_create is None:
+            out_node = choice(possible_outputs)
+            in_node = choice(possible_inputs)
+        else:
+            in_node, out_node = conn_to_create
+            if out_node not in possible_outputs:
+                raise ControlledMutationError(
+                    "Unknown or invalid out_node {0!r} for conn_to_create {1!r}".format(
+                        out_node, conn_to_create))
+            if in_node not in possible_inputs:
+                raise ControlledMutationError(
+                    "Unknown out_node {0!r} for conn_to_create {1!r}".format(
+                        out_node, conn_to_create))
 
         # Don't duplicate connections.
         key = (in_node, out_node)
         if key in self.connections:
+            if conn_to_create is not None:
+                raise ControlledMutationError(
+                    "Connection to create {!r} already exists".format(conn_to_create))
             # TODO: Should this be using mutation to/from rates? Hairy to configure...
             if config.check_structural_mutation_surer():
                 self.connections[key].enabled = True
@@ -357,6 +378,10 @@ class DefaultGenome(object):
 
         # Don't allow connections between two output nodes
         if in_node in config.output_keys and out_node in config.output_keys:
+            if conn_to_create is not None:
+                raise ControlledMutationError(
+                    "Both in_node {0!r} and out_node {1!r} are output nodes".format(
+                        in_node, out_node))
             return
 
         # No need to check for connections between input nodes:
@@ -364,18 +389,30 @@ class DefaultGenome(object):
 
         # For feed-forward networks, avoid creating cycles.
         if config.feed_forward and creates_cycle(list(iterkeys(self.connections)), key):
+            if conn_to_create is not None:
+                raise ControlledMutationError(
+                    "Connection to create {!r} would cause a cycle".format(
+                        conn_to_create))
             return
 
         cg = self.create_connection(config, in_node, out_node)
         self.connections[cg.key] = cg
+        return cg
 
-    def mutate_delete_node(self, config):
+    def mutate_delete_node(self, config, node_to_delete=None):
         # Do nothing if there are no non-output nodes.
         available_nodes = [k for k in iterkeys(self.nodes) if k not in config.output_keys]
-        if not available_nodes:
-            return -1
 
-        del_key = choice(available_nodes)
+        if node_to_delete is None:
+            if not available_nodes:
+                return -1
+
+            del_key = choice(available_nodes)
+        else:
+            if node_to_delete not in available_nodes:
+                raise ControlledMutationError(
+                    "Unknown or invalid node to delete {!r}".format(node_to_delete))
+            del_key = node_to_delete
 
         connections_to_delete = set()
         for k, v in iteritems(self.connections):
@@ -389,10 +426,20 @@ class DefaultGenome(object):
 
         return del_key
 
-    def mutate_delete_connection(self):
-        if self.connections:
-            key = choice(list(self.connections.keys()))
-            del self.connections[key]
+    def mutate_delete_connection(self, conn_to_delete=None):
+        if conn_to_delete is None:
+            if self.connections:
+                key = choice(list(self.connections.keys()))
+                del self.connections[key]
+                return key
+            else:
+                return None
+        else:
+            if conn_to_delete not in self.connections:
+                raise ControlledMutationError(
+                    "Unknown connection to delete {!r}".format(conn_to_delete))
+            del self.connections[conn_to_delete]
+            return conn_to_delete
 
     def distance(self, other, config):
         """
