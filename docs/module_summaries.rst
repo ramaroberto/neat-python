@@ -761,11 +761,13 @@ distributed
     Values - which should be treated as constants - that are used for the ``mode`` argument of :py:class:`DistributedEvaluator`. If MODE_AUTO,
     :py:func:`_determine_mode()` uses :py:func:`host_is_local()` and the specified ``addr`` of the :term:`primary node` to decide the mode; the other two specify it.
 
-  .. py:data:: _STATE_RUNNING
-  .. py:data:: _STATE_SHUTDOWN
-  .. py:data:: _STATE_FORCED_SHUTDOWN
+  .. py:data:: _EXCEPTION_TYPE_OK
+  .. py:data:: _EXCEPTION_TYPE_UNCERTAIN
+  .. py:data:: _EXCEPTION_TYPE_BAD
 
-    Values - which should be treated as constants - that are used to determine the current state (whether the secondaries should be continuing the run or not).
+    Values - which should be treated as constants - that are returned by the :py:meth:`_check_exception()` method. The first is for a queue being empty and similar
+    reasons to try again. The second indicates likely disconnection, but should try to reconnect. The third includes all other cases, and is responded to with either immediately
+    `raising <raise>` the exception again, or returning and exiting with a non-zero exit (status) value.
 
   .. py:exception:: ModeError(RuntimeError)
 
@@ -807,8 +809,7 @@ distributed
 
   .. py:class:: _ExtendedManager(addr, authkey, mode, start=False)
 
-    Manages the :pylib:`multiprocessing.managers.SyncManager <multiprocessing.html#multiprocessing.managers.SyncManager>` instance. Initializes
-    ``self._secondary_state`` to :py:data:`_STATE_RUNNING`.
+    Manages the :pylib:`multiprocessing.managers.SyncManager <multiprocessing.html#multiprocessing.managers.SyncManager>` instance.
 
     :param addr: Should be a tuple of (hostname, port) pointing to the machine running the DistributedEvaluator in primary mode. If mode is :py:data:`MODE_AUTO`, the mode is determined by checking whether the hostname points to this host or not (via :py:func:`_determine_mode()` and :py:func:`host_is_local()`).
     :type addr: tuple(str, int)
@@ -817,44 +818,26 @@ distributed
     :param int mode: Specifies the mode to run in - must be one of :py:data:`MODE_AUTO`, :py:data:`MODE_PRIMARY`, or :py:data:`MODE_SECONDARY`. Processed by :py:func:`_determine_mode()`.
     :param bool start: Whether to call the :py:meth:`start()` method after initialization.
 
-    .. index:: TODO
-
     .. py:method:: __reduce__()
 
-      Used by `pickle` to serialize instances of this class. TODO: Appears to assume that ``start`` (for initialization) should be true; perhaps ``self.manager``
-      should be checked? (This may require :py:meth::`stop()` to set ``self.manager`` to ``None``, incidentally.)
+      Used by `pickle` to serialize instances of this class.
 
-      :return: Information about the class instance; a tuple of (class name, tuple(addr, authkey, mode, True)).
+      :return: Information about the class instance, usable to call ``__init__()`` for the class again; a tuple of (class name, tuple(addr, authkey, mode, whether_started)).
       :rtype: tuple(str, tuple(tuple(str, int), bytes, int, bool))
 
     .. py:method:: start()
 
       Starts (if in :py:data:`MODE_PRIMARY`) or connects to (if in :py:data:`MODE_SECONDARY`) the manager.
 
-    .. index:: TODO
-
     .. py:method:: stop()
 
-      Stops the manager using :pylib:`shutdown <multiprocessing.html#multiprocessing.managers.BaseManager.shutdown>` .
-      TODO: Should this set ``self.manager`` to None?
-
-    .. py:method:: set_secondary_state(value)
-
-      Sets the value for the ``secondary_state``, shared between the nodes via :pylib:`multiprocessing.managers.Value <multiprocessing.html#multiprocessing.managers.SyncManager.Value>`.
-
-      :param int value: The desired secondary state; must be one of :py:data:`_STATE_RUNNING`, :py:data:`_STATE_SHUTDOWN`, or :py:data:`_STATE_FORCED_SHUTDOWN`.
-      :raises ValueError: If the ``value`` is not one of the above.
-      :raises RuntimeError: If the manager has not been :py:meth:`started <start()>`.
-
-    .. py:attribute:: secondary_state
-
-      The :pylib:`property <functions.html#property>` ``secondary_state`` - whether the secondary nodes should still be processing elements.
+      Stops the manager; if in :py:data:`MODE_PRIMARY`, uses :pylib:`shutdown <multiprocessing.html#multiprocessing.managers.BaseManager.shutdown>`.
 
     .. py:method:: get_inqueue()
 
       Returns the inqueue.
 
-      :return: The incoming :pylib:`queue <multiprocessing.html#multiprocessing.Queue>`.
+      :return: The incoming `queue <queue.Queue>`.
       :rtype: :datamodel:`instance <index-48>`
       :raises RuntimeError: If the manager has not been :py:meth:`started <start()>`.
 
@@ -862,7 +845,7 @@ distributed
 
       Returns the outqueue.
 
-      :return: The outgoing :pylib:`queue <multiprocessing.html#multiprocessing.Queue>`.
+      :return: The outgoing `queue <queue.Queue>`.
       :rtype: :datamodel:`instance <index-48>`
       :raises RuntimeError: If the manager has not been :py:meth:`started <start()>`.
 

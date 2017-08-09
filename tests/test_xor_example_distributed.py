@@ -60,7 +60,7 @@ def run_primary(addr, authkey, generations):
         secondary_chunksize=15,
         mode=MODE_PRIMARY,
         )
-    de.start()
+    de.start(reconnect=True)
     winner = p.run(de.evaluate, generations)
     print("===== stopping DistributedEvaluator =====")
     de.stop(wait=3, shutdown=False, force_secondary_shutdown=False)
@@ -86,7 +86,7 @@ def run_primary(addr, authkey, generations):
 
         winner2 = None
         time.sleep(3)
-        de.start()
+        de.start(reconnect=True)
         winner2 = p2.run(de.evaluate, (100-checkpointer.last_generation_checkpoint))
         print ("===== stopping DistributedEvaluator (forced) =====")
         de.stop(wait=3, shutdown=True, force_secondary_shutdown=True)

@@ -205,7 +205,8 @@ class _ExtendedManager(object):
 
     def stop(self):
         """Stops the manager."""
-        #self.manager.shutdown() # claims there isn't any such attribute ?!?
+        if (self.manager is not None) and (self.mode == MODE_PRIMARY):
+            self.manager.shutdown()
         self.manager = None
 
     @staticmethod
@@ -223,9 +224,9 @@ class _ExtendedManager(object):
             """
             pass
 
-        inqueue = queue.Queue() # may need to be one from multiprocessing.managers.SyncManager
-        outqueue = queue.Queue() # ditto
-        namespace = Namespace() # ditto
+        inqueue = queue.Queue()
+        outqueue = queue.Queue()
+        namespace = Namespace() # Does this need to be from multiprocessing.managers.SyncManager?
 
         if register_callables:
             _EvaluatorSyncManager.register(
@@ -433,11 +434,11 @@ class DistributedEvaluator(object):
             raise ModeError("Not in primary mode!")
         if not self.started:
             raise RuntimeError("Not yet started!")
-        start_time = time.time()
-        num_added = 0
         if self.n_tasks is None: # pragma: no cover
             self.n_tasks = max(1, wait, self.worker_timeout)*5
             warnings.warn("Self.n_tasks is None; estimating at {:n}".format(self.n_tasks))
+        start_time = time.time()
+        num_added = 0
         while (num_added < self.n_tasks) and ((time.time() - start_time) <
                                               max(1,
                                                   self.reconnect_max_time,
@@ -501,7 +502,7 @@ class DistributedEvaluator(object):
               or ('refused' in string) or ('file descriptor' in string)):
             return _EXCEPTION_TYPE_UNCERTAIN
         return _EXCEPTION_TYPE_BAD
-        
+
     def _secondary_loop(self, reconnect_max_time=(5*60)):
         """The worker loop for the secondary nodes."""
         if self.num_workers > 1:
