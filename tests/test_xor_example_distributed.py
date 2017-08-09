@@ -12,7 +12,7 @@ from neat.distributed import MODE_PRIMARY, MODE_SECONDARY
 
 ON_PYPY = platform.python_implementation().upper().startswith("PYPY")
 
-if ON_PYPY and ((not 'TRY_PYPY' in os.environ) or (os.environ['TRY_PYPY'] != 1)):
+if ON_PYPY and (not 'TRY_PYPY' in os.environ):
     SKIP_FOR_PYPY = True
 else:
     SKIP_FOR_PYPY = False

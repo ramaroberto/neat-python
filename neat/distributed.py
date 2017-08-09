@@ -415,6 +415,13 @@ class DistributedEvaluator(object):
                 if self.exit_on_stop:
                     self._do_exit()
                 else:
+                    if (self.outqueue is not None) and hasattr(self.outqueue,'close'):
+                        try:
+                            self.outqueue.close()
+                        except (EOFError, IOError, OSError, socket.gaierror, TypeError,
+                                managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
+                            if self._check_exception(e) == _EXCEPTION_TYPE_BAD:
+                                warnings.warn("Outqueue close error: " + repr(e))
                     self.inqueue = self.outqueue = self.namespace = None
                     if self.reconnect:
                         self.em.stop()
@@ -468,7 +475,13 @@ class DistributedEvaluator(object):
         time_passed = time.time() - start_time
         if time_passed < wait: # pragma: no cover
             time.sleep(wait - time_passed)
-        self._close_queues()
+        if (force_secondary_shutdown or shutdown) and (self.inqueue is not None) and hasattr(self.inqueue,'close'):
+            try:
+                self.inqueue.close()
+            except (EOFError, IOError, OSError, socket.gaierror, TypeError,
+                    managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
+                if self._check_exception(e) == _EXCEPTION_TYPE_BAD:
+                    warnings.warn("Inqueue close error: " + repr(e))
         self.outqueue = self.inqueue = self.namespace = None
         if shutdown:
             self.em.stop()
@@ -504,26 +517,15 @@ class DistributedEvaluator(object):
             return _EXCEPTION_TYPE_UNCERTAIN
         return _EXCEPTION_TYPE_BAD
 
-    def _close_queues(self):
-        """Attempts to close any queues that need it."""
-        if (self.mode == MODE_PRIMARY) and (self.inqueue is not None) and hasattr(self.inqueue,'close'):
-            try:
-                self.inqueue.close()
-            except (EOFError, IOError, OSError, socket.gaierror, TypeError, # add NotImplementedError?
-                    managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
-                if self._check_exception(e) == _EXCEPTION_TYPE_BAD:
-                    warnings.warn("Inqueue close error: " + repr(e))
-        elif (self.mode == MODE_SECONDARY) and (self.outqueue is not None) and hasattr(self.outqueue,'close'):
+    def _reset_em(self):
+        """Resets self.em and the shared instances."""
+        if (self.mode == MODE_SECONDARY) and (self.outqueue is not None) and hasattr(self.outqueue,'close'):
             try:
                 self.outqueue.close()
             except (EOFError, IOError, OSError, socket.gaierror, TypeError,
                     managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
                 if self._check_exception(e) == _EXCEPTION_TYPE_BAD:
                     warnings.warn("Outqueue close error: " + repr(e))
-
-    def _reset_em(self):
-        """Resets self.em and the shared instances."""
-        self._close_queues()
         self.em = _ExtendedManager(self.addr, self.authkey, mode=self.mode, start=True)
         self._set_shared_instances()
 
@@ -591,6 +593,10 @@ class DistributedEvaluator(object):
                         self.exit_on_stop = False
                     elif not tasks:
                         self.reconnect = False
+                    break
+                elif tasks is None:
+                    running = False
+                    should_reconnect = False
                     break
                 last_time_done = time.time()
                 if pool is None:
@@ -668,7 +674,10 @@ class DistributedEvaluator(object):
                 sr = self.outqueue.get(block=True, timeout=0.2)
             except (queue.Empty, managers.RemoteError): # more detailed check?
                 continue
-            tresults.append(sr)
+            if sr is None:
+                self._reset_em()
+            else:
+                tresults.append(sr)
         results = []
         for sr in tresults:
             results += sr
