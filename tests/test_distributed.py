@@ -230,7 +230,7 @@ def test_DistributedEvaluator_state_error4():
         raise Exception("primary.em.get_namespace() with unstarted manager did not raise a RuntimeError!")
     
 
-@unittest.skipIf(SKIP_FOR_PYPY, "This test fails on pypy during travis builds but usually works locally.")
+@unittest.skipIf(SKIP_FOR_PYPY, "Multiprocessing managers use threads; pypy has problems with threads.")
 def test_distributed_evaluation_multiprocessing(do_mwcp=True):
     """
     Full test run using the Distributed Evaluator (fake nodes using processes).

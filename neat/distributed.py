@@ -349,7 +349,7 @@ class DistributedEvaluator(object):
         self.reconnect_max_time = None
         self.n_tasks = None
 
-    def __getstate__(self):
+    def __getstate__(self): # pragma: no cover
         """Required by the pickle protocol."""
         # we do not actually save any state, but we need __getstate__ to be
         # called.
@@ -371,7 +371,7 @@ class DistributedEvaluator(object):
     def _do_exit(self):
         if self.exit_string is None:
             sys.exit(0)
-        else:
+        else: # pragma: no cover
             sys.exit(self.exit_string)
 
     def start(self, exit_on_stop=True, secondary_wait=0, reconnect=False, reconnect_max_time=None):
@@ -450,7 +450,7 @@ class DistributedEvaluator(object):
                 else:
                     self.inqueue.put(1, block=True, timeout=0.2)
             except (EOFError, IOError, OSError, socket.gaierror, TypeError, queue.Full,
-                    managers.RemoteError, multiprocessing.ProcessError) as e:
+                    managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
                 if ("timed" in repr(e).lower()) or ("timeout" in repr(e).lower()):
                     if (time.time() - start_time) < max(1, wait, self.worker_timeout):
                         num_added += 1
@@ -462,12 +462,13 @@ class DistributedEvaluator(object):
             else:
                 num_added += 1
         time_passed = time.time() - start_time
-        if time_passed < wait:
+        if time_passed < wait: # pragma: no cover
             time.sleep(wait - time_passed)
+        self.outqueue = self.inqueue = self.namespace = None
         if shutdown:
             self.em.stop()
         self.started = False
-        self.outqueue = self.inqueue = self.namespace = None
+
 
     def _start_primary(self):
         """Start as the primary"""
@@ -540,7 +541,7 @@ class DistributedEvaluator(object):
                     continue
                 except (EOFError, TypeError, socket.gaierror,
                         managers.RemoteError, multiprocessing.ProcessError, IOError, OSError) as e:
-                    if ('empty' in repr(e).lower()):
+                    if ('empty' in repr(e).lower()): # pragma: no cover
                         continue
                     curr_status = self._check_exception(e)
                     if curr_status in (_EXCEPTION_TYPE_OK, _EXCEPTION_TYPE_UNCERTAIN):
@@ -596,7 +597,7 @@ class DistributedEvaluator(object):
                 except (EOFError, TypeError, socket.gaierror,
                         managers.RemoteError, multiprocessing.ProcessError,
                         IOError, OSError) as e:
-                    if ('full' in repr(e).lower()):
+                    if ('full' in repr(e).lower()): # pragma: no cover
                         continue
                     curr_status = self._check_exception(e)
                     if curr_status in (_EXCEPTION_TYPE_OK, _EXCEPTION_TYPE_UNCERTAIN):

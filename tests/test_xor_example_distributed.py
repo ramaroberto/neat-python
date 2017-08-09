@@ -48,7 +48,7 @@ def run_primary(addr, authkey, generations):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    checkpointer = neat.Checkpointer(max(1,int(generations/4)), 10)
+    checkpointer = neat.Checkpointer(max(1,(int(generations/4)-1)), 10)
     p.add_reporter(checkpointer)
 
     # Run for the specified number of generations.
@@ -76,7 +76,7 @@ def run_primary(addr, authkey, generations):
             output = winner_net.activate(xi)
             print("input {!r}, expected output {!r}, got {!r}".format(xi, xo, output))
 
-    if (checkpointer.last_generation_checkpoint >= 0) and (checkpointer.last_generation_checkpoint < 100):
+    if (checkpointer.last_generation_checkpoint >= 0) and (checkpointer.last_generation_checkpoint < generations):
         filename = 'neat-checkpoint-{0}'.format(checkpointer.last_generation_checkpoint)
         print("Restoring from {!s}".format(filename))
         p2 = neat.checkpoint.Checkpointer.restore_checkpoint(filename)
@@ -133,7 +133,7 @@ def run_secondary(addr, authkey, num_workers=1):
         raise Exception("DistributedEvaluator in secondary mode did not try to exit!")
 
 
-@unittest.skipIf(SKIP_FOR_PYPY, "This test fails on pypy during travis builds (frequently due to timeouts) but usually works locally.")
+@unittest.skipIf(SKIP_FOR_PYPY, "Multiprocessing managers use threads; pypy has problems with threads.")
 def test_xor_example_distributed():
     """
     Test to make sure restoration after checkpoint works with distributed.
