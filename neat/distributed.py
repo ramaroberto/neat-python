@@ -418,7 +418,7 @@ class DistributedEvaluator(object):
                     if (self.outqueue is not None) and hasattr(self.outqueue,'close'):
                         try:
                             self.outqueue.close()
-                        except (EOFError, IOError, OSError, socket.gaierror, TypeError,
+                        except (EOFError, IOError, OSError, socket.gaierror, TypeError, ValueError,
                                 managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
                             if self._check_exception(e) == _EXCEPTION_TYPE_BAD:
                                 warnings.warn("Outqueue close error: " + repr(e))
@@ -460,7 +460,7 @@ class DistributedEvaluator(object):
                     self.inqueue.put(0, block=True, timeout=0.2)
                 else:
                     self.inqueue.put(1, block=True, timeout=0.2)
-            except (EOFError, IOError, OSError, socket.gaierror, TypeError, queue.Full,
+            except (EOFError, IOError, OSError, socket.gaierror, TypeError, queue.Full, ValueError,
                     managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
                 if ("timed" in repr(e).lower()) or ("timeout" in repr(e).lower()):
                     if (time.time() - start_time) < max(1, wait, self.worker_timeout):
@@ -478,7 +478,7 @@ class DistributedEvaluator(object):
         if (force_secondary_shutdown or shutdown) and (self.inqueue is not None) and hasattr(self.inqueue,'close'):
             try:
                 self.inqueue.close()
-            except (EOFError, IOError, OSError, socket.gaierror, TypeError,
+            except (EOFError, IOError, OSError, socket.gaierror, TypeError, ValueError,
                     managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
                 if self._check_exception(e) == _EXCEPTION_TYPE_BAD:
                     warnings.warn("Inqueue close error: " + repr(e))
@@ -513,7 +513,7 @@ class DistributedEvaluator(object):
             return _EXCEPTION_TYPE_UNCERTAIN
         elif (('eoferror' in string) or ('typeerror' in string) or ('gaierror' in string)
               or ('pipeerror' in string) or ('authenticationerror' in string)
-              or ('refused' in string) or ('file descriptor' in string)):
+              or ('refused' in string) or ('file descriptor' in string) or ('closed' in string)):
             return _EXCEPTION_TYPE_UNCERTAIN
         return _EXCEPTION_TYPE_BAD
 
@@ -522,7 +522,7 @@ class DistributedEvaluator(object):
         if (self.mode == MODE_SECONDARY) and (self.outqueue is not None) and hasattr(self.outqueue,'close'):
             try:
                 self.outqueue.close()
-            except (EOFError, IOError, OSError, socket.gaierror, TypeError,
+            except (EOFError, IOError, OSError, socket.gaierror, TypeError, ValueError,
                     managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
                 if self._check_exception(e) == _EXCEPTION_TYPE_BAD:
                     warnings.warn("Outqueue close error: " + repr(e))
@@ -545,7 +545,7 @@ class DistributedEvaluator(object):
             running = True
             try:
                 self._reset_em()
-            except (EOFError, IOError, OSError, socket.gaierror, TypeError,
+            except (EOFError, IOError, OSError, socket.gaierror, TypeError, ValueError,
                     managers.RemoteError, multiprocessing.ProcessError) as e:
                 if (time.time() - last_time_done) >= reconnect_max_time:
                     should_reconnect = False
@@ -564,7 +564,7 @@ class DistributedEvaluator(object):
                     tasks = self.inqueue.get(block=True, timeout=0.2)
                 except queue.Empty:
                     continue
-                except (EOFError, TypeError, socket.gaierror,
+                except (EOFError, TypeError, socket.gaierror, ValueError,
                         managers.RemoteError, multiprocessing.ProcessError, IOError, OSError) as e:
                     if ('empty' in repr(e).lower()): # pragma: no cover
                         continue
@@ -623,7 +623,7 @@ class DistributedEvaluator(object):
                     self.outqueue.put(res)
                 except queue.Full: # pragma: no cover
                     continue
-                except (EOFError, TypeError, socket.gaierror,
+                except (EOFError, TypeError, socket.gaierror, ValueError,
                         managers.RemoteError, multiprocessing.ProcessError,
                         IOError, OSError) as e:
                     if ('full' in repr(e).lower()): # pragma: no cover
@@ -672,8 +672,20 @@ class DistributedEvaluator(object):
         while len(tresults) < n_tasks:
             try:
                 sr = self.outqueue.get(block=True, timeout=0.2)
-            except (queue.Empty, managers.RemoteError): # more detailed check?
+            except queue.Empty:
                 continue
+            except (EOFError, TypeError, socket.gaierror, ValueError,
+                    managers.RemoteError, multiprocessing.ProcessError, IOError, OSError) as e:
+                    if ('empty' in repr(e).lower()): # pragma: no cover
+                        continue
+                    curr_status = self._check_exception(e)
+                    if curr_status == _EXCEPTION_TYPE_OK:
+                        continue
+                    elif curr_status == _EXCEPTION_TYPE_UNCERTAIN:
+                        self._reset_em()
+                        continue
+                    else:
+                        raise
             if sr is None:
                 self._reset_em()
             else:
