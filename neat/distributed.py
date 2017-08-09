@@ -679,15 +679,12 @@ class DistributedEvaluator(object):
                     if ('empty' in repr(e).lower()): # pragma: no cover
                         continue
                     curr_status = self._check_exception(e)
-                    if curr_status == _EXCEPTION_TYPE_OK:
-                        continue
-                    elif curr_status == _EXCEPTION_TYPE_UNCERTAIN:
-                        self._reset_em()
+                    if curr_status in (_EXCEPTION_TYPE_OK, _EXCEPTION_TYPE_UNCERTAIN):
                         continue
                     else:
                         raise
             if sr is None:
-                self._reset_em()
+                continue
             else:
                 tresults.append(sr)
         results = []
