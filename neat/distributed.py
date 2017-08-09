@@ -224,8 +224,12 @@ class _ExtendedManager(object):
             """
             pass
 
-        inqueue = queue.Queue()
-        outqueue = queue.Queue()
+        try:
+            inqueue = multiprocessing.Queue()
+            outqueue = multiprocessing.Queue()
+        except ImportError: # pragma: no cover
+            inqueue = queue.Queue() # pylint: disable=redefined-variable-type
+            outqueue = queue.Queue() # pylint: disable=redefined-variable-type
         namespace = Namespace() # Does this need to be from multiprocessing.managers.SyncManager?
 
         if register_callables:
@@ -464,6 +468,7 @@ class DistributedEvaluator(object):
         time_passed = time.time() - start_time
         if time_passed < wait: # pragma: no cover
             time.sleep(wait - time_passed)
+        self._close_queues()
         self.outqueue = self.inqueue = self.namespace = None
         if shutdown:
             self.em.stop()
@@ -486,11 +491,6 @@ class DistributedEvaluator(object):
         self.outqueue = self.em.get_outqueue()
         self.namespace = self.em.get_namespace()
 
-    def _reset_em(self):
-        """Resets self.em and the shared instances."""
-        self.em = _ExtendedManager(self.addr, self.authkey, mode=self.mode, start=True)
-        self._set_shared_instances()
-
     @staticmethod
     def _check_exception(e):
         string = repr(e).lower()
@@ -503,6 +503,29 @@ class DistributedEvaluator(object):
               or ('refused' in string) or ('file descriptor' in string)):
             return _EXCEPTION_TYPE_UNCERTAIN
         return _EXCEPTION_TYPE_BAD
+
+    def _close_queues(self):
+        """Attempts to close any queues that need it."""
+        if (self.mode == MODE_PRIMARY) and (self.inqueue is not None) and hasattr(self.inqueue,'close'):
+            try:
+                self.inqueue.close()
+            except (EOFError, IOError, OSError, socket.gaierror, TypeError, # add NotImplementedError?
+                    managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
+                if self._check_exception(e) == _EXCEPTION_TYPE_BAD:
+                    warnings.warn("Inqueue close error: " + repr(e))
+        elif (self.mode == MODE_SECONDARY) and (self.outqueue is not None) and hasattr(self.outqueue,'close'):
+            try:
+                self.outqueue.close()
+            except (EOFError, IOError, OSError, socket.gaierror, TypeError,
+                    managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
+                if self._check_exception(e) == _EXCEPTION_TYPE_BAD:
+                    warnings.warn("Outqueue close error: " + repr(e))
+
+    def _reset_em(self):
+        """Resets self.em and the shared instances."""
+        self._close_queues()
+        self.em = _ExtendedManager(self.addr, self.authkey, mode=self.mode, start=True)
+        self._set_shared_instances()
 
     def _secondary_loop(self, reconnect_max_time=(5*60)):
         """The worker loop for the secondary nodes."""
