@@ -415,13 +415,6 @@ class DistributedEvaluator(object):
                 if self.exit_on_stop:
                     self._do_exit()
                 else:
-                    if (self.outqueue is not None) and hasattr(self.outqueue,'close'):
-                        try:
-                            self.outqueue.close()
-                        except (EOFError, IOError, OSError, socket.gaierror, TypeError, ValueError,
-                                managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
-                            if self._check_exception(e) == _EXCEPTION_TYPE_BAD:
-                                warnings.warn("Outqueue close error: " + repr(e))
                     self.inqueue = self.outqueue = self.namespace = None
                     if self.reconnect:
                         self.em.stop()
@@ -475,7 +468,7 @@ class DistributedEvaluator(object):
         time_passed = time.time() - start_time
         if time_passed < wait: # pragma: no cover
             time.sleep(wait - time_passed)
-        if (force_secondary_shutdown or shutdown) and (self.inqueue is not None) and hasattr(self.inqueue,'close'):
+        if force_secondary_shutdown and shutdown and (self.inqueue is not None) and hasattr(self.inqueue,'close'):
             try:
                 self.inqueue.close()
             except (EOFError, IOError, OSError, socket.gaierror, TypeError, ValueError,
