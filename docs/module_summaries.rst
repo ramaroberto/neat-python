@@ -13,17 +13,14 @@ activations
 ---------------
 Has the built-in :term:`activation functions <activation function>`, code for using them, and code for adding new user-defined ones.
 
-  .. py:exception:: InvalidActivationFunction(TypeError)
+  .. py:exception:: InvalidActivationFunction(Exception)
 
-    Exception called if an activation function being added is invalid according to the `MultiParameterSet.add_func` method, or if an unknown activation
-    function is requested by name via :py:meth:`get <ActivationFunctionSet.get()>`.
-
-    .. versionchanged:: 0.92
-      Base of exception changed to more-precise TypeError.
+    Exception called if an activation function being added is invalid according to the :py:meth:`multiparameter.MultiParameterSet.add_func` method, or if an
+    unknown activation function is requested by name via :py:meth:`get <ActivationFunctionSet.get()>`.
 
     .. deprecated:: 0.92-multiparam_funcs
-      This is now an alias for :py:exc:`BadFunctionError`, which is itself based on both TypeError and LookupError. Use either it, or preferably
-      one of its two subclasses, :py:exc:`InvalidFunctionError` (for unusable functions; based on TypeError) or :py:exc:`UnknownFunctionError`
+      This is now an alias for :py:exc:`multiparameter.BadFunctionError`. Use either it, or preferably one of its two subclasses,
+      :py:exc:`.multiparameter.InvalidFunctionError` (for unusable functions; based on TypeError) or :py:exc:`multiparameter.UnknownFunctionError`
       (for unknown functions requested by name; based on LookupError).
 
   .. py:class:: ActivationFunctionSet
@@ -140,16 +137,16 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
 
     .. versionadded:: 0.92
 
-  .. py:exception:: InvalidAggregationFunction(TypeError)
+  .. py:exception:: InvalidAggregationFunction(Exception)
 
-    Exception called if an aggregation function being added is invalid according to the `MultiParameterSet.add_func` method, or if an unknown aggregation
-    function is requested by name via :py:meth:`get <AggregationFunctionSet.get()>`.
+    Exception called if an aggregation function being added is invalid according to the :py:meth:`multiparameter.MultiParameterSet.add_func` method, or if an
+    unknown aggregation function is requested by name via :py:meth:`get <AggregationFunctionSet.get()>`.
 
     .. versionadded:: 0.92
 
     .. deprecated:: 0.92-multiparam_funcs
-      This is now an alias for :py:exc:`BadFunctionError`, which is itself based on both TypeError and LookupError. Use either it, or preferably
-      one of its two subclasses, :py:exc:`InvalidFunctionError` (for unusable functions; based on TypeError) or :py:exc:`UnknownFunctionError`
+      This is now an alias for :py:exc:`multiparameter.BadFunctionError`. Use either it, or preferably one of its two subclasses,
+      :py:exc:`multiparameter.InvalidFunctionError` (for unusable functions; based on TypeError) or :py:exc:`multiparameter.UnknownFunctionError`
       (for unknown functions requested by name; based on LookupError).
 
   .. py:class:: AggregationFunctionSet
@@ -160,9 +157,9 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
 
     .. py:method:: add(name, function)
 
-      After validating the function (via `validate_aggregation`), adds it to the available aggregation functions under the given name. Used
+      After validating the function, adds it to the available aggregation functions under the given name. Used
       by :py:meth:`DefaultGenomeConfig.add_aggregation <genome.DefaultGenomeConfig.add_aggregation>`. TODO: Check for whether
-      the function needs `reduce <functools.reduce>`, or at least offer a form of this function (or extra argument for it, defaulting to false)
+      the function needs `reduce <functools.reduce>`, or at least offer a form of this function (or extra argument for it, defaulting to false),
       and/or its interface in :py:mod:`genome`, that will appropriately "wrap" the input function.
 
       :param str name: The name by which the function is to be known in the :ref:`configuration file <aggregation-function-config-label>`.
@@ -183,7 +180,7 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
       .. versionadded:: 0.92
 
       .. versionchanged:: 0.92-multiparam_funcs
-        Changed from :py:exc:`InvalidAggregationFunction` to :py:exc:`UnknownFunctionError`.
+        Changed from :py:exc:`InvalidAggregationFunction` to :py:exc:`multiparameter.UnknownFunctionError`.
 
     .. py:method:: __getitem__(index)
 
@@ -355,7 +352,7 @@ Deals with :term:`attributes` used by :term:`genes <gene>`.
 
   .. py:class:: StringAttribute(BaseAttribute)
 
-    Class for string attributes such as the :term:`aggregation function` of a :term:`node`, which are selected from a list of options;
+    Class for string attributes (such as, previously, the :term:`aggregation function` of a :term:`node`), which are selected from a list of options;
     includes code for configuration, creation, and mutation.
 
     .. index:: ! X_default
@@ -398,6 +395,52 @@ Deals with :term:`attributes` used by :term:`genes <gene>`.
       :type config: :datamodel:`instance <index-48>`
       :return: The new value.
       :rtype: str
+
+  .. py:class:: FuncAttribute(BaseAttribute)
+
+    Handle attributes that may be simple strings or may be functions needing :py:mod:`multiparameter` handling.
+
+    .. versionadded:: 0.92-multiparam_funcs
+
+   .. py:method:: init_value(config)
+
+      Initializes the attribute's value, either using a configured ``default`` or (if the default is "random") with a randomly-chosen member of the ``options``
+      (each having an equal chance). Note: It is possible for the default value, if specifically configured, to **not** be one of the options.
+
+      .. deprecated:: 0.92
+        While it is possible to use "None" as an equivalent to "random", this is too easily confusable with an actual `None`.
+
+      .. versionadded:: 0.92-multiparam_funcs
+
+      :param config: The configuration object from which the default and, if necessary, ``options`` parameters are to be retrieved.
+      :type config: :datamodel:`instance <index-48>`
+      :return: The new value.
+      :rtype: str or function
+      :raises RuntimeError: If the ``default`` is neither an object with an ``init_value`` attribute nor a string.
+
+    .. index:: ! mutation
+    .. index:: mutate_rate
+    .. index:: ! X_options
+    .. index:: TODO
+
+    .. py:method:: mutate_value(value, config)
+
+      With a frequency determined by the ``mutate_rate`` configuration parameter, replaces the value with one of the ``options``, with each having an
+      equal chance; note that this can be the same value as before. (It is possible to crudely alter the chances of what is chosen by listing a given option
+      more than once, although this is inefficient given the use of the `random.choice` function.)
+      TODO: Add configurable probabilities of which option is used. Longer-term, as with the improved version of RBF-NEAT, separate genes for the
+      likelihoods of each (but always doing some change, to prevent overly-conservative evolution due to its inherent short-sightedness), allowing the
+      genomes to control the distribution of options, will be desirable.
+
+      :param value: The current value of the attribute.
+      :type value: `str` or `function`
+      :param config: The configuration object from which the ``options`` and other parameters are to be extracted.
+      :type config: :datamodel:`instance <index-48>`
+      :return: The new value.
+      :rtype: `str` or `function`
+      :raises RuntimeError: If the chosen option is neither an object with a ``mutate_value`` attribute nor a string.
+
+      .. versionadded:: 0.92-multiparam_funcs
 
   .. versionchanged:: 0.92
     ``__config_items__`` changed to ``_config_items``, since it is not a Python internal variable.
@@ -466,7 +509,7 @@ Uses :py:mod:`pickle` to save and restore populations (and other aspects of the 
 
       :param str filename: The file to be restored from.
       :return: :py:class:`Population <population.Population>` instance that can be used with :py:meth:`Population.run <population.Population.run>` to restart the simulation.
-      :rtype:  :datamodel:`instance <index-48>` 
+      :rtype: :datamodel:`instance <index-48>` 
 
 .. index:: fitness_criterion
 .. index:: fitness_threshold
@@ -926,7 +969,7 @@ distributed
       :type wait: :pytypes:`float <typesnumeric>`
       :param shutdown: Whether to :pylib:`shutdown <multiprocessing.html#multiprocessing.managers.BaseManager.shutdown>` the :pylib:`multiprocessing.managers.SyncManager <multiprocessing.html#multiprocessing.managers.SyncManager>` also (after the wait, if any).
       :type shutdown: :pytypes:`bool <typesnumeric>`
-      :param bool force_secondary_shutdown: Causes secondaries to shutdown even if started with ``reconnect`` true (via setting the ``secondary_state`` to :py:data:`_STATE_FORCED_SHUTDOWN` instead of :py:data:`_STATE_SHUTDOWN`).
+      :param bool force_secondary_shutdown: Causes secondaries to shutdown even if started with ``reconnect`` true.
       :raises ModeError: If not the :term:`primary node` (not in :py:data:`MODE_PRIMARY`).
       :raises RuntimeError: If not yet :py:meth:`started <start()>`.
 
@@ -1134,7 +1177,7 @@ Handles genomes (individuals in the population).
       Uses :py:meth:`ActivationFunctionSet.add <activations.ActivationFunctionSet.add>`.
 
       :param str name: The name by which the function is to be known in the :ref:`configuration file <activation-function-config-label>`.
-      :param func: A function meeting the requirements of :py:func:`activations.validate_activation`.
+      :param func: A function that meets the requirements of :py:meth:`multiparameter.MultiParameterSet.add_func`.
       :type func: `function`
 
     .. index:: ! aggregation function
@@ -1145,7 +1188,7 @@ Handles genomes (individuals in the population).
       Uses :py:meth:`AggregationFunctionSet.add <aggregations.AggregationFunctionSet.add>`.
 
       :param str name: The name by which the function is to be known in the :ref:`configuration file <aggregation-function-config-label>`.
-      :param func: A function meeting the requirements of :py:func:`aggregations.validate_aggregation`.
+      :param func: A function meeting the requirements of :py:meth:`multiparameter.MultiParameterSet.add_func`.
       :type func: `function`
 
       .. versionadded:: 0.92
@@ -1765,12 +1808,35 @@ functions (such as for the :ref:`species_fitness_func <species-fitness-func-labe
     .. versionchanged:: 0.92
       Previously not functional on Python 3.X due to changes to map.
 
+.. index:: activation_function
+.. index:: aggregation_function
+
 .. py:module:: multiparameter
    :synopsis: The basis for multiparameter activation and aggregation functions.
 
 multiparameter
 --------------------
-The basis for multiparameter activation and aggregation functions.
+The basis for multiparameter :term:`activation <activation function>` and :term:`aggregation <aggregation function>` functions.
+
+  .. py:class:: MultiParameterFunctionInstance(name, multi_param_func)
+
+    Holds, initializes, and mutates the evolved parameters for one instance of a multiparameter function.
+
+    :param str name: The name of the function.
+    :param multi_param_func: The :py:class:`MultiParameterFunction` instance for the multiparameter function.
+    :type multi_param_func: :datamodel:`instance <index-48>`
+
+  .. py:class:: MultiParameterFunction(name, which_type, user_func, evolved_param_names, **evolved_param_dicts)
+
+    Holds and initializes configuration information for one multiparameter function.
+
+    :param str name: The name of the function.
+    :param str which_type: The type of function (currently, either :term:`activation <activation function>` or :term:`aggregation <aggregation function>`).
+    :param user_func: The multiparameter function.
+    :type user_func: `function`
+    :param evolved_param_names: A list of the evolved variable names.
+    :type evolved_param_names: list(str)
+    :param dict evolved_param_dicts: The `dictionaries <dictionary>` with configuration information for each of the evolved variables.
 
   .. py:exception:: BadFunctionError(Exception)
 
@@ -1783,13 +1849,40 @@ The basis for multiparameter activation and aggregation functions.
   .. py:exception:: UnknownFunctionError(LookupError, BadFunctionError)
 
     Exception raised if an unknown function is requested by name, such as via :py:meth:`activations.ActivationFunctionSet.get()`,
-    :py:meth:`aggregations.AggregationFunctionSet.get()`, or :py:meth:`MultiParameterSet.get_MPF()`.
+    :py:meth:`aggregations.AggregationFunctionSet.get()`, or :py:meth:`multiparameter.MultiParameterSet.get_MPF()`.
 
   .. py:class:: MultiParameterSet(*which_types)
 
     Holds the set of (potentially multiparameter) functions and contains methods for dealing with them.
 
-    :param str which_types: What types of functions to hold; initialized by :py:class:`DefaultGenomeConfig` to ['activation', 'aggregation']. Determines the valid types for ``which_type`` parameters in the class methods.
+    :param str which_types: What types of functions to hold; initialized by :py:class:`genome.DefaultGenomeConfig` to ['activation', 'aggregation']. Determines the valid types for ``which_type`` parameters in the class methods.
+
+    .. py:method:: get_MPF(name, which_type)
+
+      Fetches the named :py:class:`MultiParameterFunction` :datamodel:`instance <index-48>`.
+
+      :param str name: The name of the function.
+      :param str which_type: The type of function (currently, either :term:`activation <activation function>` or :term:`aggregation <aggregation function>`).
+      :return: The named :py:class:`MultiParameterFunction` instance.
+      :rtype: :datamodel:`instance <index-48>`
+      :raises UnknownFunctionError: If the function is unknown.
+
+    .. py:method:: add_func(name, user_func, which_type, **kwargs)
+
+      Adds a new activation/aggregation function, potentially multiparameter. A multiparameter function must have entries in ``kwargs`` for each
+      of its parameter variables to be evolved. Requirements for the function include the following:
+      1. Most obviously, must be a function (including lambda).
+      2. Functions (such as built-in functions) without a `__code__` attribute cannot be multiparameter functions without a wrapper function (which will have the appropriate `__code__` attribute); this attribute is used to determine the arguments for the function.
+      3. Any function arguments except the first one must be evolved variables with corresponding entries in ``kwargs``.
+      4. Multiparameter function names cannot have parentheses, since parenthesized terms are used in constructing a particular function instance.
+
+      :param str name: The name of the function.
+      :param user_func: The function to be added.
+      :type user_func: `function`
+      :param str which_type: The type of function (currently, either :term:`activation <activation function>` or :term:`aggregation <aggregation function>`).
+      :param kwargs: The configuration information for the function's evolved variables.
+      :type kwargs: dict(str, dict(str,object))
+      :raises InvalidFunctionError: If the function does not meet the requirements specified above.
 
 .. py:module:: nn.feed_forward
    :synopsis: A straightforward feed-forward neural network NEAT implementation.

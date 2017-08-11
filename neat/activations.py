@@ -7,6 +7,8 @@ from __future__ import division
 
 import math
 import warnings
+
+from neat.math_util import NORM_EPSILON
 from neat.multiparameter import MultiParameterSet
 from neat.multiparameter import BadFunctionError as InvalidActivationFunction # pylint: disable=unused-import
 
@@ -59,6 +61,19 @@ def inv_activation(z):
 def log_activation(z):
     z = max(1e-7, z)
     return math.log(z)
+
+
+def expanded_log_activation(z): # mostly intended for CPPNs
+    if abs(z*2) < NORM_EPSILON:
+        z = math.copysign((NORM_EPSILON/2),z)
+    return math.copysign(1.0,z)*math.log(abs(z*2),2)
+
+
+def skewed_log_plus_activation(z): # mostly intended for CPPNs
+    return math.copysign(1.0,z)*(math.log1p(abs(z*2))-1)
+
+def log_plus_activation(z):
+    return math.copysign(1.0,z)*math.log1p(abs(z*math.sqrt(math.exp(1))))
 
 
 def exp_activation(z):
@@ -150,8 +165,8 @@ class ActivationFunctionSet(object):
         if multiparameterset is None:
             warn_string = ("Activation init called without multiparameterset:" +
                            " may cause multiple instances of it")
-            warnings.warn(warn_string)
             multiparameterset = MultiParameterSet('activation')
+            warnings.warn(warn_string)
         self.multiparameterset = multiparameterset
         self.add('sigmoid', sigmoid_activation)
         self.add('tanh', tanh_activation)
@@ -163,6 +178,9 @@ class ActivationFunctionSet(object):
         self.add('clamped', clamped_activation)
         self.add('inv', inv_activation)
         self.add('log', log_activation)
+        self.add('expanded_log', expanded_log_activation)
+        self.add('log_plus', log_plus_activation)
+        self.add('skewed_log_plus', skewed_log_plus_activation)
         self.add('exp', exp_activation)
         self.add('abs', abs_activation)
         self.add('hat', hat_activation)

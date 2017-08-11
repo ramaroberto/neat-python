@@ -71,7 +71,7 @@ def sum_mean_aggregation(x, a):
 
     return sum(input_list)*mult
 
-def product_mean_aggregation(x, a):
+def product_mean_aggregation(x, a, use_median):
     assert a <= 1.0
     assert a >= 0.0
 
@@ -86,10 +86,11 @@ def product_mean_aggregation(x, a):
 
     tmp_product = product_aggregation(input_list)
 
-    if a > 0.5:
-        return math.copysign(math.pow(abs(tmp_product), power), tmp_product)
+    if use_median:
+        return math.copysign(math.pow(abs(tmp_product), power), median2(input_list))
+    
+    return math.copysign(math.pow(abs(tmp_product), power), tmp_product)
 
-    return math.copysign(math.pow(abs(tmp_product), power), median2(input_list))
 
 def sum_product_aggregation(x, a):
     assert a <= 1.0
@@ -97,14 +98,14 @@ def sum_product_aggregation(x, a):
 
     return ((1.0-a)*product_aggregation(x))+(a*sum(x))
 
-def sum_product_mean_aggregation(x, a, b):
+def sum_product_mean_aggregation(x, a, b, use_median):
     assert a <= 1.0
     assert a >= 0.0
     assert b <= 1.0
     assert b >= 0.0
 
     return ((b*sum_mean_aggregation(x, a))+
-            ((1.0-b)*product_mean_aggregation(x, a)))
+            ((1.0-b)*product_mean_aggregation(x, a, use_median)))
     
 
 class AggregationFunctionSet(object):
@@ -130,12 +131,14 @@ class AggregationFunctionSet(object):
         self.add('sum_mean', sum_mean_aggregation,
                  a={'min_value':0.0, 'max_value':1.0})
         self.add('product_mean', product_mean_aggregation,
-                 a={'min_value':0.0, 'max_value':1.0})
+                 a={'min_value':0.0, 'max_value':1.0},
+                 use_median={'param_type': 'bool'})
         self.add('sum_product', sum_product_aggregation,
                  a={'min_value':0.0, 'max_value':1.0})
         self.add('sum_product_mean', sum_product_mean_aggregation,
                  a={'min_value':0.0, 'max_value':1.0},
-                 b={'min_value':0.0, 'max_value':1.0})
+                 b={'min_value':0.0, 'max_value':1.0},
+                 use_median={'param_type': 'bool'})
 
     def add(self, name, function, **kwargs):
         self.multiparameterset.add_func(name, function, 'aggregation', **kwargs)

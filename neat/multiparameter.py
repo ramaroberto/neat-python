@@ -12,7 +12,7 @@ import warnings
 
 from math import sqrt, isnan
 
-from neat.attributes import FloatAttribute
+from neat.attributes import FloatAttribute, BoolAttribute
 from neat.math_util import NORM_EPSILON
 from neat.six_util import iteritems
 
@@ -129,40 +129,60 @@ class MultiParameterFunction(object):
         that MultiParameterFunctionInstances generally share MultiParameterFunction instances)
         defaults for one parameter's FloatAttribute settings for a multiparameter function.
         """
-        self.evolved_param_dicts[n].setdefault('init_type','uniform')
+        self.evolved_param_dicts[n].setdefault('param_type', 'float')
         param_dict = self.evolved_param_dicts[n]
-        middle = (param_dict['max_value'] +
-                  param_dict['min_value'])/2.0
-        self.evolved_param_dicts[n].setdefault('init_mean', middle)
-        # below here is mainly intended for users wanting to use built-in
-        # multiparameter functions without too much initialization worries
-        self.evolved_param_dicts[n].setdefault('replace_rate', 0.1)
-        mutate_rate = min((1.0-param_dict['replace_rate']),(param_dict['replace_rate']*5.0))
-        self.evolved_param_dicts[n].setdefault('mutate_rate', mutate_rate)
-        for_stdev = min(abs(param_dict['max_value'] -
-                            param_dict['init_mean']),
-                        abs(param_dict['min_value'] -
-                            param_dict['init_mean']))/2.0
-        if param_dict['init_type'] == 'uniform':
-            self.evolved_param_dicts[n].setdefault('init_stdev', for_stdev)
-            # actual standard deviation of uniform distribution is width/sqrt(12) -
-            # use of 1/4 range in the uniform distribution FloatAttribute setup
-            # (and thus the above) is to make it easier to figure out how to
-            # get a given initialization range that is not the same as the
-            # overall min/max range.
-        else:
-            self.evolved_param_dicts[n].setdefault('init_stdev', ((4.0*for_stdev)/sqrt(12.0)))
-        if param_dict['mutate_rate'] > 0:
-            mutate_power = (min(1.0,(param_dict['replace_rate']/param_dict['mutate_rate']))*
-                            (abs(param_dict['max_value']-param_dict['min_value'])/sqrt(12.0)))
-            self.evolved_param_dicts[n].setdefault('mutate_power', mutate_power)
-        else:
-            self.evolved_param_dicts[n].setdefault('mutate_power', 0.0)
-        
         tmp_name = "{0}_{1}".format(self.name,n)
-        self.evolved_param_attributes[n] = FloatAttribute(name=tmp_name,
-                                                          **param_dict)
-        for x, y in iteritems(param_dict): # so that this can be used as a config for FloatAttribute
+        
+        if param_dict['param_type'] in ('float','int'):
+            self.evolved_param_dicts[n].setdefault('init_type','uniform')
+ 
+            middle = (param_dict['max_value'] +
+                      param_dict['min_value'])/2.0
+            self.evolved_param_dicts[n].setdefault('init_mean', middle)
+            # below here is mainly intended for users wanting to use built-in
+            # multiparameter functions without too much initialization worries
+            self.evolved_param_dicts[n].setdefault('replace_rate', 0.1)
+            mutate_rate = min((1.0-param_dict['replace_rate']),(param_dict['replace_rate']*5.0))
+            self.evolved_param_dicts[n].setdefault('mutate_rate', mutate_rate)
+            for_stdev = min(abs(param_dict['max_value'] -
+                                param_dict['init_mean']),
+                            abs(param_dict['min_value'] -
+                                param_dict['init_mean']))/2.0
+            if param_dict['init_type'] == 'uniform':
+                self.evolved_param_dicts[n].setdefault('init_stdev', for_stdev)
+                # actual standard deviation of uniform distribution is width/sqrt(12) -
+                # use of 1/4 range in the uniform distribution FloatAttribute setup
+                # (and thus the above) is to make it easier to figure out how to
+                # get a given initialization range that is not the same as the
+                # overall min/max range.
+            else:
+                self.evolved_param_dicts[n].setdefault('init_stdev', ((4.0*for_stdev)/sqrt(12.0)))
+            if param_dict['mutate_rate'] > 0:
+                mutate_power = (min(1.0,(param_dict['replace_rate']/param_dict['mutate_rate']))*
+                                (abs(param_dict['max_value']-param_dict['min_value'])/sqrt(12.0)))
+                self.evolved_param_dicts[n].setdefault('mutate_power', mutate_power)
+            else:
+                self.evolved_param_dicts[n].setdefault('mutate_power', 0.0)
+
+            param_dict2 = copy.deepcopy(param_dict)
+            del param_dict2['param_type']
+
+            self.evolved_param_attributes[n] = FloatAttribute(name=tmp_name, # TODO: IntAttribute
+                                                              **param_dict2)
+        elif param_dict['param_type'] == 'bool':
+            self.evolved_param_dicts[n].setdefault('mutate_rate', 0.1)
+
+            param_dict2 = copy.deepcopy(param_dict)
+            del param_dict2['param_type']
+
+            self.evolved_param_attributes[n] = BoolAttribute(name=tmp_name,
+                                                             **param_dict2)
+        else:
+            raise RuntimeError(
+                "Unknown param_type {0!r} for MultiParameterFunction {1!s}".format(
+                    param_dict['param_type'], self.orig_name))
+
+        for x, y in iteritems(param_dict): # so that this can be used as a config for the attribute
             setattr(self, self.evolved_param_attributes[n].config_item_name(x), y)
 
     def init_instance(self):
@@ -170,23 +190,23 @@ class MultiParameterFunction(object):
 
 ##    def set_attribute_settings(self, n, **param_dict): # TEST NEEDED! Perhaps do as @property?
 ##        """
-##        Sets the FloatAttribute settings for one of a function's parameters. Note that this will change
-##        these for all MultiParameterFunctionInstances derived from MultiParameterFunction class
-##        instance, although such changes will not have an effect until the next mutation (including
-##        reinitialization). It is advisable to make a copy first, and alter that.
+##        Sets the FloatAttribute settings for one of a function's parameters. Note that this will
+##        change these for all MultiParameterFunctionInstances derived from MultiParameterFunction
+##        class instance, although such changes will not have an effect until the next mutation
+##        (including reinitialization). It is advisable to make a copy first, and alter that.
 ##        """
 ##        for x, y in iteritems(param_dict):
 ##            self.evolved_param_dicts[n][x] = y
 ##        self.init_defaults(n)
 
-    def __repr__(self): # TEST NEEDED? Should be able to duplicate by using this as an init...
+    def __repr__(self): # TEST NEEDED! Should be able to duplicate by using this as an init...
         to_return_list = [self.orig_name,
                           self.which_type,
-                          self.user_func.__name__,
+                          self.user_func,
                           self.evolved_param_names]
+        to_return_list = list(map(repr,to_return_list))
         for n in self.evolved_param_names:
             to_return_list.append(n + '=' + repr(self.evolved_param_dicts[n]))
-        to_return_list = list(map(repr,to_return_list))
         return str(self.__class__) + '(' + ",".join(to_return_list) + ')'
 
     def copy(self):
@@ -255,7 +275,8 @@ class MultiParameterSet(object):
 
         if name in self.multiparam_func_dict[which_type]:
             mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]
-            return mpfunc_dict[name] # Allows for altering configuration, although tricky re already-existing ones
+            # Allows for altering configuration, although tricky re already-existing ones
+            return mpfunc_dict[name]
         raise UnknownFunctionError("Unknown {!s} MPF function {!r}".format(which_type,name))
 
     def get_MPF_Instance(self, # MORE THOROUGH TESTS NEEDED!
@@ -269,11 +290,12 @@ class MultiParameterSet(object):
             return mpfunc_dict[name].init_instance()
 
         if not name.endswith(')'):
-            raise UnknownFunctionError("Unknown {!s} MPF function {!r} - no end )".format(which_type,name))
+            raise UnknownFunctionError("Unknown {!s} MPF function {!r} - no end ')'".format(
+                which_type,name))
 
         param_start = name.find('(')
         if param_start < 0:
-            raise UnknownFunctionError("Unknown {!s} MPF function {!r} - no start (".
+            raise UnknownFunctionError("Unknown {!s} MPF function {!r} - no start '('".
                                        format(which_type,name))
 
         func_name = name[:param_start]
@@ -350,19 +372,20 @@ class MultiParameterSet(object):
             raise InvalidFunctionError("A function object is required, not {0!r} ({1!s})".format(
                 user_func, name))
 
-        if isinstance(user_func, types.BuiltinFunctionType): # TODO: Test!
+        if not hasattr(user_func, '__code__'):
             if kwargs:
-                raise InvalidFunctionError(
-                    "Cannot use built-in function {0!r} ({1!s}) as multiparam {2!s} function - needs wrapping".format(
-                        user_func, name, which_type))
+                if isinstance(user_func, types.BuiltinFunctionType):
+                    raise InvalidFunctionError(
+                        "Cannot use built-in function {0!r} ({1!s}) ".format(user_func,name)
+                        + "as multiparam {0!s} function - needs wrapping".format(which_type))
+                else:
+                    raise InvalidFunctionError(
+                        "For a multiparam {0!s} function, need an object ".format(which_type)
+                        + "with a __code__ attribute, not {1!r} ({2!s})".format(
+                            user_func, name))
             nfunc_dict = self.norm_func_dict[which_type]
             nfunc_dict[name] = user_func
             return
-
-        if not hasattr(user_func, '__code__'):
-            raise InvalidFunctionError(
-                "An object with __code__ attribute is required, not {0!r} ({1!s})".format(user_func,
-                                                                                          name))
         
         func_code = user_func.__code__
         if func_code.co_argcount != (len(kwargs)+1):

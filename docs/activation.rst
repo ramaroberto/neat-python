@@ -8,6 +8,8 @@ Overview of builtin activation functions
 Note that some of these :term:`functions <activation function>` are scaled differently from the canonical
 versions you may be familiar with.  The intention of the scaling is to place
 more of the functions' "interesting" behavior in the region :math:`\left[-1, 1\right] \times \left[-1, 1\right]`.
+Some of these are more intended for CPPNs (e.g., for HyperNEAT) than for "direct" problem-solving;
+these include expanded_log, sin, and skewed_log_plus.
 
 The implementation of these functions can be found in the :py:mod:`activations` module.
 
@@ -49,6 +51,12 @@ exp
    :scale: 100 %
    :alt: exponential function
 
+expanded_log
+-------------------
+
+.. figure: activation-expanded_log.png
+    :scale: 100 %
+    :alt: Expanded-range log function.
 
 gauss
 -----
@@ -86,6 +94,13 @@ log
 .. figure:: activation-log.png
    :scale: 100 %
    :alt: log function
+
+log_plus
+-----------
+
+.. figure:: activation-log_plus.png
+    :scale: 100 %
+    :alt: log(x+1) function with alterations for negative numbers
 
 .. _multiparam-relu-description-label:
 
@@ -127,6 +142,13 @@ sin
 .. figure:: activation-sin.png
    :scale: 100 %
    :alt: sine function
+
+skewed_log_plus
+------------------------
+
+.. figure:: activation-skewed_log_plus.png
+    :scale: 100 %
+    :alt: shifted log-plus function
 
 softplus
 --------

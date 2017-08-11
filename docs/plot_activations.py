@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -81,3 +83,4 @@ for n, mpf in mps.multiparam_func_dict['activation'].items():
         new_img.save("activation-{0}.png".format(n))
     else:
         img.save("activation-{0}.png".format(n))
+    os.unlink("activation-tmp-{0}.png".format(n))
