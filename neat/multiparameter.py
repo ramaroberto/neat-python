@@ -171,6 +171,7 @@ class MultiParameterFunction(object):
                                                               **param_dict2)
         elif param_dict['param_type'] == 'bool':
             self.evolved_param_dicts[n].setdefault('mutate_rate', 0.1)
+            self.evolved_param_dicts[n].setdefault('default', 'random')
 
             param_dict2 = copy.deepcopy(param_dict)
             del param_dict2['param_type']
@@ -304,18 +305,38 @@ class MultiParameterSet(object):
                                        format(which_type,func_name,name))
         multiparam_func = self.multiparam_func_dict[which_type][func_name]
 
-        param_nums = list(map(float, name[(param_start+1):(len(name)-1)].split(',')))
+        param_values = name[(param_start+1):(len(name)-1)].split(',')
 
-        if len(multiparam_func.evolved_param_names) < len(param_nums):
+        if len(multiparam_func.evolved_param_names) < len(param_values):
             raise RuntimeError(
-                "Too many ({0:n}) param_nums in name {1!r} - should be max {2:n}".format(
-                    len(param_nums), name, len(multiparam_func.evolved_param_names)))
-        elif len(multiparam_func.evolved_param_names) > len(param_nums):
+                "Too many ({0:n}) param_values in name {1!r} - should be max {2:n}".format(
+                    len(param_values), name, len(multiparam_func.evolved_param_names)))
+        elif len(multiparam_func.evolved_param_names) > len(param_values):
             warnings.warn(
-                "MPFInstance name {0!r} has only {1:n} param_nums, while function takes {2:n}".format(
-                    name, len(param_nums), len(multiparam_func.evolved_param_names)))
+                "MPFInstance name {0!r} has only {1:n} param_values, while function takes {2:n}".format(
+                    name, len(param_values), len(multiparam_func.evolved_param_names)))
 
-        params = dict(zip(multiparam_func.evolved_param_names, param_nums))
+        init_params = dict(zip(multiparam_func.evolved_param_names, param_values))
+        params = {}
+        for name2 in init_params:
+            value = init_params[name2]
+            if multiparam_func.evolved_param_dicts[name2]['param_type'] == 'float':
+                params[name2] = float(value)
+            elif multiparam_func.evolved_param_dicts[name2]['param_type'] == 'int':
+                params[name2] = int(value)
+            elif multiparam_func.evolved_param_dicts[name2]['param_type'] == 'bool':
+                if value.lower() in ('false','off','0'):
+                    params[name2] = False
+                elif value.lower() in ('true', 'on', '1'):
+                    params[name2] = True
+                else:
+                    params[name2] = bool(value)
+            else:
+                raise RuntimeError(
+                    "{0!s}: Uninterpretable MPFInstance {1!s} param_type {2!r} for {3!r}".format(
+                        name, name2,
+                        multiparam_func.evolved_param_dicts[name2]['param_type'],
+                        multiparam_func))
 
         instance = multiparam_func.init_instance()
 

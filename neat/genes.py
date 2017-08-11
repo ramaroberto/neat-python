@@ -60,6 +60,9 @@ class BaseGene(object):
                 setattr(new_gene, a.name, getattr(self, a.name))
         return new_gene
 
+    def __copy__(self):
+        return self.copy()
+
     def crossover(self, gene2):
         """ Creates a new gene randomly inheriting attributes from its parents."""
         assert self.key == gene2.key
