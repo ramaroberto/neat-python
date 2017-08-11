@@ -70,20 +70,20 @@ def test_sum_mean():
     assert aggregations.sum_mean_aggregation([0.0,-1.0,-2.0], 0.0) == -1.0
 
 def test_product_mean():
-    assert aggregations.product_mean_aggregation([1.0,2.0,0.5], 1.0) == 1.0
-    assert aggregations.product_mean_aggregation([1.0,0.5,0.0], 1.0) == 0.0
-    assert aggregations.product_mean_aggregation([2.0,2.0], 0.0) == 2.0
-    assert aggregations.product_mean_aggregation([4.0,2.0,1.0], 0.0) == 2.0
+    assert aggregations.product_mean_aggregation([1.0,2.0,0.5], 1.0, True) == 1.0
+    assert aggregations.product_mean_aggregation([1.0,0.5,0.0], 1.0, True) == 0.0
+    assert aggregations.product_mean_aggregation([2.0,2.0], 0.0, False) == 2.0
+    assert aggregations.product_mean_aggregation([4.0,2.0,1.0], 0.0, False) == 2.0
 
 def test_sum_product_mean():
-    assert aggregations.sum_product_mean_aggregation([1.0,2.0,0.5], 1.0, 1.0) == 3.5
-    assert aggregations.sum_product_mean_aggregation([1.0,-1.0,0.0], 1.0, 1.0) == 0.0
-    assert aggregations.sum_product_mean_aggregation([0.0,1.0,2.0], 0.0, 1.0) == 1.0
-    assert aggregations.sum_product_mean_aggregation([0.0,-1.0,-2.0], 0.0, 1.0) == -1.0
-    assert aggregations.sum_product_mean_aggregation([1.0,2.0,0.5], 1.0, 0.0) == 1.0
-    assert aggregations.sum_product_mean_aggregation([1.0,0.5,0.0], 1.0, 0.0) == 0.0
-    assert aggregations.sum_product_mean_aggregation([2.0,2.0], 0.0, 0.0) == 2.0
-    assert aggregations.sum_product_mean_aggregation([4.0,2.0,1.0], 0.0, 0.0) == 2.0
+    assert aggregations.sum_product_mean_aggregation([1.0,2.0,0.5], 1.0, 1.0, True) == 3.5
+    assert aggregations.sum_product_mean_aggregation([1.0,-1.0,0.0], 1.0, 1.0, False) == 0.0
+    assert aggregations.sum_product_mean_aggregation([0.0,1.0,2.0], 0.0, 1.0, True) == 1.0
+    assert aggregations.sum_product_mean_aggregation([0.0,-1.0,-2.0], 0.0, 1.0, True) == -1.0
+    assert aggregations.sum_product_mean_aggregation([1.0,2.0,0.5], 1.0, 0.0, False) == 1.0
+    assert aggregations.sum_product_mean_aggregation([1.0,0.5,0.0], 1.0, 0.0, False) == 0.0
+    assert aggregations.sum_product_mean_aggregation([2.0,2.0], 0.0, 0.0, True) == 2.0
+    assert aggregations.sum_product_mean_aggregation([4.0,2.0,1.0], 0.0, 0.0, False) == 2.0
 
 def test_sum_product():
     assert aggregations.sum_product_aggregation([1.0,2.0,0.5], 1.0) == 3.5
@@ -232,8 +232,8 @@ def test_get_MPF_Instance_complex():
     assert config.genome_config.get_aggregation_MPF_Instance('max_median_min(0.5)') is not None
     assert config.genome_config.get_aggregation_MPF_Instance('maxabs_mean(0.5)') is not None
     assert config.genome_config.get_aggregation_MPF_Instance('sum_mean(0.5)') is not None
-    assert config.genome_config.get_aggregation_MPF_Instance('product_mean(0.5)') is not None
-    assert config.genome_config.get_aggregation_MPF_Instance('sum_product_mean(0.5,0.5)') is not None
+    assert config.genome_config.get_aggregation_MPF_Instance('product_mean(0.5,True)') is not None
+    assert config.genome_config.get_aggregation_MPF_Instance('sum_product_mean(0.5,0.5,True)') is not None
     assert config.genome_config.get_aggregation_MPF_Instance('sum_product(0.5)') is not None
     assert config.genome_config.get_aggregation_MPF_Instance('sum_product(1)') is not None
 
