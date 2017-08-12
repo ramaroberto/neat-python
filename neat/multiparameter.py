@@ -23,7 +23,8 @@ class MultiParameterFunctionInstance(object):
     """
     def __init__(self, name, multi_param_func):
         self.name = name
-        assert isinstance(multi_param_func, MultiParameterFunction), "multi_param_func {0!s} type '{1!s}' ({2!r}) bad".format(
+        assert isinstance(multi_param_func,
+                          MultiParameterFunction), "multi_param_func {0!s} type '{1!s}' ({2!r}) bad".format(
             name, type(multi_param_func), multi_param_func)
         self.multi_param_func = multi_param_func
         self.user_func = multi_param_func.user_func
@@ -79,13 +80,14 @@ class MultiParameterFunctionInstance(object):
                        other.current_param_values[n])
             if diff:
                 param_dict = self.evolved_param_dicts[n]
-                this_diff = diff / max(NORM_EPSILON,abs(param_dict['max_value'] - param_dict['min_value']))
+                this_diff = diff / max(NORM_EPSILON,
+                                       abs(param_dict['max_value'] - param_dict['min_value']))
                 max_diff = max(max_diff, this_diff)
         return max_diff
 
     def copy(self):
         #print("{0!s}: Copying myself {1!r}".format(self.instance_name,self),file=sys.stderr)
-        other = MultiParameterFunctionInstance(self.name, self.multi_param_func.copy())
+        other = MultiParameterFunctionInstance(self.name, copy.copy(self.multi_param_func))
         for n in self.evolved_param_names:
             other.current_param_values[n] = self.current_param_values[n]
         other.instance_name = self.instance_name[:]
@@ -95,7 +97,8 @@ class MultiParameterFunctionInstance(object):
         return self.copy()
 
     def __deepcopy__(self, memo_dict):
-        other = MultiParameterFunctionInstance(self.name[:], self.multi_param_func.deepcopy(memo_dict))
+        other = MultiParameterFunctionInstance(self.name[:],
+                                               copy.deepcopy(self.multi_param_func,memo_dict))
         for n in self.evolved_param_names:
             other.current_param_values[n] = self.current_param_values[n]
         other.instance_name = self.instance_name[:]
@@ -132,10 +135,10 @@ class MultiParameterFunction(object):
         self.evolved_param_dicts[n].setdefault('param_type', 'float')
         param_dict = self.evolved_param_dicts[n]
         tmp_name = "{0}_{1}".format(self.name,n)
-        
+
         if param_dict['param_type'] in ('float','int'):
             self.evolved_param_dicts[n].setdefault('init_type','uniform')
- 
+
             middle = (param_dict['max_value'] +
                       param_dict['min_value'])/2.0
             self.evolved_param_dicts[n].setdefault('init_mean', middle)
@@ -210,21 +213,15 @@ class MultiParameterFunction(object):
             to_return_list.append(n + '=' + repr(self.evolved_param_dicts[n]))
         return str(self.__class__) + '(' + ",".join(to_return_list) + ')'
 
-    def copy(self):
+    def __copy__(self):
         return MultiParameterFunction(self.orig_name, self.which_type, self.user_func,
                                       self.evolved_param_names, **self.evolved_param_dicts)
 
-    def deepcopy(self, memo_dict):
+    def __deepcopy__(self, memo_dict):
         return MultiParameterFunction(self.orig_name[:], self.which_type[:],
                                       copy.deepcopy(self.user_func, memo_dict),
                                       copy.deepcopy(self.evolved_param_names, memo_dict),
                                       **copy.deepcopy(self.evolved_param_dicts, memo_dict))
-
-    def __copy__(self): # TEST NEEDED!
-        return self.copy()
-
-    def __deepcopy__(self, memo_dict): # TEST NEEDED!
-        return self.deepcopy(memo_dict)
 
 
 class BadFunctionError(Exception):
@@ -273,6 +270,7 @@ class MultiParameterSet(object):
                 which_type # type: str
                 ):
         # type: (...) -> MultiParameterFunction
+        """Fetches the named MultiParameterFunction instance."""
 
         if name in self.multiparam_func_dict[which_type]:
             mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]
@@ -285,7 +283,10 @@ class MultiParameterSet(object):
                          which_type # type: str
                         ):
         # type: (...) -> MultiParameterFunctionInstance
-        # TODO: Accept in keyword format also; probably package into function usable by get_func also
+        """Fetches a named MultiParameterFunctionInstance."""
+
+        # TODO: Accept in keyword format also;
+        # probably package into function usable by get_func also
         if name in self.multiparam_func_dict[which_type]:
             mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]
             return mpfunc_dict[name].init_instance()
@@ -313,7 +314,7 @@ class MultiParameterSet(object):
                     len(param_values), name, len(multiparam_func.evolved_param_names)))
         elif len(multiparam_func.evolved_param_names) > len(param_values):
             warnings.warn(
-                "MPFInstance name {0!r} has only {1:n} param_values, while function takes {2:n}".format(
+                "MPFInstance name {0!r}: Only {1:n} param_values, but function takes {2:n}".format(
                     name, len(param_values), len(multiparam_func.evolved_param_names)))
 
         init_params = dict(zip(multiparam_func.evolved_param_names, param_values))
@@ -343,7 +344,7 @@ class MultiParameterSet(object):
         instance.set_values(**params)
 
         return instance
-        
+
 
     def get_func(self, name, which_type):
         """
@@ -407,7 +408,7 @@ class MultiParameterSet(object):
             nfunc_dict = self.norm_func_dict[which_type]
             nfunc_dict[name] = user_func
             return
-        
+
         func_code = user_func.__code__
         if func_code.co_argcount != (len(kwargs)+1):
             raise InvalidFunctionError("Function {0!r} ({1!s})".format(user_func,name) +
@@ -434,7 +435,7 @@ class MultiParameterSet(object):
         evolved_param_names = func_code.co_varnames[1:func_code.co_argcount]
         func_names_set = set(evolved_param_names)
         kwargs_names_set = set(kwargs.keys())
-        
+
         missing1 = func_names_set - kwargs_names_set
         if missing1:
             raise InvalidFunctionError("Function {0!r} ({1!s}) has arguments ".format(user_func,
