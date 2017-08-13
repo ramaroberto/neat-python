@@ -171,7 +171,7 @@ class FuncAttribute(BaseAttribute):
     or may be functions needing multiparameter handling.
     """
     _config_items = copy(StringAttribute._config_items)
-    
+
     def init_value(self, config):
         default = getattr(config, self.default_name)
 

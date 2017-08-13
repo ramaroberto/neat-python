@@ -200,58 +200,58 @@ def test_get_MPF():
     else:
         raise Exception("Should have had a LookupError/derived for get_aggregation_MPF 'foo'")
 
-def test_get_MPF_Instance_simple():
+def test_get_Evolved_MPF_simple():
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, 'test_configuration')
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    assert config.genome_config.get_aggregation_MPF_Instance('max_median_min') is not None
-    assert config.genome_config.get_aggregation_MPF_Instance('maxabs_mean') is not None
-    assert config.genome_config.get_aggregation_MPF_Instance('sum_mean') is not None
-    assert config.genome_config.get_aggregation_MPF_Instance('product_mean') is not None
-    assert config.genome_config.get_aggregation_MPF_Instance('sum_product_mean') is not None
-    assert config.genome_config.get_aggregation_MPF_Instance('sum_product') is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('max_median_min') is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('maxabs_mean') is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('sum_mean') is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('product_mean') is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product_mean') is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product') is not None
 
     try:
-        ignored = config.genome_config.get_aggregation_MPF_Instance('foo')
+        ignored = config.genome_config.get_aggregation_Evolved_MPF('foo')
     except LookupError:
         pass
     else:
         raise Exception(
-            "Should have had a LookupError/derived for get_aggregation_MPF_Instance 'foo'")
+            "Should have had a LookupError/derived for get_aggregation_Evolved_MPF 'foo'")
 
-def test_get_MPF_Instance_complex():
+def test_get_Evolved_MPF_complex():
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, 'test_configuration')
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    assert config.genome_config.get_aggregation_MPF_Instance('max_median_min(0.5)') is not None
-    assert config.genome_config.get_aggregation_MPF_Instance('maxabs_mean(0.5)') is not None
-    assert config.genome_config.get_aggregation_MPF_Instance('sum_mean(0.5)') is not None
-    assert config.genome_config.get_aggregation_MPF_Instance('product_mean(0.5,True)') is not None
-    assert config.genome_config.get_aggregation_MPF_Instance('sum_product_mean(0.5,0.5,True)') is not None
-    assert config.genome_config.get_aggregation_MPF_Instance('sum_product(0.5)') is not None
-    assert config.genome_config.get_aggregation_MPF_Instance('sum_product(1)') is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('max_median_min(0.5)') is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('maxabs_mean(0.5)') is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('sum_mean(0.5)') is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('product_mean(0.5,True)') is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product_mean(0.5,0.5,True)') is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product(0.5)') is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product(1)') is not None
 
     try:
-        ignored = config.genome_config.get_aggregation_MPF_Instance('foo(0.5)')
+        ignored = config.genome_config.get_aggregation_Evolved_MPF('foo(0.5)')
     except LookupError:
         pass
     else:
         raise Exception(
-            "Should have had a LookupError/derived for get_aggregation_MPF_Instance 'foo(0.5)'")
+            "Should have had a LookupError/derived for get_aggregation_Evolved_MPF 'foo(0.5)'")
 
     try:
-        ignored = config.genome_config.get_aggregation_MPF_Instance('maxabs_mean(0.5,0.5,0.5)')
+        ignored = config.genome_config.get_aggregation_Evolved_MPF('maxabs_mean(0.5,0.5,0.5)')
     except RuntimeError:
         pass
     else:
         raise Exception(
-            "Should have had a RuntimeError/derived for get_aggregation_MPF_Instance 'maxabs_mean(0.5,0.5,0.5)'")
+            "Should have had a RuntimeError/derived for get_aggregation_Evolved_MPF 'maxabs_mean(0.5,0.5,0.5)'")
 
 if __name__ == '__main__':
     test_sum()
@@ -270,7 +270,7 @@ if __name__ == '__main__':
     test_add_minabs()
     test_function_set()
     test_get_MPF()
-    test_get_MPF_Instance_simple()
-    test_get_MPF_Instance_complex()
+    test_get_Evolved_MPF_simple()
+    test_get_Evolved_MPF_complex()
     test_bad_add1()
     test_bad_add2()

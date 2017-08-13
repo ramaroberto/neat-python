@@ -1,3 +1,4 @@
+"""A recurrent (but otherwise straightforward) neural network NEAT implementation."""
 from neat.graphs import required_for_output
 from neat.six_util import itervalues, iteritems
 
@@ -13,7 +14,7 @@ class RecurrentNetwork(object):
             for k in inputs + outputs:
                 v[k] = 0.0
 
-            for node, ignored_activation, ignored_aggregation, ignored_bias, ignored_response, links in self.node_evals:
+            for node, ignored_activ,ignored_aggr,ignored_bias,ignored_resp, links in self.node_evals:
                 v[node] = 0.0
                 for i, w in links:
                     v[i] = 0.0
@@ -25,7 +26,9 @@ class RecurrentNetwork(object):
 
     def activate(self, inputs):
         if len(self.input_nodes) != len(inputs):
-            raise RuntimeError("Expected {0:n} inputs, got {1:n}".format(len(self.input_nodes), len(inputs)))
+            raise RuntimeError(
+                "Expected {0:n} inputs, got {1:n}".format(len(self.input_nodes),
+                                                          len(inputs)))
 
         ivalues = self.values[self.active]
         ovalues = self.values[1 - self.active]
@@ -46,7 +49,9 @@ class RecurrentNetwork(object):
     def create(genome, config):
         """ Receives a genome and returns its phenotype (a RecurrentNetwork). """
         genome_config = config.genome_config
-        required = required_for_output(genome_config.input_keys, genome_config.output_keys, genome.connections)
+        required = required_for_output(genome_config.input_keys,
+                                       genome_config.output_keys,
+                                       genome.connections)
 
         # Gather inputs and expressed connections.
         node_inputs = {}
@@ -67,7 +72,14 @@ class RecurrentNetwork(object):
         for node_key, inputs in iteritems(node_inputs):
             node = genome.nodes[node_key]
             activation_function = genome_config.activation_defs.get(node.activation)
-            aggregation_function = genome_config.aggregation_function_defs.get(node.aggregation)
-            node_evals.append((node_key, activation_function, aggregation_function, node.bias, node.response, inputs))
+            aggregation_function = genome_config.aggregation_defs.get(node.aggregation)
+            node_evals.append((node_key,
+                               activation_function,
+                               aggregation_function,
+                               node.bias,
+                               node.response,
+                               inputs))
 
-        return RecurrentNetwork(genome_config.input_keys, genome_config.output_keys, node_evals)
+        return RecurrentNetwork(genome_config.input_keys,
+                                genome_config.output_keys,
+                                node_evals)

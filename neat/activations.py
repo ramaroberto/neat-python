@@ -209,7 +209,7 @@ class ActivationFunctionSet(object):
                  a={'min_value':-1.0, 'max_value':1.0})
         self.add('multiparam_sigmoid', multiparam_sigmoid_activation,
                  a={'min_value':-1.0, 'max_value':1.0})
-        
+
 
     def add(self, name, function, **kwargs):
         self.multiparameterset.add_func(name, function, 'activation', **kwargs)

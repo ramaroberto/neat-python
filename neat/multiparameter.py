@@ -16,7 +16,7 @@ from neat.attributes import FloatAttribute, BoolAttribute
 from neat.math_util import NORM_EPSILON
 from neat.six_util import iteritems
 
-class MultiParameterFunctionInstance(object):
+class EvolvedMultiParameterFunction(object):
     """
     Holds, initializes, and mutates the evolved parameters for one instance
     of a multiparameter function.
@@ -66,7 +66,7 @@ class MultiParameterFunctionInstance(object):
         return self.instance_name
 
     def distance(self, other):
-        if not isinstance(other, MultiParameterFunctionInstance):
+        if not isinstance(other, EvolvedMultiParameterFunction):
             return 1.0
 
         if self.name != other.name:
@@ -87,7 +87,7 @@ class MultiParameterFunctionInstance(object):
 
     def copy(self):
         #print("{0!s}: Copying myself {1!r}".format(self.instance_name,self),file=sys.stderr)
-        other = MultiParameterFunctionInstance(self.name, copy.copy(self.multi_param_func))
+        other = EvolvedMultiParameterFunction(self.name, copy.copy(self.multi_param_func))
         for n in self.evolved_param_names:
             other.current_param_values[n] = self.current_param_values[n]
         other.instance_name = self.instance_name[:]
@@ -97,8 +97,8 @@ class MultiParameterFunctionInstance(object):
         return self.copy()
 
     def __deepcopy__(self, memo_dict):
-        other = MultiParameterFunctionInstance(self.name[:],
-                                               copy.deepcopy(self.multi_param_func,memo_dict))
+        other = EvolvedMultiParameterFunction(self.name[:],
+                                              copy.deepcopy(self.multi_param_func,memo_dict))
         for n in self.evolved_param_names:
             other.current_param_values[n] = self.current_param_values[n]
         other.instance_name = self.instance_name[:]
@@ -190,7 +190,7 @@ class MultiParameterFunction(object):
             setattr(self, self.evolved_param_attributes[n].config_item_name(x), y)
 
     def init_instance(self):
-        return MultiParameterFunctionInstance(self.orig_name, self)
+        return EvolvedMultiParameterFunction(self.orig_name, self)
 
 ##    def set_attribute_settings(self, n, **param_dict): # TEST NEEDED! Perhaps do as @property?
 ##        """
@@ -278,12 +278,12 @@ class MultiParameterSet(object):
             return mpfunc_dict[name]
         raise UnknownFunctionError("Unknown {!s} MPF function {!r}".format(which_type,name))
 
-    def get_MPF_Instance(self, # MORE THOROUGH TESTS NEEDED!
+    def get_Evolved_MPF(self, # MORE THOROUGH TESTS NEEDED!
                          name, # type: str
                          which_type # type: str
                         ):
-        # type: (...) -> MultiParameterFunctionInstance
-        """Fetches a named MultiParameterFunctionInstance."""
+        # type: (...) -> EvolvedMultiParameterFunction
+        """Fetches a named EvolvedMultiParameterFunction instance."""
 
         # TODO: Accept in keyword format also;
         # probably package into function usable by get_func also
@@ -314,7 +314,7 @@ class MultiParameterSet(object):
                     len(param_values), name, len(multiparam_func.evolved_param_names)))
         elif len(multiparam_func.evolved_param_names) > len(param_values):
             warnings.warn(
-                "MPFInstance name {0!r}: Only {1:n} param_values, but function takes {2:n}".format(
+                "EMPF name {0!r}: Only {1:n} param_values, but function takes {2:n}".format(
                     name, len(param_values), len(multiparam_func.evolved_param_names)))
 
         init_params = dict(zip(multiparam_func.evolved_param_names, param_values))
@@ -334,7 +334,7 @@ class MultiParameterSet(object):
                     params[name2] = bool(value)
             else:
                 raise RuntimeError(
-                    "{0!s}: Uninterpretable MPFInstance {1!s} param_type {2!r} for {3!r}".format(
+                    "{0!s}: Uninterpretable EMPF {1!s} param_type {2!r} for {3!r}".format(
                         name, name2,
                         multiparam_func.evolved_param_dicts[name2]['param_type'],
                         multiparam_func))
@@ -351,7 +351,7 @@ class MultiParameterSet(object):
         Figures out what function, or function instance for multiparameter functions,
         is needed, and returns it.
         """
-        if isinstance(name, MultiParameterFunctionInstance):
+        if isinstance(name, EvolvedMultiParameterFunction):
             return name.get_func()
         if hasattr(name, 'get_func'):
             return name.get_func()

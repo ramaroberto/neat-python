@@ -1818,7 +1818,7 @@ multiparameter
 --------------------
 The basis for multiparameter :term:`activation <activation function>` and :term:`aggregation <aggregation function>` functions.
 
-  .. py:class:: MultiParameterFunctionInstance(name, multi_param_func)
+  .. py:class:: EvolvedMultiParameterFunction(name, multi_param_func)
 
     Holds, initializes, and mutates the evolved parameters for one instance of a multiparameter function.
 

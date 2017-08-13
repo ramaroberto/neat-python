@@ -1,3 +1,4 @@
+"""A straightforward feed-forward neural network NEAT implementation."""
 from neat.graphs import feed_forward_layers
 from neat.six_util import itervalues
 
@@ -11,7 +12,9 @@ class FeedForwardNetwork(object):
 
     def activate(self, inputs):
         if len(self.input_nodes) != len(inputs):
-            raise RuntimeError("Expected {0:n} inputs, got {1:n}".format(len(self.input_nodes), len(inputs)))
+            raise RuntimeError(
+                "Expected {0:n} inputs, got {1:n}".format(len(self.input_nodes),
+                                                          len(inputs)))
 
         for k, v in zip(self.input_nodes, inputs):
             self.values[k] = v
@@ -32,7 +35,9 @@ class FeedForwardNetwork(object):
         # Gather expressed connections.
         connections = [cg.key for cg in itervalues(genome.connections) if cg.enabled]
 
-        layers = feed_forward_layers(config.genome_config.input_keys, config.genome_config.output_keys, connections)
+        layers = feed_forward_layers(config.genome_config.input_keys,
+                                     config.genome_config.output_keys,
+                                     connections)
         node_evals = []
         for layer in layers:
             for node in layer:
@@ -47,10 +52,17 @@ class FeedForwardNetwork(object):
 
 
                 ng = genome.nodes[node]
-                aggregation_function = config.genome_config.aggregation_function_defs.get(ng.aggregation)
+                aggregation_function = config.genome_config.aggregation_defs.get(ng.aggregation)
                 activation_function = config.genome_config.activation_defs.get(ng.activation)
-                node_evals.append((node, activation_function, aggregation_function, ng.bias, ng.response, inputs))
+                node_evals.append((node,
+                                   activation_function,
+                                   aggregation_function,
+                                   ng.bias,
+                                   ng.response,
+                                   inputs))
 
-        return FeedForwardNetwork(config.genome_config.input_keys, config.genome_config.output_keys, node_evals)
+        return FeedForwardNetwork(config.genome_config.input_keys,
+                                  config.genome_config.output_keys,
+                                  node_evals)
 
 
