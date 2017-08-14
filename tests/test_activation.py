@@ -18,7 +18,7 @@ def assert_almost_equal(a, b):
         max_abs = max(abs(a), abs(b))
         abs_rel_err = abs(a - b) / max_abs
         if abs_rel_err > 1e-6:
-            raise NotAlmostEqualException("{0:.6f} !~= {1:.6f}".format(a, b))
+            raise NotAlmostEqualException("{0!r} !~= {1!r}".format(float(a), float(b)))
 
 
 def test_sigmoid():
@@ -74,10 +74,35 @@ def test_inv():
 
 def test_log():
     assert activations.log_activation(1.0) == 0.0
+    assert_almost_equal(activations.log_activation(0.5),-0.6931471805599453)
 
+def test_expanded_log():
+    assert activations.expanded_log_activation(-1.0) == -1.0
+    assert abs(activations.expanded_log_activation(-0.5)) == 0.0
+    assert activations.expanded_log_activation(0.0) <= -13.0
+    assert activations.expanded_log_activation(0.5) == 0.0
+    assert activations.expanded_log_activation(1.0) == 1.0
+
+def test_skewed_log1p():
+    assert_almost_equal(activations.skewed_log1p_activation(-1.0),-0.09861228866810978)
+    assert_almost_equal(activations.skewed_log1p_activation(-0.5),0.3068528194400547)
+    assert activations.skewed_log1p_activation(0.0) == -1.0
+    assert_almost_equal(activations.skewed_log1p_activation(0.5),-0.3068528194400547)
+    assert_almost_equal(activations.skewed_log1p_activation(1.0),0.09861228866810978)
+
+def test_log1p():
+    assert_almost_equal(activations.log1p_activation(-1.0),-0.9740769841801067)
+    assert_almost_equal(activations.log1p_activation(-0.5),-0.6012295888576978)
+    assert activations.log1p_activation(0.0) == 0.0
+    assert_almost_equal(activations.log1p_activation(0.5),0.6012295888576978)
+    assert_almost_equal(activations.log1p_activation(1.0),0.9740769841801067)
 
 def test_exp():
+    assert_almost_equal(activations.exp_activation(-1.0),0.36787944117144233)
+    assert_almost_equal(activations.exp_activation(-0.5),0.6065306597126334)
     assert activations.exp_activation(0.0) == 1.0
+    assert_almost_equal(activations.exp_activation(0.5),1.6487212707001282)
+    assert_almost_equal(activations.exp_activation(1.0),2.718281828459045)
 
 
 def test_abs():
@@ -275,6 +300,87 @@ def test_multiparam_sigmoid():
     assert activations.multiparam_sigmoid_activation(0.5,-1.0) == 1.0
     assert activations.multiparam_sigmoid_activation(-0.5,-1.0) == 0.0
 
+def test_hat_gauss():
+    assert activations.hat_gauss_activation(-1.0,1.0) == 0.0
+    assert activations.hat_gauss_activation(0.0,1.0) == 1.0
+    assert activations.hat_gauss_activation(1.0,1.0) == 0.0
+    assert_almost_equal(activations.hat_gauss_activation(-1.0,0.75),0.0016844867497713668)
+    assert activations.hat_gauss_activation(0.0,0.75) == 1.0
+    assert_almost_equal(activations.hat_gauss_activation(1.0,0.75),0.0016844867497713668)
+    assert_almost_equal(activations.hat_gauss_activation(-1.0,0.5),0.0033689734995427335)
+    assert_almost_equal(activations.hat_gauss_activation(-0.5,0.5),0.3932523984300951)
+    assert activations.hat_gauss_activation(0.0,0.5) == 1.0
+    assert_almost_equal(activations.hat_gauss_activation(0.5,0.5),0.3932523984300951)
+    assert_almost_equal(activations.hat_gauss_activation(1.0,0.5),0.0033689734995427335)
+    assert_almost_equal(activations.hat_gauss_activation(-1.0,0.25),0.0050534602493141)
+    assert activations.hat_gauss_activation(0.0,0.25) == 1.0
+    assert_almost_equal(activations.hat_gauss_activation(1.0,0.25),0.0050534602493141)
+    assert_almost_equal(activations.hat_gauss_activation(-1.0,0.0),0.006737946999085467)
+    assert activations.hat_gauss_activation(0.0,0.0) == 1.0
+    assert_almost_equal(activations.hat_gauss_activation(1.0,0.0),0.006737946999085467)
+
+def test_scaled_expanded_log():
+    assert activations.scaled_expanded_log_activation(-1.0,2.0) == -1.0
+    assert activations.scaled_expanded_log_activation(0.0,2.0) <= -6.5
+    assert activations.scaled_expanded_log_activation(1.0,2.0) == 1.0
+    assert_almost_equal(activations.scaled_expanded_log_activation(-1.0,1.5),-1.0606601717798214)
+    assert_almost_equal(activations.scaled_expanded_log_activation(0.0,1.5),-9.19238815542512)
+    assert_almost_equal(activations.scaled_expanded_log_activation(1.0,1.5),1.0606601717798214)
+    assert activations.scaled_expanded_log_activation(-1.0,1.0) == -1.0
+    assert abs(activations.scaled_expanded_log_activation(-0.5,1.0)) == 0.0
+    assert activations.scaled_expanded_log_activation(0.0,1.0) <= -13.0
+    assert activations.scaled_expanded_log_activation(0.5,1.0) == 0.0
+    assert activations.scaled_expanded_log_activation(1.0,1.0) == 1.0
+    assert_almost_equal(activations.scaled_expanded_log_activation(-1.0,0.5),-0.7071067811865477)
+    assert_almost_equal(activations.scaled_expanded_log_activation(1.0,0.5),0.7071067811865477)
+    assert abs(activations.scaled_expanded_log_activation(-1.0,0.0)) == 0.0
+    assert activations.scaled_expanded_log_activation(0.0,0.0) <= -26.0
+    assert activations.scaled_expanded_log_activation(1.0,0.0) == 0.0
+
+def test_scaled_log1p():
+    assert_almost_equal(activations.scaled_log1p_activation(-1.0,2.0),-0.4745817877281998)
+    assert activations.scaled_log1p_activation(0.0,2.0) == 0.0
+    assert_almost_equal(activations.scaled_log1p_activation(1.0,2.0),0.4745817877281998)
+    assert_almost_equal(activations.scaled_log1p_activation(-1.0,1.5),-0.6259149659059668)
+    assert_almost_equal(activations.scaled_log1p_activation(1.0,1.5),0.6259149659059668)
+    assert_almost_equal(activations.scaled_log1p_activation(-1.0,1.0),-0.7965334777057539)
+    assert_almost_equal(activations.scaled_log1p_activation(-0.5,1.0),-0.5205837691459093)
+    assert_almost_equal(activations.scaled_log1p_activation(0.5,1.0),0.5205837691459093)
+    assert_almost_equal(activations.scaled_log1p_activation(1.0,1.0),0.7965334777057539)
+    assert_almost_equal(activations.scaled_log1p_activation(-1.0,0.5),-0.9740769841801067)
+    assert_almost_equal(activations.scaled_log1p_activation(1.0,0.5),0.9740769841801067)
+    assert_almost_equal(activations.scaled_log1p_activation(-1.0,0.0),-1.142806500315004)
+    assert activations.scaled_log1p_activation(0.0,0.0) == 0.0
+    assert_almost_equal(activations.scaled_log1p_activation(1.0,0.0),1.142806500315004)
+
+def test_multiparam_tanh_log1p():
+    assert activations.multiparam_tanh_log1p_activation(-1.0,1.0,1.0) == -1.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,1.0,1.0) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(1.0,1.0,1.0) == 1.0
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,1.0,0.0),-0.9866142981514303)
+    assert activations.multiparam_tanh_log1p_activation(0.0,1.0,0.0) == 0.0
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(1.0,1.0,0.0),0.9866142981514303)
+    assert activations.multiparam_tanh_log1p_activation(-1.0,1.0,-1.0) == -1.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,1.0,-1.0) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(1.0,1.0,-1.0) == 1.0
+    assert activations.multiparam_tanh_log1p_activation(-1.0,0.5,1.0) == -1.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.5,1.0) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(1.0,0.5,1.0) == 1.0
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.5,0.0),-0.9803456411657685)
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.5,0.0) == 0.0
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(1.0,0.5,0.0),0.9803456411657685)
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.5,-1.0),-0.7372908938640998)
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.5,-1.0) == 0.0
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(1.0,0.5,-1.0),0.7372908938640998)
+    assert activations.multiparam_tanh_log1p_activation(-1.0,0.0,1.0) == -1.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.0,1.0) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(1.0,0.0,1.0) == 1.0
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.0,0.0),-0.9740769841801067)
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.0,0.0) == 0.0
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(1.0,0.0,0.0),0.9740769841801067)
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.0,-1.0),-0.4745817877281998)
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.0,-1.0) == 0.0
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(1.0,0.0,-1.0),0.4745817877281998)
 
 def test_function_set():
     m = multiparameter.MultiParameterSet('activation')
@@ -288,6 +394,9 @@ def test_function_set():
     assert s.get('clamped') is not None
     assert s.get('inv') is not None
     assert s.get('log') is not None
+    assert s.get('expanded_log') is not None
+    assert s.get('skewed_log1p') is not None
+    assert s.get('log1p') is not None
     assert s.get('exp') is not None
     assert s.get('abs') is not None
     assert s.get('hat') is not None
@@ -299,6 +408,10 @@ def test_function_set():
     assert m.get_MPF('weighted_lu', 'activation') is not None
     assert m.get_MPF('clamped_tanh_step', 'activation') is not None
     assert m.get_MPF('multiparam_sigmoid', 'activation') is not None
+    assert m.get_MPF('hat_gauss', 'activation') is not None
+    assert m.get_MPF('scaled_expanded_log', 'activation') is not None
+    assert m.get_MPF('scaled_log1p', 'activation') is not None
+    assert m.get_MPF('multiparam_tanh_log1p', 'activation') is not None
 
     assert s.is_valid('sigmoid')
     assert s.is_valid('tanh')
@@ -309,6 +422,9 @@ def test_function_set():
     assert s.is_valid('clamped')
     assert s.is_valid('inv')
     assert s.is_valid('log')
+    assert s.is_valid('expanded_log')
+    assert s.is_valid('skewed_log1p')
+    assert s.is_valid('log1p')
     assert s.is_valid('exp')
     assert s.is_valid('abs')
     assert s.is_valid('hat')
@@ -320,6 +436,10 @@ def test_function_set():
     assert s.is_valid('weighted_lu')
     assert s.is_valid('clamped_tanh_step')
     assert s.is_valid('multiparam_sigmoid')
+    assert s.is_valid('hat_gauss')
+    assert s.is_valid('scaled_expanded_log')
+    assert s.is_valid('scaled_log1p')
+    assert s.is_valid('multiparam_tanh_log1p')
 
     assert not s.is_valid('foo')
 
@@ -432,6 +552,9 @@ if __name__ == '__main__':
     test_clamped()
     test_inv()
     test_log()
+    test_expanded_log()
+    test_skewed_log1p()
+    test_log1p()
     test_exp()
     test_abs()
     test_hat()
@@ -443,6 +566,10 @@ if __name__ == '__main__':
     test_multiparam_relu_softplus()
     test_clamped_tanh_step()
     test_multiparam_sigmoid()
+    test_hat_gauss()
+    test_scaled_expanded_log()
+    test_scaled_log1p()
+    test_multiparam_tanh_log1p()
     test_function_set()
     test_get_MPF()
     test_get_Evolved_MPF_simple()

@@ -53,6 +53,11 @@ class DefaultReproduction(DefaultClassConfig):
             stderr.flush()
             config.fitness_min_divisor = float_info.epsilon
 
+        if config.min_species_size < 2:
+            raise RuntimeError(
+                "Min_species_size must be at least 2 (not {0:n}) for crossover parents".format(
+                    config.min_species_size))
+
 
     def create_new(self, genome_type, genome_config, num_genomes):
         new_genomes = {}

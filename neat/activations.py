@@ -69,11 +69,11 @@ def expanded_log_activation(z): # mostly intended for CPPNs
     return math.copysign(1.0,z)*math.log(abs(z*2),2)
 
 
-def skewed_log_plus_activation(z): # mostly intended for CPPNs
+def skewed_log1p_activation(z): # mostly intended for CPPNs
     return math.copysign(1.0,z)*(math.log1p(abs(z*2))-1)
 
-def log_plus_activation(z):
-    return math.copysign(1.0,z)*math.log1p(abs(z*math.sqrt(math.exp(1))))
+def log1p_activation(z):
+    return math.copysign(1.0,z)*math.log1p(abs(z*math.exp(0.5)))
 
 
 def exp_activation(z):
@@ -132,10 +132,10 @@ def multiparam_relu_softplus_activation(z, a, b):
     assert b >= 0.0
 
     val1 = ((a*relu_activation(z))+
-            ((1-a)*z))
+            ((1.0-a)*z))
     val2 = ((a*abs(z))+
-            ((1-a)*softplus_activation(z)))
-    return ((b*val1)+((1-b)*val2))
+            ((1.0-a)*softplus_activation(z)))
+    return ((b*val1)+((1.0-b)*val2))
 
 def clamped_tanh_step_activation(z, a):
     assert a <= 1.0
@@ -153,11 +153,41 @@ def clamped_tanh_step_activation(z, a):
 
     return max(-1.0,min(1.0,to_return))
 
-
 def multiparam_sigmoid_activation(z, a):
     """Conversion of clamped_tanh_step_activation to a 0-1 output range"""
     return max(0.0,min(1.0,((clamped_tanh_step_activation(z, a)+1.0)/2.0)))
 
+def hat_gauss_activation(z, a):
+    assert a <= 1.0
+    assert a >= 0.0
+
+    return (a*hat_activation(z))+((1.0-a)*gauss_activation(z))
+
+def scaled_expanded_log_activation(z, a): # mostly intended for CPPNs
+    assert a >= 0.0
+
+    if abs(z*math.pow(2.0,a)) < NORM_EPSILON:
+        z = math.copysign((NORM_EPSILON/math.pow(2.0,a)),z)
+    return math.copysign(math.pow(2.0,(1.0-a)),z)*math.log(abs(z*math.pow(2.0,a)),2)
+
+def scaled_log1p_activation(z, a):
+    return math.copysign(math.exp(0.5-a),z)*math.log1p(abs(z*math.exp(a)))
+
+def multiparam_tanh_log1p_activation(z, a, b):
+    assert a <= 1.0
+    assert a >= 0.0
+    assert b <= 1.0
+    assert b >= -1.0
+
+    tanh_part = a*clamped_tanh_step_activation(z, b)
+
+    if b > 0.0:
+        other_part = (1.0-a)*((b*z)+
+                              ((1.0-b)*scaled_log1p_activation(z, 0.5)))
+    else:
+        other_part = (1.0-a)*scaled_log1p_activation(z, (0.5-(1.5*b)))
+
+    return tanh_part+other_part
 
 class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""
@@ -179,8 +209,8 @@ class ActivationFunctionSet(object):
         self.add('inv', inv_activation)
         self.add('log', log_activation)
         self.add('expanded_log', expanded_log_activation)
-        self.add('log_plus', log_plus_activation)
-        self.add('skewed_log_plus', skewed_log_plus_activation)
+        self.add('log1p', log1p_activation)
+        self.add('skewed_log1p', skewed_log1p_activation)
         self.add('exp', exp_activation)
         self.add('abs', abs_activation)
         self.add('hat', hat_activation)
@@ -209,6 +239,15 @@ class ActivationFunctionSet(object):
                  a={'min_value':-1.0, 'max_value':1.0})
         self.add('multiparam_sigmoid', multiparam_sigmoid_activation,
                  a={'min_value':-1.0, 'max_value':1.0})
+        self.add('hat_gauss', hat_gauss_activation,
+                 a={'min_value':0.0, 'max_value':1.0})
+        self.add('scaled_expanded_log', scaled_expanded_log_activation,
+                 a={'min_value':0.0, 'max_value':2.0})
+        self.add('scaled_log1p', scaled_log1p_activation,
+                 a={'min_value':0.0, 'max_value':2.0})
+        self.add('multiparam_tanh_log1p', multiparam_tanh_log1p_activation,
+                 a={'min_value':0.0, 'max_value':1.0},
+                 b={'min_value':-1.0, 'max_value':1.0})
 
 
     def add(self, name, function, **kwargs):
