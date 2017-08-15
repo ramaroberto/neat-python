@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 from neat.reporting import ReporterSet
-from neat.math_util import mean
+from neat.math_util import stat_functions
 from neat.six_util import iteritems, itervalues
 
 
@@ -27,15 +27,11 @@ class Population(object):
         self.reproduction = config.reproduction_type(config.reproduction_config,
                                                      self.reporters,
                                                      stagnation)
-        if config.fitness_criterion == 'max':
-            self.fitness_criterion = max
-        elif config.fitness_criterion == 'min':
-            self.fitness_criterion = min
-        elif config.fitness_criterion == 'mean':
-            self.fitness_criterion = mean
-        elif not config.no_fitness_termination:
+
+        self.fitness_criterion = stat_functions.get(config.fitness_criterion)
+        if (self.fitness_criterion is None) and (not config.no_fitness_termination):
             raise RuntimeError(
-                "Unexpected fitness_criterion: {0!r}".format(config.fitness_criterion))
+                "Unexpected fitness criterion: {0!r}".format(config.fitness_criterion))
 
         if initial_state is None:
             # Create a population from scratch, then partition into species.

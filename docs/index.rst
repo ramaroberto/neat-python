@@ -21,7 +21,7 @@ networks. NEAT-Python is a pure Python implementation of NEAT, with no dependenc
 
 .. index:: ! TODO
 
-Support for HyperNEAT and other extensions to NEAT is planned once the fundamental NEAT implementation is
+Support for :term:`HyperNEAT` and other extensions to NEAT is planned once the fundamental NEAT implementation is
 more complete and stable.
 
 For further information regarding general concepts and theory, please see `Selected Publications

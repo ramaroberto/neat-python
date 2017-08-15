@@ -1,9 +1,8 @@
-from __future__ import print_function
+from __future__ import print_function, division
 
 import math
 import os
-
-from sys import float_info
+import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,9 +19,14 @@ from neat.six_util import iterkeys
 
 DO_PRINT_FOR_TESTING = True
 
+save_to_print = {}
+save_exact_to_print = {}
+save_to_print_abs = {}
+
 def print_for_testing(string, result):
     if not DO_PRINT_FOR_TESTING:
         return
+    global save_to_print, save_exact_to_print, save_to_print_abs
     result = float(result)
     if result or (math.copysign(1.0,result) > 0):
         name = "activations.{0}".format(string)
@@ -35,10 +39,97 @@ def print_for_testing(string, result):
     elif (abs(result-float("{0:.7g}".format(result)))
           < 1e-06) and (abs(result-round(result,0))
                         > NORM_EPSILON) and (abs(result-round(result,2))
-                                             > math.sqrt(float_info.epsilon)):
-        print("assert_almost_equal({0},{1!r})".format(name, result))
+                                             > math.sqrt(sys.float_info.epsilon)):
+        save_result = round(result,sys.float_info.dig)
+        if (abs(result-save_result) >= 1e-07):
+            raise RuntimeError(
+                "Result {0!r} vs save_result {1!r} (diff {2:n}, dig {3:n})".format(
+                    result, save_result, abs(result-save_result), sys.float_info.dig))
+        if save_result in save_to_print:
+            save_to_print[save_result].append([name,result])
+        else:
+            save_to_print[save_result] = [[name,result]]
+        if abs(save_result) in save_to_print_abs:
+            save_to_print_abs[abs(save_result)].append([name,result])
+        else:
+            save_to_print_abs[abs(save_result)] = [[name,result]]
+        if result in save_exact_to_print:
+            save_exact_to_print[result].append(name)
+        else:
+            save_exact_to_print[result] = [name]
+##        print("assert_almost_equal({0},{1!r})".format(name, result))
     else:
         print("# Skipping {0} with result {1!r}".format(name,result))
+
+def do_prints():
+    if not DO_PRINT_FOR_TESTING:
+        return
+    global save_to_print, save_exact_to_print, save_to_print_abs
+    if not len(save_to_print):
+        return
+    did_print_result_abs = set([])
+    did_print_result = set([])
+    did_print_result_exact = set([])
+    for abs_result in sorted(iterkeys(save_to_print_abs)):
+        if len(save_to_print_abs[abs_result]) == 1:
+            print("assert_almost_equal({0},{1!r})".format(*save_to_print_abs[abs_result][0]))
+            did_print_result.add(round(save_to_print_abs[abs_result][0][1],sys.float_info.dig))
+            did_print_result_exact.add(save_to_print_abs[abs_result][0][1])
+            did_print_result_abs.add(abs_result)
+        elif len(save_to_print_abs[abs_result]) == 2:
+            name1, result1 = save_to_print_abs[abs_result][0]
+            name2, result2 = save_to_print_abs[abs_result][1]
+            did_print_result.add(round(result1,sys.float_info.dig))
+            did_print_result.add(round(result2,sys.float_info.dig))
+            did_print_result_exact.add(result1)
+            did_print_result_exact.add(result2)
+            did_print_result_abs.add(abs_result)
+            if abs(result1-result2) < 1e-06:
+                print("assert_almost_equal({0},{1})".format(name1,name2))
+            elif abs(result1+result2) < 1e-06:
+                print("assert_almost_equal({0},-1*{1})".format(name1,name2))
+            else:
+                raise RuntimeError(
+                    "{0} result abs({1!r}) != {2} result abs({3!r})".format(
+                        name1, result1, name2, result2))
+    save_to_print_abs = {}
+    for save_result in sorted([n for n in iterkeys(save_to_print) if n not in did_print_result]):
+        if len(save_to_print[save_result]) == 1:
+            if abs(save_result) not in did_print_result_abs:
+                print("assert_almost_equal({0},{1!r})".format(*save_to_print_abs[abs_result][0]))
+                did_print_result_exact.add(save_to_print[save_result][0][1])
+                did_print_result_abs.add(abs(save_result))
+        elif len(save_to_print[save_result]) == 2:
+            name1, result1 = save_to_print[save_result][0]
+            name2, result2 = save_to_print[save_result][1]
+            if abs(result1-result2) < 1e-06:
+                print("assert_almost_equal({0},{1})".format(name1,name2))
+            else:
+                raise RuntimeError(
+                    "{0} result {1!r} != {2} result {3!r}".format(
+                        name1, result1, name2, result2))
+            did_print_result_exact.add(result1)
+            did_print_result_exact.add(result2)
+            did_print_result_abs.add(abs(save_result))
+    save_to_print = {}
+    for result in sorted([n for n in iterkeys(save_exact_to_print) if n not in did_print_result_exact]):
+        rounded = round(result,sys.float_info.dig)
+        abs_rounded = round(abs(result),sys.float_info.dig)
+        if len(save_exact_to_print[result]) == 1:
+            if (rounded not in did_print_result) and (abs_rounded not in did_print_result_abs):
+                print("assert_almost_equal({0},{1!r})".format(save_exact_to_print[result][0],result))
+                did_print_result.add(rounded)
+                did_print_result_abs.add(abs_rounded)
+        elif len(save_exact_to_print[result]) == 2:
+            name1 = save_exact_to_print[result][0]
+            name2 = save_exact_to_print[result][1]
+            print("assert_almost_equal({0},{1})".format(name1,name2))
+            did_print_result.add(rounded)
+            did_print_result_abs.add(abs_rounded)
+        else:
+            print("Not sure which to use for result {0!r}:\n\t".format(result)
+                  + "\n\t".join(save_exact_to_print[result]))
+    save_exact_to_print = {}
 
 num_subfigures = 5
 
@@ -57,8 +148,9 @@ for n in sorted(iterkeys(mps.norm_func_dict['activation'])):
     plt.gca().set_aspect(1)
     plt.savefig('activation-{0}.png'.format(n))
     plt.close()
-    for i in (-1.0,-0.5,0.0,0.5,1.0):
+    for i in (-1.0,-0.75,-0.5,-0.25,0.0,0.25,0.5,0.75,1.0):
         print_for_testing("{0}_activation({1!s})".format(n,i),f(i))
+    do_prints()
 
 for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
     mpf = mps.multiparam_func_dict['activation'][n]
@@ -118,15 +210,18 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
                     else:
                         plt.plot(x, [f(i,a,b) for i in x], color, label="{0}={1}".format(param2_use,b))
                         if (color in ('c-', 'b-', 'm-')) and (a in (min_value_use,middle_param_value,max_value_use)):
+                            for i in (-1.0,-0.5,0.0,0.5,1.0):
+                                print_for_testing("{0}_activation({1!s},{2!r},{3!r})".format(n,i,a,b),f(i,a,b))
+                        elif (color in ('c-', 'b-', 'm-')) or (a in (min_value_use,middle_param_value,max_value_use)):
                             for i in (-1.0,0.0,1.0):
                                 print_for_testing("{0}_activation({1!s},{2!r},{3!r})".format(n,i,a,b),f(i,a,b))
             else:
                 plt.plot(x, [f(i,a) for i in x])
                 if a == middle_param_value:
-                    for i in (-1.0,-0.5,0.0,0.5,1.0):
+                    for i in (-1.0,-0.75,-0.5,-0.25,0.0,0.25,0.5,0.75,1.0):
                         print_for_testing("{0}_activation({1!s},{2!r})".format(n,i,a),f(i,a))                   
                 else:
-                    for i in (-1.0,0.0,1.0):
+                    for i in (-1.0,-0.5,0.0,0.5,1.0):
                         print_for_testing("{0}_activation({1!s},{2!r})".format(n,i,a),f(i,a))
             plt.title("{0}={1}".format(param_use, a))
             plt.grid()
@@ -153,3 +248,5 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
         else:
             img.save(realname)
         os.unlink(tmpname)
+        if not do_swap:
+            do_prints()

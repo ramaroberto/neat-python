@@ -156,4 +156,32 @@ Glossary
     If using the :py:mod:`distributed` module, you will need at least one secondary :term:`compute node`, as well as a :term:`primary node`. The secondary
     nodes evaluate genomes, distributed to them by the primary node.
 
+  CPPN
+    A Compositional Pattern-Producing Network. This is a neural network that, when fed inputs varying over a domain (such as the x and y axes of
+    a potential image), produces outputs that, when mapped to the domain, give rise to patterns (such as shapes on such an image).
+    One characteristic of CPPNs is the use of a wider variety of :term:`activation and/or aggregation functions <activation function>`; for examples 
+    of the former, see :ref:`activation-functions-label`. The picture2d examples use CPPNs, as does :term:`HyperNEAT`.
+
+  HyperNEAT
+    A NEAT variant in which NEAT is used to evolve a :term:`CPPN`, which is fed the potential coordinates (in a multidimensional space - usually
+    at least 4) of connections and nodes, and its output(s) are used to determine the characteristics and/or presence of the corresponding connections
+    and nodes. The :term:`fitness` of the CPPN is not determined directly, but by the fitness of the network it creates. Work on enabling
+    HyperNEAT in neat-python is ongoing.
+
+  multiparameter
+    Multiparameter :term:`activation and aggregation functions <activation function>` are ones in which, as well as the normal inputs, additional ones
+    determined as :term:`attributes` to be evolved. The :py:mod:`multiparameter` module handles creating and fetching them, while existing ones
+    can. be seen in the :py:mod:`activation` and :py:mod:`aggregation` modules (and further regarding the former in :ref:`activation-functions-label`).
+
+  fitness
+    The fitness of :term:`genomes <genome>` is what determines the fitness of :term:`species`, which in turn determines the species' next-:term:`generation`
+    sizes (and potential removal due to :term:`stagnation`). The fitness function is determined by the user of the library; a genome that better accomplishes
+    the desired goal(s) should have a higher fitness than one that does not. For further information, see :ref:`neat-overview-label`.
+
+  stagnation
+    In NEAT, no matter what the :term:`fitness` of a :term:`species`, it will always have at least a (:ref:`configured <min-species-size-label>` - usually 2)
+    minimum number of genomes. Poorly performing species (as opposed to genomes) are removed if they fail to improve in a
+    (:ref:`configured <max-stagnation-label>`) number of generations; other configuration variables can be found in the config file's
+    :ref:`stagnation-config-label`, and the default implementation in the :py:mod:`stagnation` module.
+
 :ref:`Table of Contents <toc-label>`

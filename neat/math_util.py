@@ -96,4 +96,4 @@ def softmax(values):
 
 # Lookup table for commonly used {value} -> value functions.
 stat_functions = {'min': min, 'max': max, 'mean': mean, 'median': median,
-                  'median2': median2}
+                  'median2': median2, 'tmean': tmean}

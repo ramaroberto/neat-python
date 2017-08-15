@@ -53,6 +53,9 @@ Has the built-in :term:`activation functions <activation function>`, code for us
       :return: Whether or not the function is known.
       :rtype: :pytypes:`bool <typesnumeric>`
 
+  .. versionchanged:: 0.92-multiparam_funcs
+    Most functionality of :py:class:`ActivationFunctionSet` moved to :py:mod:`multiparameter`.
+
 .. index:: ! aggregation function
 
 .. py:module:: aggregations
@@ -211,6 +214,9 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
 
   .. versionchanged:: 0.92
     Moved from :py:mod:`genome` and expanded to match `activations` (plus the ``maxabs``, ``median``, and ``mean`` functions added).
+
+  .. versionchanged:: 0.92-multiparam_funcs
+    Most functionality of :py:class:`AggregationFunctionSet` moved to :py:mod:`multiparameter`.
 
 .. py:module:: attributes
    :synopsis: Deals with attributes used by genes.
@@ -398,7 +404,7 @@ Deals with :term:`attributes` used by :term:`genes <gene>`.
 
   .. py:class:: FuncAttribute(BaseAttribute)
 
-    Handle attributes that may be simple strings or may be functions needing :py:mod:`multiparameter` handling.
+    Handle attributes that may be simple strings or may be functions needing :term:`multiparameter` handling.
 
     .. versionadded:: 0.92-multiparam_funcs
 
@@ -1742,11 +1748,16 @@ functions (such as for the :ref:`species_fitness_func <species-fitness-func-labe
 
   .. py:data:: stat_functions
 
-    Lookup table for commonly used ``{value} -> value`` functions, namely `max`, `min`, `mean`, `median`, and `median2`.
-    The :ref:`species_fitness_func <species-fitness-func-label>` (used for :py:class:`stagnation.DefaultStagnation`) is required to be one of these.
+    Lookup table for commonly used ``{value} -> value`` functions, namely `max`, `min`, `mean`, `median`, `median2`, and `tmean`.
+    The :ref:`species_fitness_func <species-fitness-func-label>` (used for :py:class:`stagnation.DefaultStagnation`) is required to be one of these, as
+    is the :ref:`fitness_criterion <fitness-criterion-label>` used for determining termination based on :term:`fitness` (if
+    :ref:`no_fitness_termination <no-fitness-termination-label>` is not set).
 
     .. versionchanged:: 0.92
       `median2` added.
+
+    .. versionchanged:: 0.92-multiparam_funcs
+      `tmean` added.
 
   .. py:function:: mean(values)
 
@@ -1776,6 +1787,20 @@ functions (such as for the :ref:`species_fitness_func <species-fitness-func-labe
     :rtype: :pytypes:`float <typesnumeric>`
 
     .. versionadded:: 0.92
+
+  .. py:function:: tmean(values, trim=0.25)
+
+    Returns the trimmed mean of the input values, with the fraction trimmed from each end being the second argument;
+    requires 0.0 <= trim <= 0.5. If ``trim`` is over 0.25, returns the weighted mean of tmean(values, 0.25) and median2(values).
+
+    :param values: Numbers to take the trimmed mean of.
+    :type values: list(float) or set(float) or tuple(float)
+    :param float trim: Fraction to trim from each end, if <= 0.25 (must have 0.0 <= trim <= 0.5)
+    :return: The trimmed mean.
+    :rtype: :pytypes:`float <typesnumeric>`
+    :raises ValueError: If ``trim`` is outside of the range 0.0-0.5, inclusive.
+
+    .. versionadded: 0.92-multiparam_funcs
 
   .. py:function:: variance(values)
 
@@ -1816,11 +1841,11 @@ functions (such as for the :ref:`species_fitness_func <species-fitness-func-labe
 
 multiparameter
 --------------------
-The basis for multiparameter :term:`activation <activation function>` and :term:`aggregation <aggregation function>` functions.
+The basis for :term:`multiparameter` :term:`activation <activation function>` and :term:`aggregation <aggregation function>` functions.
 
   .. py:class:: EvolvedMultiParameterFunction(name, multi_param_func)
 
-    Holds, initializes, and mutates the evolved parameters for one instance of a multiparameter function.
+    Holds, initializes, and mutates the evolved parameters for one instance of a :term:`multiparameter` function.
 
     :param str name: The name of the function.
     :param multi_param_func: The :py:class:`MultiParameterFunction` instance for the multiparameter function.
@@ -1828,7 +1853,7 @@ The basis for multiparameter :term:`activation <activation function>` and :term:
 
   .. py:class:: MultiParameterFunction(name, which_type, user_func, evolved_param_names, **evolved_param_dicts)
 
-    Holds and initializes configuration information for one multiparameter function.
+    Holds and initializes configuration information for one :term:`multiparameter` function.
 
     :param str name: The name of the function.
     :param str which_type: The type of function (currently, either :term:`activation <activation function>` or :term:`aggregation <aggregation function>`).
@@ -1853,7 +1878,7 @@ The basis for multiparameter :term:`activation <activation function>` and :term:
 
   .. py:class:: MultiParameterSet(*which_types)
 
-    Holds the set of (potentially multiparameter) functions and contains methods for dealing with them.
+    Holds the set of (potentially :term:`multiparameter`) functions and contains methods for dealing with them.
 
     :param str which_types: What types of functions to hold; initialized by :py:class:`genome.DefaultGenomeConfig` to ['activation', 'aggregation']. Determines the valid types for ``which_type`` parameters in the class methods.
 

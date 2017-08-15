@@ -110,6 +110,15 @@ class DefaultReproduction(DefaultClassConfig):
         # TODO: I don't like this modification of the species and stagnation objects,
         # because it requires internal knowledge of the objects.
 
+        if (generation == 0) and (pop_size
+                                  < math.ceil(4/self.reproduction_config.survival_threshold)):
+            print("Population size {0:n} is too small".format(pop_size)
+                  + " - with a survival_threshold of {1:n},".format(
+                      self.reproduction_config.survival_threshold)
+                  + " a minimum of {2:n} is recommended".format(
+                      math.ceil(4/self.reproduction_config.survival_threshold)),
+                  file=stderr)
+
         # Filter out stagnated species, collect the set of non-stagnated
         # species members, and compute their average adjusted fitness.
         # The average adjusted fitness scheme (normalized to the interval
@@ -139,6 +148,9 @@ class DefaultReproduction(DefaultClassConfig):
         fitness_range = max(self.reproduction_config.fitness_min_divisor, max_fitness - min_fitness)
         for afs in remaining_species:
             # Compute adjusted fitness.
+            # TODO: One variant suggested by Stanley on his webpage is to only use the
+            # fitnesses of the members that will be passed on to the next generation and/or
+            # get a chance to reproduce.
             msf = mean([m.fitness for m in itervalues(afs.members)])
             af = (msf - min_fitness) / fitness_range
             afs.adjusted_fitness = af
@@ -152,7 +164,7 @@ class DefaultReproduction(DefaultClassConfig):
         min_species_size = self.reproduction_config.min_species_size
         # Isn't the effective min_species_size going to be max(min_species_size,
         # self.reproduction_config.elitism)? That would probably produce more accurate tracking
-        # of population sizes and relative fitnesses... doing. TODO: document.
+        # of population sizes and relative fitnesses... doing; documented.
         min_species_size = max(min_species_size,self.reproduction_config.elitism)
         spawn_amounts = self.compute_spawn(adjusted_fitnesses, previous_sizes,
                                            pop_size, min_species_size)

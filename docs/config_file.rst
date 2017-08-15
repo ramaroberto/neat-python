@@ -33,7 +33,8 @@ itself.  This section is always required, and is handled by the `Config` class i
 .. index:: ! fitness_criterion
 
 * *fitness_criterion*
-    The function used to compute the termination criterion from the set of genome fitnesses.  Allowable values are: ``min``, ``max``, and ``mean``
+    The function used to compute the termination criterion from the set of genome fitnesses.  Allowed values are: ``max``, ``min``, ``mean``,
+    :py:func:`median <math_util.median>`, and :py:func:`tmean <math_util.tmean>`.
 
 .. _fitness-threshold-label:
 
@@ -41,7 +42,7 @@ itself.  This section is always required, and is handled by the `Config` class i
 .. index:: found_solution()
 
 * *fitness_threshold*
-    When the fitness computed by ``fitness_criterion`` meets or exceeds this threshold, the evolution process will terminate, with a call to
+    When the :term:`fitness` computed by ``fitness_criterion`` meets or exceeds this threshold, the evolution process will terminate, with a call to
     any registered reporting class' :py:meth:`found_solution <reporting.BaseReporter.found_solution>` method.
 
 .. note::
@@ -78,6 +79,8 @@ itself.  This section is always required, and is handled by the `Config` class i
 .. index:: stagnation
 .. index:: DefaultStagnation
 
+.. _stagnation-config-label:
+
 [DefaultStagnation] section
 ---------------------------
 
@@ -91,8 +94,8 @@ required for your particular implementation.
 .. index:: ! species_fitness_func
 
 * *species_fitness_func*
-    The function used to compute species fitness.  **This defaults to ``mean``.** Allowed values are: ``max``, ``min``, ``mean``, and
-    :py:func:`median <math_util.median>`
+    The function used to compute species :term:`fitness`.  **This defaults to ``mean``.** Allowed values are: ``max``, ``min``, ``mean``,
+    :py:func:`median <math_util.median>`, and :py:func:`tmean <math_util.tmean>`.
 
 .. note::
 
@@ -145,7 +148,7 @@ required for your particular implementation.
 .. _min-species-size-label:
 
 * *min_species_size*
-    The minimum number of genomes per species after reproduction. **This defaults to 2.**
+    The minimum number of genomes per species after reproduction. **This defaults to 2, which is also the minimum.**
 
 .. index:: genome
 .. index:: DefaultGenome
