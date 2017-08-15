@@ -12,7 +12,7 @@ from operator import mul
 
 from neat.multiparameter import MultiParameterSet
 from neat.multiparameter import BadFunctionError as InvalidAggregationFunction # pylint: disable=unused-import
-from neat.math_util import mean, median2
+from neat.math_util import mean, median2, tmean
 
 if sys.version_info[0] > 2:
     from functools import reduce
@@ -38,6 +38,9 @@ def median_aggregation(x):
 def mean_aggregation(x):
     return mean(x)
 
+def tmean_aggregation(x):
+    return tmean(x,trim=0.25)
+
 def max_median_min_aggregation(x, a):
     assert a <= 1.0
     assert a >= -1.0
@@ -51,10 +54,23 @@ def max_median_min_aggregation(x, a):
                 (median_weight*median2(x)))
     return median2(x)
 
+def multiparam_tmean_aggregation(x, a):
+    assert a <= 0.5
+    assert a >= 0.0
+    return tmean(x,trim=a)
+
 def maxabs_mean_aggregation(x, a):
     assert a <= 1.0
     assert a >= 0.0
     return ((1.0-a)*mean(x))+(a*maxabs_aggregation(x))
+
+def maxabs_tmean_aggregation(x, a):
+    assert a <= 1.0
+    assert a >= -1.0
+    if a >= 0.0:
+        return maxabs_mean_aggregation(x, a=a)
+    else:
+        return multiparam_tmean_aggregation(x, a=abs(a/2))
 
 def sum_mean_aggregation(x, a):
     assert a <= 1.0
@@ -124,10 +140,15 @@ class AggregationFunctionSet(object):
         self.add('maxabs', maxabs_aggregation)
         self.add('median', median_aggregation)
         self.add('mean', mean_aggregation)
+        self.add('tmean', tmean_aggregation)
+        self.add('multiparam_tmean', multiparam_tmean_aggregation,
+                 a={'min_value':0.0, 'max_value':0.5})
         self.add('max_median_min', max_median_min_aggregation,
                  a={'min_value':-1.0, 'max_value':1.0})
         self.add('maxabs_mean', maxabs_mean_aggregation,
                  a={'min_value':0.0, 'max_value':1.0})
+        self.add('maxabs_tmean', maxabs_tmean_aggregation,
+                 a={'min_value':-1.0, 'max_value':1.0})
         self.add('sum_mean', sum_mean_aggregation,
                  a={'min_value':0.0, 'max_value':1.0})
         self.add('product_mean', product_mean_aggregation,

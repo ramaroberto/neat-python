@@ -15,10 +15,14 @@ except ImportError:
 
 from neat.multiparameter import MultiParameterSet
 from neat.activations import ActivationFunctionSet
-from neat.math_util import median2
+from neat.math_util import median2, NORM_EPSILON
 from neat.six_util import iterkeys
 
+DO_PRINT_FOR_TESTING = True
+
 def print_for_testing(string, result):
+    if not DO_PRINT_FOR_TESTING:
+        return
     result = float(result)
     if result or (math.copysign(1.0,result) > 0):
         name = "activations.{0}".format(string)
@@ -29,7 +33,9 @@ def print_for_testing(string, result):
     if rounded == result:
         print("assert {0} == {1!r}".format(name, result))
     elif (abs(result-float("{0:.7g}".format(result)))
-          < 1e-06) and (abs(result-round(result,3)) > math.sqrt(float_info.epsilon)):
+          < 1e-06) and (abs(result-round(result,0))
+                        > NORM_EPSILON) and (abs(result-round(result,2))
+                                             > math.sqrt(float_info.epsilon)):
         print("assert_almost_equal({0},{1!r})".format(name, result))
     else:
         print("# Skipping {0} with result {1!r}".format(name,result))
