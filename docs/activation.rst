@@ -22,6 +22,7 @@ clamped      :ref:`clamped_tanh_step <clamped-tanh-step-label>`
 gauss         :ref:`hat_gauss <hat-gauss-label>`
 hat             :ref:`hat_gauss <hat-gauss-label>`
 identity       multiparam_relu, multiparam_relu_softplus, or weighted_lu
+inv             :ref:`multiparam_log_inv <multiparam-log-inv-label>`, if for a CPPN
 log             :ref:`scaled_expanded_log <scaled-expanded-log-label>`, if for a CPPN
 relu            multiparam_relu, multiparam_relu_softplus, or weighted_lu
 sigmoid      :ref:`multiparam_sigmoid <multiparam-sigmoid-label>`
@@ -279,3 +280,12 @@ scaled_expanded_log
 .. figure:: activation-scaled_expanded_log.png
     :scale: 100 %
     :alt: A version of expanded_log with variable scaling (with partially-counterbalancing weights both inside and outside the expanded_log function).
+
+.. _multiparam-log-inv-label:
+
+multiparam_log_inv
+^^^^^^^^^^^^^^^^^^^^
+
+.. figure:: activation-multiparam_log_inv.png
+    :scale: 100 %
+    :alt: Above 0.0, equivalent to scaled_expanded_log with a+1.0; below, weighted mean with inv of -1*x.

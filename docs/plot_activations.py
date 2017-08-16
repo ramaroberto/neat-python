@@ -156,7 +156,7 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
     mpf = mps.multiparam_func_dict['activation'][n]
     f = mpf.user_func
     if len(mpf.evolved_param_names) > 2: # NOTE: EVENTUALLY ALSO NEED TO CHECK FOR NON-FLOAT!
-        print("Cannot currently handle 3+ evolved parameters (function {!s})".format(n))
+        print("Cannot currently handle 3+ evolved parameters (function {0!s}: {1!r})".format(n,f))
         continue
     elif len(mpf.evolved_param_names) > 1:
         param2_name = mpf.evolved_param_names[1]

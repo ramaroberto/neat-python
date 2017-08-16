@@ -119,6 +119,15 @@ def multiparam_elu_activation_inner(z, a, b):
 def multiparam_elu_activation(z, a, b):
     return multiparam_elu_activation_inner((z*min(1.0,math.exp(-a))), a, b)
 
+##def multiparam_elu_variant_activation(z, a, b):
+##    try:
+##        result = 0.2 * min(abs(z*5), max((z*5), (math.exp((z+a)*5)-math.exp(b))))
+##    except ArithmeticError:
+##        z = 0.2*min(300.0, max(-300.0, (z*5)))
+##        return multiparam_elu_variant_activation(z, a, b)
+##    else:
+##        return result
+
 ##def multiparam_lu_activation(z, a, b, c): # TEST NEEDED!
 ##    z = min(60.0, max(-60.0, (5*z)))
 ##    return 0.2 * min(abs(z), max(z, (z*a), (math.exp(b)*(math.exp(z+c)-math.exp(c)))))
@@ -149,8 +158,7 @@ def multiparam_relu_softplus_activation(z, a, b):
     return ((b*val1)+((1.0-b)*val2))
 
 def clamped_tanh_step_activation(z, a):
-    assert a <= 1.0
-    assert a >= -1.0
+    _check_value_range(a, -1.0, 1.0, 'clamped_tanh_step', 'a')
     tanh_weight = 1.0-abs(a)
 
     if a > 0.0:
@@ -169,26 +177,29 @@ def multiparam_sigmoid_activation(z, a):
     return max(0.0,min(1.0,((clamped_tanh_step_activation(z, a)+1.0)/2.0)))
 
 def hat_gauss_activation(z, a):
-    assert a <= 1.0
-    assert a >= 0.0
+    _check_value_range(a, 0.0, 1.0, 'hat_gauss', 'a')
 
     return (a*hat_activation(z))+((1.0-a)*gauss_activation(z))
 
 def scaled_expanded_log_activation(z, a): # mostly intended for CPPNs
-    assert a >= 0.0
+    if abs(z*math.pow(2.0,abs(a))) < NORM_EPSILON:
+        z = math.copysign((NORM_EPSILON/math.pow(2.0,abs(a))),z)
+    return math.copysign(math.pow(2.0,(1.0-a)),z)*math.log(abs(z*math.pow(2.0,abs(a))),2)
 
-    if abs(z*math.pow(2.0,a)) < NORM_EPSILON:
-        z = math.copysign((NORM_EPSILON/math.pow(2.0,a)),z)
-    return math.copysign(math.pow(2.0,(1.0-a)),z)*math.log(abs(z*math.pow(2.0,a)),2)
+def multiparam_log_inv_activation(z, a): # mostly intended for CPPNs
+    assert a >= -1.0
+    if a >= 0:
+        return scaled_expanded_log_activation(z,(a+1.0))
+    else:
+        return ((abs(a)*inv_activation(-1*z))
+                +((1.0-abs(a))*scaled_expanded_log_activation(z,1.0)))
 
 def scaled_log1p_activation(z, a):
     return math.copysign(math.exp(0.5-a),z)*math.log1p(abs(z*math.exp(a)))
 
 def multiparam_tanh_log1p_activation(z, a, b):
-    assert a <= 1.0
-    assert a >= 0.0
-    assert b <= 1.0
-    assert b >= -1.0
+    _check_value_range(a, 0.0, 1.0, 'multiparam_tanh_log1p', 'a')
+    _check_value_range(b, -1.0, 1.0, 'multiparam_tanh_log1p', 'b')
 
     tanh_part = a*clamped_tanh_step_activation(z, b)
 
@@ -236,6 +247,9 @@ class ActivationFunctionSet(object):
         self.add('multiparam_elu', multiparam_elu_activation,
                  a={'min_value':0.0, 'max_value':1.0},
                  b={'min_value':-1.0, 'max_value':1.0})
+##        self.add('multiparam_elu_variant', multiparam_elu_variant_activation,
+##                 a={'min_value':-1.0, 'max_value':1.0},
+##                 b={'min_value':-1.0, 'max_value':1.0})
 ##        self.add('multiparam_lu', multiparam_lu_activation,
 ##                 a={'min_value':-1.0, 'max_value':1.0},
 ##                 b={'min_value':-1.0, 'max_value':1.0},
@@ -257,6 +271,8 @@ class ActivationFunctionSet(object):
                  a={'min_value':0.0, 'max_value':1.0})
         self.add('scaled_expanded_log', scaled_expanded_log_activation,
                  a={'min_value':0.0, 'max_value':2.0})
+        self.add('multiparam_log_inv', multiparam_log_inv_activation,
+                 a={'min_value':-1.0, 'max_value':1.0})
         self.add('scaled_log1p', scaled_log1p_activation,
                  a={'min_value':0.0, 'max_value':2.0})
         self.add('multiparam_tanh_log1p', multiparam_tanh_log1p_activation,
