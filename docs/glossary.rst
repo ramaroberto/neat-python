@@ -176,7 +176,9 @@ Glossary
   fitness
     The fitness of :term:`genomes <genome>` is what determines the fitness of :term:`species`, which in turn determines the species' next-:term:`generation`
     sizes (and potential removal due to :term:`stagnation`). The fitness function is determined by the user of the library; a genome that better accomplishes
-    the desired goal(s) should have a higher fitness than one that does not. For further information, see :ref:`neat-overview-label`.
+    the desired goal(s) should have a higher fitness than one that does not. Note that some portions of the current implementation, such as the
+    :py:mod:`statistics` reporter and the `best_genome` attribute of :py:class:`population.Population`, assume that a genome's fitness is constant;
+    appropriate modifications are needed if this is not true (e.g., novelty search or coevolution). For further information, see :ref:`neat-overview-label`.
 
   stagnation
     In NEAT, no matter what the :term:`fitness` of a :term:`species`, it will always have at least a (:ref:`configured <min-species-size-label>` - usually 2)

@@ -1977,10 +1977,11 @@ functions (such as for the :ref:`species_fitness_func <species-fitness-func-labe
     :rtype: list(:pytypes:`float <typesnumeric>`)
 
     .. versionchanged:: 0.92
-      Previously not functional on Python 3.X due to changes to map.
+      Previously not functional on Python 3.X due to changes to `map`.
 
 .. index:: activation_function
 .. index:: aggregation_function
+.. index:: ! multiparameter
 
 .. py:module:: multiparameter
    :synopsis: The basis for multiparameter activation and aggregation functions.
@@ -2015,7 +2016,7 @@ The basis for :term:`multiparameter` :term:`activation <activation function>` an
 
   .. py:exception:: InvalidFunctionError(TypeError, BadFunctionError)
 
-    Exception raised if an object to be added as a function is not usable. TODO: Add examples of why.
+    Exception raised if an object to be added as a function is not usable - for instance, if it is not a function (or `lambda`) or does not take any parameters.
 
   .. py:exception:: UnknownFunctionError(LookupError, BadFunctionError)
 

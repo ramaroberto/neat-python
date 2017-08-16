@@ -248,8 +248,10 @@ class DefaultGenome(object):
 
     def configure_crossover(self, genome1, genome2, config):
         """ Configure a new genome by crossover from two parent genomes. """
-        assert isinstance(genome1.fitness, (int, float))
-        assert isinstance(genome2.fitness, (int, float))
+        assert isinstance(genome1.fitness, (int, float)), "Genome1.fitness ({0!r}) is type {1!s}, not int/float".format(
+            genome1.fitness, type(genome1.fitness))
+        assert isinstance(genome2.fitness, (int, float)), "Genome2.fitness ({0!r}) is type {1!s}, not int/float".format(
+            genome2.fitness, type(genome2.fitness))
         if genome1.fitness > genome2.fitness:
             parent1, parent2 = genome1, genome2
         else:
