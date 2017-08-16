@@ -6,6 +6,7 @@ and methods for adding new user-defined ones
 from __future__ import division
 
 import math
+import sys
 import warnings
 
 from neat.math_util import NORM_EPSILON
@@ -13,13 +14,27 @@ from neat.multiparameter import MultiParameterSet
 from neat.multiparameter import BadFunctionError as InvalidActivationFunction # pylint: disable=unused-import
 
 def sigmoid_activation(z):
-    z = max(-60.0, min(60.0, 5.0 * z))
-    return 1.0 / (1.0 + math.exp(-z))
+    try:
+        to_return = 1.0 / (1.0 + math.exp(-5.0*z))
+    except ArithmeticError:
+        if z > 0.0:
+            return 1.0
+        else:
+            return 0.0
+    else:
+        return to_return
 
 
 def tanh_activation(z):
-    z = max(-60.0, min(60.0, 2.5 * z))
-    return math.tanh(z)
+    try:
+        to_return = math.tanh(z*2.5)
+    except ArithmeticError:
+        if z > 0.0:
+            return 1.0
+        else:
+            return -1.0
+    else:
+        return to_return
 
 
 def sin_activation(z):
@@ -28,8 +43,12 @@ def sin_activation(z):
 
 
 def gauss_activation(z):
-    z = max(-3.4, min(3.4, z))
-    return math.exp(-5.0 * z**2)
+    try:
+        to_return = math.exp(-5.0 * z**2)
+    except ArithmeticError:
+        return 0.0
+    else:
+        return to_return
 
 
 def relu_activation(z):
@@ -37,8 +56,15 @@ def relu_activation(z):
 
 
 def softplus_activation(z):
-    z = max(-60.0, min(60.0, 5.0 * z))
-    return 0.2 * math.log(1 + math.exp(z))
+    try:
+        to_return = 0.2 * math.log1p(math.exp(z*5.0))
+    except ArithmeticError:
+        if z > 0.0: # pragma: no cover
+            return z
+        else:
+            return 0.0
+    else:
+        return to_return
 
 
 def identity_activation(z):
@@ -59,8 +85,13 @@ def inv_activation(z):
 
 
 def log_activation(z):
-    z = max(1e-7, z)
-    return math.log(z)
+    z = max(sys.float_info.epsilon, z)
+    try:
+        to_return = math.log(z)
+    except ArithmeticError: # pragma: no cover
+        return math.log(1e-7)
+    else:
+        return to_return
 
 
 def expanded_log_activation(z): # mostly intended for CPPNs
@@ -86,7 +117,7 @@ def abs_activation(z):
 
 
 def hat_activation(z):
-    return max(0.0, 1 - abs(z))
+    return max(0.0, 1.0 - abs(z))
 
 
 def square_activation(z):
@@ -97,9 +128,9 @@ def cube_activation(z):
     return z ** 3
 
 def step_activation(z):
-    if z < 0:
+    if z < 0.0:
         return -1
-    if z > 0:
+    if z > 0.0:
         return 1
     return z
 
@@ -111,13 +142,23 @@ def multiparam_elu_activation_inner(z, a, b):
     try:
         result = 0.2 * min(abs(z*5), max((z*5), (math.exp(a)*(math.exp((z*5)+b)-math.exp(b)))))
     except ArithmeticError:
-        z = 0.2*min(300.0, max(-300.0, (5*z)))
-        return multiparam_elu_activation_inner(z, a, b)
+        old_z = z
+        old_a = a
+        old_b = b
+        a = min(sys.float_info.max_10_exp, max(sys.float_info.min_10_exp, a))
+        b = min(sys.float_info.max_10_exp, max(sys.float_info.min_10_exp, a))
+        z = min(((60.0-b)/math.exp(a)), max(((-60.0-b)/math.exp(a)), z))
+        if (abs(z) < abs(old_z)) or (abs(a) < abs(old_a)) or (abs(b) < abs(old_b)):
+            return multiparam_elu_activation_inner(z, a, b)
+        else:
+            return multiparam_elu_activation_inner(old_z, min(2.0,max(-1.0,a)),
+                                                   min(2.0,max(-2.0,b)))
     else:
         return result
 
 def multiparam_elu_activation(z, a, b):
-    return multiparam_elu_activation_inner((z*min(1.0,math.exp(-a))), a, b)
+    a_use = min(sys.float_info.max_10_exp, max(sys.float_info.min_10_exp, a))
+    return multiparam_elu_activation_inner((z*min(1.0,math.exp(-a_use))), a, b)
 
 ##def multiparam_elu_variant_activation(z, a, b):
 ##    try:
@@ -182,12 +223,13 @@ def hat_gauss_activation(z, a):
     return (a*hat_activation(z))+((1.0-a)*gauss_activation(z))
 
 def scaled_expanded_log_activation(z, a): # mostly intended for CPPNs
+    a = min(sys.float_info.max_10_exp, max(sys.float_info.min_10_exp, a))
     if abs(z*math.pow(2.0,abs(a))) < NORM_EPSILON:
         z = math.copysign((NORM_EPSILON/math.pow(2.0,abs(a))),z)
     return math.copysign(math.pow(2.0,(1.0-a)),z)*math.log(abs(z*math.pow(2.0,abs(a))),2)
 
 def multiparam_log_inv_activation(z, a): # mostly intended for CPPNs
-    assert a >= -1.0
+    assert a >= -1.0, "'a' for multiparam_log_inv must be -1.0 or above, not {!r}".format(a)
     if a >= 0:
         return scaled_expanded_log_activation(z,(a+1.0))
     else:
@@ -195,6 +237,7 @@ def multiparam_log_inv_activation(z, a): # mostly intended for CPPNs
                 +((1.0-abs(a))*scaled_expanded_log_activation(z,1.0)))
 
 def scaled_log1p_activation(z, a):
+    a = min(sys.float_info.max_10_exp, max(sys.float_info.min_10_exp, a))
     return math.copysign(math.exp(0.5-a),z)*math.log1p(abs(z*math.exp(a)))
 
 def multiparam_tanh_log1p_activation(z, a, b):

@@ -1,7 +1,7 @@
 from __future__ import print_function, division
 import os
-
 import math
+import sys
 
 import neat
 from neat import activations, multiparameter
@@ -41,11 +41,15 @@ def test_sigmoid():
     assert activations.sigmoid_activation(0.0) == 0.5
     assert_inv_func_adds_to(activations.sigmoid_activation,
                             [0.5,1.0],1.0)
+    assert_almost_equal(activations.sigmoid_activation(sys.float_info.max),1.0)
+    assert_almost_equal(activations.sigmoid_activation(-1*sys.float_info.max),0.0)
 
 def test_tanh():
     assert activations.tanh_activation(0.0) == 0.0
     assert_inv_func_adds_to(activations.tanh_activation,
                             [0.25,0.5,0.75,1.0],0.0)
+    assert_almost_equal(activations.tanh_activation(sys.float_info.max),1.0)
+    assert_almost_equal(activations.tanh_activation(-1*sys.float_info.max),-1.0)
 
 
 def test_sin():
@@ -59,6 +63,7 @@ def test_gauss():
                         activations.gauss_activation(1.0))
     assert_almost_equal(activations.gauss_activation(-0.5),
                         activations.gauss_activation(0.5))
+    assert_almost_equal(activations.gauss_activation(sys.float_info.max),0.0)
 
 
 def test_relu():
@@ -69,6 +74,7 @@ def test_relu():
 
 def test_softplus():
     assert_almost_equal(activations.softplus_activation(-5.0),0.0)
+    assert_almost_equal(activations.softplus_activation(sys.float_info.max),0.0)
     assert_almost_equal((activations.softplus_activation(1.0)
                          -activations.softplus_activation(-1.0)),1.0)
     assert_almost_equal(activations.softplus_activation(5.0),5.0)
@@ -186,39 +192,44 @@ def test_multiparam_relu():
     assert activations.multiparam_relu_activation(1.0,-1.0) == 1.0
 
 def test_multiparam_elu():
-    assert activations.multiparam_elu_activation(-1.0,1.0,1.0) == -1.0
     assert activations.multiparam_elu_activation(0.0,1.0,1.0) == 0.0
-    assert activations.multiparam_elu_activation(1.0,1.0,1.0) == 1.0
+    assert activations.multiparam_elu_activation(0.0,1.0,0.5) == 0.0
     assert activations.multiparam_elu_activation(0.0,1.0,0.0) == 0.0
-    assert activations.multiparam_elu_activation(1.0,1.0,0.0) == 1.0
+    assert activations.multiparam_elu_activation(0.0,1.0,-0.5) == 0.0
     assert activations.multiparam_elu_activation(0.0,1.0,-1.0) == 0.0
-    assert activations.multiparam_elu_activation(1.0,1.0,-1.0) == 1.0
+    assert activations.multiparam_elu_activation(0.0,0.75,1.0) == 0.0
+    assert activations.multiparam_elu_activation(0.0,0.75,0.0) == 0.0
+    assert activations.multiparam_elu_activation(0.0,0.75,-1.0) == 0.0
+    assert activations.multiparam_elu_activation(0.0,0.5,1.0) == 0.0
+    assert activations.multiparam_elu_activation(0.0,0.5,0.5) == 0.0
+    assert activations.multiparam_elu_activation(0.0,0.5,0.0) == 0.0
+    assert activations.multiparam_elu_activation(0.0,0.5,-0.5) == 0.0
+    assert activations.multiparam_elu_activation(0.0,0.5,-1.0) == 0.0
+    assert activations.multiparam_elu_activation(0.0,0.25,1.0) == 0.0
+    assert activations.multiparam_elu_activation(0.0,0.25,0.0) == 0.0
+    assert activations.multiparam_elu_activation(0.0,0.25,-1.0) == 0.0
     assert activations.multiparam_elu_activation(0.0,0.0,1.0) == 0.0
+    assert activations.multiparam_elu_activation(0.5,0.0,1.0) == 0.5
     assert activations.multiparam_elu_activation(1.0,0.0,1.0) == 1.0
+    assert activations.multiparam_elu_activation(0.0,0.0,0.5) == 0.0
+    assert activations.multiparam_elu_activation(1.0,0.0,0.5) == 1.0
     assert activations.multiparam_elu_activation(0.0,0.0,0.0) == 0.0
+    assert activations.multiparam_elu_activation(0.5,0.0,0.0) == 0.5
     assert activations.multiparam_elu_activation(1.0,0.0,0.0) == 1.0
+    assert activations.multiparam_elu_activation(0.0,0.0,-0.5) == 0.0
+    assert activations.multiparam_elu_activation(1.0,0.0,-0.5) == 1.0
     assert activations.multiparam_elu_activation(0.0,0.0,-1.0) == 0.0
+    assert activations.multiparam_elu_activation(0.5,0.0,-1.0) == 0.5
     assert activations.multiparam_elu_activation(1.0,0.0,-1.0) == 1.0
-    assert activations.multiparam_elu_activation(0.0,-1.0,1.0) == 0.0
-    assert activations.multiparam_elu_activation(1.0,-1.0,1.0) == 1.0
-    assert activations.multiparam_elu_activation(0.0,-1.0,0.0) == 0.0
-    assert activations.multiparam_elu_activation(1.0,-1.0,0.0) == 1.0
-    assert activations.multiparam_elu_activation(0.0,-1.0,-1.0) == 0.0
-    assert activations.multiparam_elu_activation(1.0,-1.0,-1.0) == 1.0
-    assert_almost_equal(activations.multiparam_elu_activation(-0.5,0.0,0.0),
-                        activations.multiparam_elu_activation(-0.5,-1.0,1.0))
-    assert_almost_equal(activations.multiparam_elu_activation(-1.0,-0.5,-1.0),
-                        activations.multiparam_elu_activation(-1.0,-1.0,-0.5))
-    assert_almost_equal(activations.multiparam_elu_activation(-0.5,0.0,-1.0),
-                        activations.multiparam_elu_activation(-0.5,-1.0,0.0))
-    assert_almost_equal(activations.multiparam_elu_activation(-1.0,0.0,-1.0),
-                        activations.multiparam_elu_activation(-1.0,-1.0,0.0))
-    assert_almost_equal(activations.multiparam_elu_activation(-0.5,1.0,0.0),
-                        activations.multiparam_elu_activation(-0.5,0.0,1.0))
-    assert_almost_equal(activations.multiparam_elu_activation(-1.0,1.0,0.0),
-                        activations.multiparam_elu_activation(-1.0,0.0,1.0))
-    assert_almost_equal(activations.multiparam_elu_activation(-1.0,1.0,0.5),
-                        activations.multiparam_elu_activation(-1.0,0.5,1.0))
+    assert_almost_equal(activations.multiparam_elu_activation(-0.5,1.0,1.0),
+                        activations.multiparam_elu_activation(-0.5,1.0,0.0))
+    assert_almost_equal(activations.multiparam_elu_activation(-60.0,0.5,0.5),
+                        activations.multiparam_elu_activation((-1*sys.float_info.max/5),
+                                                              0.5,0.5))
+    assert_almost_equal(activations.multiparam_elu_activation(-0.5,sys.float_info.max_10_exp,0.5),
+                        activations.multiparam_elu_activation(-0.5,sys.float_info.max,0.5))
+    assert_almost_equal(activations.multiparam_elu_activation(-0.5,0.5,sys.float_info.max_10_exp),
+                        activations.multiparam_elu_activation(-0.5,0.5,sys.float_info.max))
 
 
 def test_weighted_lu():
@@ -242,6 +253,13 @@ def test_weighted_lu():
     assert activations.weighted_lu_activation(1.0,0.0,0.0) == 1.0
     assert activations.weighted_lu_activation(0.0,0.0,-1.0) == 0.0
     assert activations.weighted_lu_activation(1.0,0.0,-1.0) == 1.0
+    try:
+        ignored = activations.weighted_lu_activation(-1.0,2.0,1.0)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError(
+            "weighted_lu_activation(-1.0,2.0,1.0) did not raise a ValueError/derived")
 
 def test_multiparam_relu_softplus():
     assert activations.multiparam_relu_softplus_activation(-1.0,1.0,1.0) == 0.0
@@ -358,6 +376,34 @@ def test_scaled_expanded_log():
     assert_almost_equal(activations.scaled_expanded_log_activation(-1.0,1.5),
                         -1*activations.scaled_expanded_log_activation(1.0,1.5))
 
+def test_multiparam_log_inv():
+    assert activations.multiparam_log_inv_activation(-1.0,1.0) == -1.0
+    assert activations.multiparam_log_inv_activation(-0.5,1.0) == -0.5
+    assert activations.multiparam_log_inv_activation(0.0,1.0) == -6.5
+    assert activations.multiparam_log_inv_activation(0.5,1.0) == 0.5
+    assert activations.multiparam_log_inv_activation(1.0,1.0) == 1.0
+    assert activations.multiparam_log_inv_activation(-1.0,0.0) == -1.0
+    assert activations.multiparam_log_inv_activation(-0.25,0.0) == 1.0
+    assert activations.multiparam_log_inv_activation(0.0,0.0) == -13.0
+    assert activations.multiparam_log_inv_activation(0.25,0.0) == -1.0
+    assert activations.multiparam_log_inv_activation(0.5,0.0) == 0.0
+    assert activations.multiparam_log_inv_activation(1.0,0.0) == 1.0
+    assert activations.multiparam_log_inv_activation(-1.0,-0.5) == 0.0
+    assert activations.multiparam_log_inv_activation(-0.5,-0.5) == 1.0
+    assert activations.multiparam_log_inv_activation(0.0,-0.5) == -6.5
+    assert activations.multiparam_log_inv_activation(0.5,-0.5) == -1.0
+    assert activations.multiparam_log_inv_activation(1.0,-0.5) == 0.0
+    assert activations.multiparam_log_inv_activation(-1.0,-1.0) == 1.0
+    assert activations.multiparam_log_inv_activation(-0.5,-1.0) == 2.0
+    assert activations.multiparam_log_inv_activation(0.0,-1.0) == 0.0
+    assert activations.multiparam_log_inv_activation(0.5,-1.0) == -2.0
+    assert activations.multiparam_log_inv_activation(1.0,-1.0) == -1.0
+    assert_almost_equal(activations.multiparam_log_inv_activation(-0.5,0.5),
+                        -1*activations.multiparam_log_inv_activation(0.5,0.5))
+    assert_almost_equal(activations.multiparam_log_inv_activation(-0.75,0.0),
+                        -1*activations.multiparam_log_inv_activation(0.75,0.0))
+    assert_almost_equal(activations.multiparam_log_inv_activation(-1.0,0.5),
+                        -1*activations.multiparam_log_inv_activation(1.0,0.5))
 
 def test_scaled_log1p():
     for n in [0.5,1.0]:
@@ -455,6 +501,7 @@ def test_function_set():
     assert m.get_MPF('multiparam_sigmoid', 'activation') is not None
     assert m.get_MPF('hat_gauss', 'activation') is not None
     assert m.get_MPF('scaled_expanded_log', 'activation') is not None
+    assert m.get_MPF('multiparam_log_inv', 'activation') is not None
     assert m.get_MPF('scaled_log1p', 'activation') is not None
     assert m.get_MPF('multiparam_tanh_log1p', 'activation') is not None
 
@@ -483,6 +530,7 @@ def test_function_set():
     assert s.is_valid('multiparam_sigmoid')
     assert s.is_valid('hat_gauss')
     assert s.is_valid('scaled_expanded_log')
+    assert s.is_valid('multiparam_log_inv')
     assert s.is_valid('scaled_log1p')
     assert s.is_valid('multiparam_tanh_log1p')
 
@@ -613,6 +661,7 @@ if __name__ == '__main__':
     test_multiparam_sigmoid()
     test_hat_gauss()
     test_scaled_expanded_log()
+    test_multiparam_log_inv()
     test_scaled_log1p()
     test_multiparam_tanh_log1p()
     test_function_set()
