@@ -1117,8 +1117,8 @@ distributed
       Evaluates whether an exception should be treated as simply a reason to retry the operation, as indicating a need to reconnect, or as some worse type of error.
       TODO: Currently, due to problems with the variety of exceptions emitted by the `multiprocessing` module - particularly due to different versions of
       Python - attempts in most (but not all) cases to evaluate the exception via `repr`, looking for keywords, which is uncertain at best. The `multiprocessing` module
-      in particular has a large number of `assert` checks, frequently without user messages; two pull requests have been submitted to correct this in the most problematic
-      portions of the module, in at least the latest (developmental) version of Python ("nightly"), of which one has been accepted thus far.
+      in particular has a large number of `assert` checks, frequently without user messages. Two pull requests have been submitted to correct this for the most problematic
+      portions of the module, in at least the latest (developmental) version of Python ("nightly"), of which one has been accepted thus far; the other is awaiting review.
 
       :param e: The exception to be evaluated.
       :type e: :datamodel:`instance <index-48>`
@@ -2043,7 +2043,7 @@ The basis for :term:`multiparameter` :term:`activation <activation function>` an
       Adds a new activation/aggregation function, potentially multiparameter. A multiparameter function must have entries in ``kwargs`` for each
       of its parameter variables to be evolved. Requirements for the function include the following:
       1. Most obviously, must be a function (including lambda).
-      2. Functions (such as built-in functions) without a :datamodel:`__code__ <index-55>` attribute cannot be multiparameter functions without a wrapper function (which will have the appropriate :datamodel:`__code__ <index-55>` attribute); this attribute is used to determine the arguments for the function.
+      2. Functions (such as built-in functions) without a :datamodel:`__code__ <index-55>` attribute cannot be multiparameter functions without a wrapper function (which will have the appropriate :datamodel:`__code__ <index-34>` attribute); this attribute is used to determine the arguments for the function.
       3. Any function arguments except the first one must be evolved variables with corresponding entries in ``kwargs``.
       4. Multiparameter function names cannot have parentheses, since parenthesized terms are used in constructing a particular function instance.
 

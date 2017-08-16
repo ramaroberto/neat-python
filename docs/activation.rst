@@ -25,7 +25,7 @@ identity       multiparam_relu, multiparam_relu_softplus, or weighted_lu
 log             :ref:`scaled_expanded_log <scaled-expanded-log-label>`, if for a CPPN
 relu            multiparam_relu, multiparam_relu_softplus, or weighted_lu
 sigmoid      :ref:`multiparam_sigmoid <multiparam-sigmoid-label>`
-softplus      multiparam_relu_softplus
+softplus      :ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`
 tanh           :ref:`clamped_tanh_step <clamped-tanh-step-label>`
 ======== =======================================================
 
@@ -118,6 +118,8 @@ multiparam_relu
 .. figure:: activation-multiparam_relu.png
     :scale: 100 %
     :alt: max(x, a*x), where a is an evolved parameter with a range from -1 to 1, inclusive. Acts like a weighted combination of abs, relu, and identity.
+
+.. _multiparam-relu-softplus-label:
 
 multiparam_relu_softplus
 ^^^^^^^^^^^^^^^^^^^^^^^^

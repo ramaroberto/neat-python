@@ -107,9 +107,17 @@ def step_activation(z):
 def multiparam_relu_activation(z, a):
     return max(z, (z*a))
 
+def multiparam_elu_activation_inner(z, a, b):
+    try:
+        result = 0.2 * min(abs(z*5), max((z*5), (math.exp(a)*(math.exp((z*5)+b)-math.exp(b)))))
+    except ArithmeticError:
+        z = 0.2*min(300.0, max(-300.0, (5*z)))
+        return multiparam_elu_activation_inner(z, a, b)
+    else:
+        return result
+
 def multiparam_elu_activation(z, a, b):
-    z = min(60.0, max(-60.0, (5*z)))
-    return 0.2 * min(abs(z), max(z, (math.exp(a)*(math.exp(z+b)-math.exp(b)))))
+    return multiparam_elu_activation_inner((z*min(1.0,math.exp(-a))), a, b)
 
 ##def multiparam_lu_activation(z, a, b, c): # TEST NEEDED!
 ##    z = min(60.0, max(-60.0, (5*z)))
@@ -118,18 +126,21 @@ def multiparam_elu_activation(z, a, b):
 ##def multiparam_lu_partial_activation(z, a, b): # TEST NEEDED!
 ##    return multiparam_lu_activation(z, a, b, 0.0)
 
+def _check_value_range(a, min_val, max_val, caller, var_name): # TEST NEEDED!
+    if not min_val <= a <= max_val:
+        raise ValueError(
+            "{0} for {1}_activation must be between {2:n} and {3:n}, not {4!r}".format(
+                var_name, caller, min_val, max_val, a))
+
 def weighted_lu_activation(z, a, b):
-    assert a <= 1.0
-    assert a >= 0.0
+    _check_value_range(a, 0.0, 1.0, 'weighted_lu', 'a')
 
     return ((a*multiparam_relu_activation(z, b))+
-            ((1-a)*multiparam_elu_activation(z, b, 0.0)))
+            ((1-a)*multiparam_elu_activation_inner(z, b, 0.0)))
 
 def multiparam_relu_softplus_activation(z, a, b):
-    assert a <= 1.0
-    assert a >= 0.0
-    assert b <= 1.0
-    assert b >= 0.0
+    _check_value_range(a, 0.0, 1.0, 'multiparam_relu_softplus', 'a')
+    _check_value_range(b, 0.0, 1.0, 'multiparam_relu_softplus', 'b')
 
     val1 = ((a*relu_activation(z))+
             ((1.0-a)*z))
@@ -219,8 +230,11 @@ class ActivationFunctionSet(object):
         self.add('step', step_activation)
         self.add('multiparam_relu', multiparam_relu_activation,
                  a={'min_value':-1.0, 'max_value':1.0})
+##        self.add('multiparam_elu', multiparam_elu_activation_inner,
+##                 a={'min_value':-1.0, 'max_value':1.0},
+##                 b={'min_value':-1.0, 'max_value':1.0})
         self.add('multiparam_elu', multiparam_elu_activation,
-                 a={'min_value':-1.0, 'max_value':1.0},
+                 a={'min_value':0.0, 'max_value':1.0},
                  b={'min_value':-1.0, 'max_value':1.0})
 ##        self.add('multiparam_lu', multiparam_lu_activation,
 ##                 a={'min_value':-1.0, 'max_value':1.0},

@@ -96,7 +96,7 @@ def do_prints():
     for save_result in sorted([n for n in iterkeys(save_to_print) if n not in did_print_result]):
         if len(save_to_print[save_result]) == 1:
             if abs(save_result) not in did_print_result_abs:
-                print("assert_almost_equal({0},{1!r})".format(*save_to_print_abs[abs_result][0]))
+                print("assert_almost_equal({0},{1!r})".format(*save_to_print[save_result][0]))
                 did_print_result_exact.add(save_to_print[save_result][0][1])
                 did_print_result_abs.add(abs(save_result))
         elif len(save_to_print[save_result]) == 2:
