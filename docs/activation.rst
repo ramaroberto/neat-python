@@ -9,25 +9,25 @@ Note that some of these :term:`functions <activation function>` are scaled diffe
 versions you may be familiar with.  The intention of the scaling is to place
 more of the functions' "interesting" behavior in the region :math:`\left[-1, 1\right] \times \left[-1, 1\right]`.
 Some of these are more intended for :term:`CPPNs <CPPN>` (e.g., for :term:`HyperNEAT`) than for "direct" problem-solving,
-as noted below.
+as noted below; however, even those meant mainly for CPPNs can be of use elsewhere - `abs` and ``hat`` can both solve xor in one generation,
+for instance (although note for the former that it is included in several others such as :ref:`multiparam_relu <multiparam-relu-description-label>`).
 
 The :term:`multiparameter` functions below, and some of the others, are new; if users wish to try substituting them for previously-used activation functions, the following are suggested:
-====== =========================================
-Old        New
-====== =========================================
-abs         multiparam_relu, multiparam_relu_softplus, or weighted_lu
-clamped  clamped_tanh_step
-gauss     hat_gauss
-hat         hat_gauss
-identity   multiparam_relu, multiparam_relu_softplus, or weighted_lu
-log         scaled_expanded_log, if for a CPPN
-relu        multiparam_relu, multiparam_relu_softplus, or weighted_lu
-sigmoid  multiparam_sigmoid
-softplus  multiparam_relu_softplus
-tanh       clamped_tanh_step
-====== =========================================
 
-.. versionadded:: 0.92-multiparam_funcs
+======== =======================================================
+Old            New
+======== =======================================================
+abs             multiparam_relu, multiparam_relu_softplus, or weighted_lu
+clamped      :ref:`clamped_tanh_step <clamped-tanh-step-label>`
+gauss         :ref:`hat_gauss <hat-gauss-label>`
+hat             :ref:`hat_gauss <hat-gauss-label>`
+identity       multiparam_relu, multiparam_relu_softplus, or weighted_lu
+log             :ref:`scaled_expanded_log <scaled-expanded-log-label>`, if for a CPPN
+relu            multiparam_relu, multiparam_relu_softplus, or weighted_lu
+sigmoid      :ref:`multiparam_sigmoid <multiparam-sigmoid-label>`
+softplus      multiparam_relu_softplus
+tanh           :ref:`clamped_tanh_step <clamped-tanh-step-label>`
+======== =======================================================
 
 The implementations of these functions can be found in the :py:mod:`activations` module.
 
@@ -120,7 +120,7 @@ multiparam_relu
     :alt: max(x, a*x), where a is an evolved parameter with a range from -1 to 1, inclusive. Acts like a weighted combination of abs, relu, and identity.
 
 multiparam_relu_softplus
-^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. figure:: activation-multiparam_relu_softplus.png
     :scale: 100 %
@@ -195,7 +195,7 @@ exp
 expanded_log
 ^^^^^^^^^^^^^^
 
-.. figure: activation-expanded_log.png
+.. figure:: activation-expanded_log.png
     :scale: 100 %
     :alt: Expanded-range log function.
 
@@ -260,12 +260,16 @@ square
 CPPN-intended activation functions (multi-parameter)
 ---------------------------------------------------------------------------
 
+.. _hat-gauss-label:
+
 hat_gauss
 ^^^^^^^^^^^
 
 .. figure:: activation-hat_gauss.png
     :scale: 100 %
     :alt: Weighted average of gauss and hat functions.
+
+.. _scaled-expanded-log-label:
 
 scaled_expanded_log
 ^^^^^^^^^^^^^^^^^^^^

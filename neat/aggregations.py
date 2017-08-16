@@ -41,9 +41,33 @@ def mean_aggregation(x):
 def tmean_aggregation(x):
     return tmean(x,trim=0.25)
 
+def _check_value_range(a, min_val, max_val, caller, var_name): # TEST NEEDED!
+    if not min_val <= a <= max_val:
+        raise ValueError(
+            "{0} for {1}_aggregation must be between {2:n} and {3:n}, not {4!r}".format(
+                var_name, caller, min_val, max_val, a))
+
+def maxabs_mean_aggregation(x, a):
+    _check_value_range(a, 0.0, 1.0, 'maxabs_mean', 'a')
+    return ((1.0-a)*mean(x))+(a*maxabs_aggregation(x))
+
+def multiparam_tmean_aggregation(x, a):
+    _check_value_range(a, 0.0, 0.5, 'multiparam_tmean', 'a')
+    return tmean(x,trim=a)
+
+def maxabs_tmean_aggregation(x, a):
+    _check_value_range(a, -1.0, 1.0, 'maxabs_tmean', 'a')
+    if a >= 0.0:
+        return maxabs_mean_aggregation(x, a=a)
+    else:
+        return multiparam_tmean_aggregation(x, a=abs(a/2))
+
+def sum_product_aggregation(x, a):
+    _check_value_range(a, 0.0, 1.0, 'sum_product', 'a')
+    return ((1.0-a)*product_aggregation(x))+(a*sum(x))
+
 def max_median_min_aggregation(x, a):
-    assert a <= 1.0
-    assert a >= -1.0
+    _check_value_range(a, -1.0, 1.0, 'max_median_min', 'a')
     median_weight = 1.0-abs(a)
 
     if a > 0.0:
@@ -54,27 +78,8 @@ def max_median_min_aggregation(x, a):
                 (median_weight*median2(x)))
     return median2(x)
 
-def multiparam_tmean_aggregation(x, a):
-    assert a <= 0.5
-    assert a >= 0.0
-    return tmean(x,trim=a)
-
-def maxabs_mean_aggregation(x, a):
-    assert a <= 1.0
-    assert a >= 0.0
-    return ((1.0-a)*mean(x))+(a*maxabs_aggregation(x))
-
-def maxabs_tmean_aggregation(x, a):
-    assert a <= 1.0
-    assert a >= -1.0
-    if a >= 0.0:
-        return maxabs_mean_aggregation(x, a=a)
-    else:
-        return multiparam_tmean_aggregation(x, a=abs(a/2))
-
 def sum_mean_aggregation(x, a):
-    assert a <= 1.0
-    assert a >= 0.0
+    _check_value_range(a, 0.0, 1.0, 'sum_mean', 'a')
 
     input_list = list(map(float,x))
 
@@ -88,8 +93,11 @@ def sum_mean_aggregation(x, a):
     return sum(input_list)*mult
 
 def product_mean_aggregation(x, a, use_median):
-    assert a <= 1.0
-    assert a >= 0.0
+    _check_value_range(a, 0.0, 1.0, 'product_mean', 'a')
+    if not isinstance(use_median, bool):
+        raise TypeError(
+            "Type of use_median must be bool, not {0!s} (for {1!r})".format(
+                type(use_median), use_median))
 
     input_list = list(map(float,x))
 
@@ -101,25 +109,16 @@ def product_mean_aggregation(x, a, use_median):
     power = (1+(a*(num_input - 1)))/num_input
 
     tmp_product = product_aggregation(input_list)
+    transformed_product = math.pow(abs(tmp_product), power)
 
     if use_median:
-        return math.copysign(math.pow(abs(tmp_product), power), median2(input_list))
+        return math.copysign(transformed_product, median2(input_list))
     
-    return math.copysign(math.pow(abs(tmp_product), power), tmp_product)
-
-
-def sum_product_aggregation(x, a):
-    assert a <= 1.0
-    assert a >= 0.0
-
-    return ((1.0-a)*product_aggregation(x))+(a*sum(x))
+    return math.copysign(transformed_product, tmp_product)
 
 def sum_product_mean_aggregation(x, a, b, use_median):
-    assert a <= 1.0
-    assert a >= 0.0
-    assert b <= 1.0
-    assert b >= 0.0
-
+    _check_value_range(a, 0.0, 1.0, 'sum_product_mean', 'a')
+    _check_value_range(b, 0.0, 1.0, 'sum_product_mean', 'b')
     return ((b*sum_mean_aggregation(x, a))+
             ((1.0-b)*product_mean_aggregation(x, a, use_median)))
     

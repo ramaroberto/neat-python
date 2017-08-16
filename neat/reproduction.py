@@ -150,7 +150,7 @@ class DefaultReproduction(DefaultClassConfig):
             # Compute adjusted fitness.
             # TODO: One variant suggested by Stanley on his webpage is to only use the
             # fitnesses of the members that will be passed on to the next generation and/or
-            # get a chance to reproduce.
+            # get a chance to reproduce. This is a compromise between mean and max.
             msf = mean([m.fitness for m in itervalues(afs.members)])
             af = (msf - min_fitness) / fitness_range
             afs.adjusted_fitness = af

@@ -171,7 +171,7 @@ Glossary
   multiparameter
     Multiparameter :term:`activation and aggregation functions <activation function>` are ones in which, as well as the normal inputs, additional ones
     determined as :term:`attributes` to be evolved. The :py:mod:`multiparameter` module handles creating and fetching them, while existing ones
-    can. be seen in the :py:mod:`activation` and :py:mod:`aggregation` modules (and further regarding the former in :ref:`activation-functions-label`).
+    can. be seen in the :py:mod:`activations` and :py:mod:`aggregations` modules (and further regarding the former in :ref:`activation-functions-label`).
 
   fitness
     The fitness of :term:`genomes <genome>` is what determines the fitness of :term:`species`, which in turn determines the species' next-:term:`generation`

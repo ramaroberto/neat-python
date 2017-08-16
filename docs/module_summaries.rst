@@ -11,7 +11,7 @@ Module summaries
 
 activations
 ---------------
-Has the built-in :term:`activation functions <activation function>`, code for using them, and code for adding new user-defined ones.
+Has the built-in :term:`activation functions <activation function>`, code for using them, and code for adding new user-defined ones. For the built-in activation functions, see :ref:`activation-functions-label`.
 
   .. py:exception:: InvalidActivationFunction(Exception)
 
@@ -139,6 +139,137 @@ Has the built-in :term:`aggregation functions <aggregation function>`, code for 
     :rtype: :pytypes:`float <typesnumeric>`
 
     .. versionadded:: 0.92
+
+  .. py:function:: tmean_aggregation(x)
+
+    Returns the :py:func:`trimmed mean <math_util.tmean>`, with 25% of the values being trimmed off each end.
+
+    :param x: The numbers to find the trimmed mean of; takes any :pygloss:`iterable`.
+    :type x: list(:pytypes:`float <typesnumeric>`) or tuple(:pytypes:`float <typesnumeric>`) or set(:pytypes:`float <typesnumeric>`)
+    :return: The trimmed arithmetic mean.
+    :rtype: :pytypes:`float <typesnumeric>`
+
+    .. versionadded:: 0.92-multiparam_funcs
+
+  .. py:function:: maxabs_mean_aggregation(x, a)
+
+    A :term:`multiparameter` aggregation function; the weighted mean of the :py:func:`maxabs_aggregation()` and :py:func:`mean_aggregation()`, with
+    the weighing determined by the evolved ``a`` parameter. If a is 1.0, then maxabs is used; if a is 0.0, then mean is used.
+
+    :param x: The numbers to aggregate; takes any :pygloss:`iterable`.
+    :type x: list(:pytypes:`float <typesnumeric>`) or tuple(:pytypes:`float <typesnumeric>`) or set(:pytypes:`float <typesnumeric>`)
+    :param float a: Determines the relative weights of maxabs and mean; must be between 0.0 and 1.0, inclusive.
+    :return: The weighted mean of the maxabs and mean aggregation functions.
+    :rtype: float
+    :raises ValueError: If a is outside of 0.0-1.0.
+
+    .. versionadded:: 0.92-multiparam_funcs
+
+  .. py:function:: multiparam_tmean_aggregation(x, a)
+
+    A :term:`multiparameter` aggregation function; in this case, the evolved ``a`` term is used for the ``trim`` parameter of :py:func:`tmean <math_util.tmean>`.
+
+    :param x: The numbers to aggregate; takes any :pygloss:`iterable`.
+    :type x: list(:pytypes:`float <typesnumeric>`) or tuple(:pytypes:`float <typesnumeric>`) or set(:pytypes:`float <typesnumeric>`)
+    :param float a: Determines the trim parameter used; must be between 0.0 and 0.5, inclusive.
+    :return: The trimmed mean of the data.
+    :rtype: float
+    :raises ValueError: If a is outside of 0.0-0.5.
+
+    .. versionadded:: 0.92-multiparam_funcs
+
+  .. py:function:: maxabs_tmean_aggregation(x, a)
+
+    A :term:`multiparameter` aggregation function; if the evolved ``a`` term is 0.0 or above, :py:func:`maxabs_mean_aggregation()` is called; if a is below
+    0.0, then :py:func:`multiparam_tmean_aggregation()` is called, with a = abs(a/2). *Recommended for ``pooling`` use by neural networks.*
+
+    :param x: The numbers to aggregate; takes any :pygloss:`iterable`.
+    :type x: list(:pytypes:`float <typesnumeric>`) or tuple(:pytypes:`float <typesnumeric>`) or set(:pytypes:`float <typesnumeric>`)
+    :param float a: Determines the balance between maxabs, mean, tmean, and median; must be between -1.0 and 1.0, inclusive.
+    :return: The combination of the inputs according to the ``a`` parameter.
+    :rtype: float
+    :raises ValueError: If a is outside of -1.0-1.0.
+
+    .. versionadded:: 0.92-multiparam_funcs
+
+  .. py:function:: sum_product_aggregation(x, a)
+
+    A :term:`multiparameter` aggregation function; the evolved ``a`` term determines the weights in the weighted mean of the
+    :py:func:`sum_aggregation()` and :py:func:`product_aggregation()` functions. *Recommended as a more flexible replacement for both sum and product.*
+
+    :param x: The numbers to aggregate; takes any :pygloss:`iterable`.
+    :type x: list(:pytypes:`float <typesnumeric>`) or tuple(:pytypes:`float <typesnumeric>`) or set(:pytypes:`float <typesnumeric>`)
+    :param float a: Determines the balance between sum and product; must be between 0.0 and 1.0, inclusive.
+    :return: The combination of the inputs according to the ``a`` parameter.
+    :rtype: float
+    :raises ValueError: If a is outside of 0.0-1.0.
+
+    .. versionadded:: 0.92-multiparam_funcs
+
+  .. py:function:: max_median_min_aggregation(x, a)
+
+    A :term:`multiparameter` aggregation function; the evolved ``a`` term determines the weights in the weighted mean of the max, median, and min
+    aggregation functions. While meant primarily for :term:`CPPNs <CPPN>`, could be of use in other circumstances.
+
+    :param x: The numbers to aggregate; takes any :pygloss:`iterable`.
+    :type x: list(:pytypes:`float <typesnumeric>`) or tuple(:pytypes:`float <typesnumeric>`) or set(:pytypes:`float <typesnumeric>`)
+    :param float a: Determines the balance between max, median, and min; must be between -1.0 and 1.0, inclusive.
+    :return: The combination of the inputs according to the ``a`` parameter.
+    :rtype: float
+    :raises ValueError: If a is outside of -1.0-1.0.
+
+    .. versionadded:: 0.92-multiparam_funcs
+
+  .. py:function:: sum_mean_aggregation(x, a)
+
+    A :term:`multiparameter` aggregation function; the evolved ``a`` term determines a compromise between the sum and mean
+    aggregation functions. (Intermediate functions are created by dividing by less than the number of inputs (as for ``mean``) but
+    more than 1 (as for ``sum``).)
+
+    :param x: The numbers to aggregate; takes any :pygloss:`iterable`.
+    :type x: list(:pytypes:`float <typesnumeric>`) or tuple(:pytypes:`float <typesnumeric>`) or set(:pytypes:`float <typesnumeric>`)
+    :param float a: Determines the balance between sum and arithmetic mean; must be between 0.0 and 1.0, inclusive.
+    :return: The combination of the inputs according to the ``a`` parameter.
+    :rtype: float
+    :raises ValueError: If a is outside of 0.0-1.0.
+
+    .. versionadded:: 0.92-multiparam_funcs
+
+  .. py:function:: product_mean_aggregation(x, a, use_median)
+
+    A :term:`multiparameter` aggregation function; the evolved ``a`` term determines a compromise between the ``product`` aggregation function and
+    a geometric mean. Since it is desired to avoid complex numbers resulting from taking the roots of negative numbers, the root is taken of the
+    absolute value of the inputs' product; the evolved ``use_median`` boolean term determines whether the sign of the result is taken from the
+    :py:func:`median <math_util.median2>` of the inputs or the product of the inputs.
+
+    :param x: The numbers to aggregate; takes any :pygloss:`iterable`.
+    :type x: list(:pytypes:`float <typesnumeric>`) or tuple(:pytypes:`float <typesnumeric>`) or set(:pytypes:`float <typesnumeric>`)
+    :param float a: Determines the balance between product and geometric mean; must be between 0.0 and 1.0, inclusive.
+    :param bool use_median: Whether to use the median (if `True`) or the product (if `False`) of the inputs to determine the sign.
+    :return: The combination of the inputs according to the ``a`` and ``use_median`` parameters.
+    :rtype: float
+    :raises ValueError: If ``a`` is not in 0.0-1.0.
+    :raises TypeError: If ``use_median`` is not a `boolean <bool>`.
+
+    .. versionadded:: 0.92-multiparam_funcs
+
+  .. py:function:: sum_product_mean_aggregation(x, a, b, use_median)
+
+    A :term:`multiparameter` aggregation function; the evolved ``b`` term determines the weights of the weighted mean of the
+    :py:func:`sum_mean_aggregation()` and :py:func:`product_mean_aggregation()` functions, while the other two evolved terms (``a`` and ``use_median``)
+    are inputs to those two aggregation functions (only for ``product_mean_aggregation`` for ``use_median``).
+
+    :param x: The numbers to aggregate; takes any :pygloss:`iterable`.
+    :type x: list(:pytypes:`float <typesnumeric>`) or tuple(:pytypes:`float <typesnumeric>`) or set(:pytypes:`float <typesnumeric>`)
+    :param float a: Determines the balance between sum and arithmetic mean and/or between product and geometric mean, depending on ``b``; must be between 0.0 and 1.0, inclusive.
+    :param float b: Determines the balance between the ``sum_mean_aggregation`` and ``product_mean_aggregation`` functions.
+    :param bool use_median: Input into :py:func:`product_mean_aggregation()`.
+    :return: The combination of the inputs according to the ``a``, ``b``, and ``use_median`` parameters.
+    :rtype: float
+    :raises ValueError: If ``a`` or ``b`` is not in 0.0-1.0.
+    :raises TypeError: If ``use_median`` is not a `boolean <bool>`.
+
+    .. versionadded:: 0.92-multiparam_funcs
 
   .. py:exception:: InvalidAggregationFunction(Exception)
 
@@ -545,7 +676,7 @@ Does general configuration parsing; used by other classes for their configuratio
 
     .. py:method:: __repr__()
 
-      Returns a representation of the class suitable for use in code for initialization.
+      Returns a representation of the class suitable for use in code for initialization.g
 
       :return: Representation as for `repr`.
       :rtype: str
@@ -814,9 +945,9 @@ distributed
   .. py:data:: _EXCEPTION_TYPE_UNCERTAIN
   .. py:data:: _EXCEPTION_TYPE_BAD
 
-    Values - which should be treated as constants - that are returned by the :py:meth:`_check_exception()` method. The first is for a queue being empty and similar
-    reasons to try again. The second indicates likely disconnection, but should try to reconnect. The third includes all other cases, and is responded to with either immediately
-    `raising <raise>` the exception again, or returning and exiting with a non-zero exit (status) value.
+    Values - which should be treated as constants - that are returned by the :py:meth:`_check_exception <DistributedEvaluator._check_exception()>` method. The first is
+    for a queue being empty and similar reasons to try again. The second indicates likely disconnection, but should try to reconnect. The third includes all other cases, and
+    is responded to with either immediately `raising <raise>` the exception again, or returning and exiting with a non-zero exit (status) value.
 
   .. py:exception:: ModeError(RuntimeError)
 
@@ -978,6 +1109,21 @@ distributed
       :param bool force_secondary_shutdown: Causes secondaries to shutdown even if started with ``reconnect`` true.
       :raises ModeError: If not the :term:`primary node` (not in :py:data:`MODE_PRIMARY`).
       :raises RuntimeError: If not yet :py:meth:`started <start()>`.
+
+    .. index:: TODO
+
+    .. py:staticmethod:: _check_exception(e)
+
+      Evaluates whether an exception should be treated as simply a reason to retry the operation, as indicating a need to reconnect, or as some worse type of error.
+      TODO: Currently, due to problems with the variety of exceptions emitted by the `multiprocessing` module - particularly due to different versions of
+      Python - attempts in most (but not all) cases to evaluate the exception via `repr`, looking for keywords, which is uncertain at best. The `multiprocessing` module
+      in particular has a large number of `assert` checks, frequently without user messages; two pull requests have been submitted to correct this in the most problematic
+      portions of the module, in at least the latest (developmental) version of Python ("nightly"), of which one has been accepted thus far.
+
+      :param e: The exception to be evaluated.
+      :type e: :datamodel:`instance <index-48>`
+      :return: One of :py:data:`_EXCEPTION_TYPE_OK`, :py:data:`_EXCEPTION_TYPE_UNCERTAIN`, or :py:data:`_EXCEPTION_TYPE_BAD`.
+      :rtype: int
 
     .. index:: TODO
 
@@ -1897,7 +2043,7 @@ The basis for :term:`multiparameter` :term:`activation <activation function>` an
       Adds a new activation/aggregation function, potentially multiparameter. A multiparameter function must have entries in ``kwargs`` for each
       of its parameter variables to be evolved. Requirements for the function include the following:
       1. Most obviously, must be a function (including lambda).
-      2. Functions (such as built-in functions) without a `__code__` attribute cannot be multiparameter functions without a wrapper function (which will have the appropriate `__code__` attribute); this attribute is used to determine the arguments for the function.
+      2. Functions (such as built-in functions) without a :datamodel:`__code__ <index-55>` attribute cannot be multiparameter functions without a wrapper function (which will have the appropriate :datamodel:`__code__ <index-55>` attribute); this attribute is used to determine the arguments for the function.
       3. Any function arguments except the first one must be evolved variables with corresponding entries in ``kwargs``.
       4. Multiparameter function names cannot have parentheses, since parenthesized terms are used in constructing a particular function instance.
 
@@ -2106,7 +2252,7 @@ Implements the core evolution algorithm.
       :return: The best genome seen.
       :rtype: :datamodel:`instance <index-48>`
       :raises RuntimeError: If ``None`` for n but :ref:`no_fitness_termination <no-fitness-termination-label>` is ``True``.
-      :raises CompleteExtinctionException: If all species go extinct due to `stagnation` but :ref:`reset_on_extinction <reset-on-extinction-label>` is ``False``.
+      :raises CompleteExtinctionException: If all species go extinct due to :term:`stagnation` but :ref:`reset_on_extinction <reset-on-extinction-label>` is ``False``.
 
       .. versionchanged:: 0.92
         :ref:`no_fitness_termination <no-fitness-termination-label>` capability added.
