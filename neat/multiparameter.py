@@ -285,7 +285,7 @@ class MultiParameterSet(object):
         # type: (...) -> EvolvedMultiParameterFunction
         """Fetches a named EvolvedMultiParameterFunction instance."""
 
-        # TODO: Accept in keyword format also;
+        # TODO: Accept in keyword format also (possibly use dict.update?);
         # probably package into function usable by get_func also
         if name in self.multiparam_func_dict[which_type]:
             mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]

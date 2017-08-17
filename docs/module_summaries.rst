@@ -1889,21 +1889,12 @@ math_util
 Contains some mathematical/statistical functions not found in the Python2 standard library, plus a mechanism for looking up some commonly used
 functions (such as for the :ref:`species_fitness_func <species-fitness-func-label>`) by name.
 
+  .. py:data:: NORM_EPSILON
+    This is a system-dependent constant (the 4th root of the `sys.float_info.epsilon` system constant) used as a minimum value for precision (note that many machine
+    learning techniques can work well with half-precision floating-point numbers).
+
   .. index:: ! species_fitness_func
   .. index:: stagnation
-
-  .. py:data:: stat_functions
-
-    Lookup table for commonly used ``{value} -> value`` functions, namely `max`, `min`, `mean`, `median`, `median2`, and `tmean`.
-    The :ref:`species_fitness_func <species-fitness-func-label>` (used for :py:class:`stagnation.DefaultStagnation`) is required to be one of these, as
-    is the :ref:`fitness_criterion <fitness-criterion-label>` used for determining termination based on :term:`fitness` (if
-    :ref:`no_fitness_termination <no-fitness-termination-label>` is not set).
-
-    .. versionchanged:: 0.92
-      `median2` added.
-
-    .. versionchanged:: 0.92-multiparam_funcs
-      `tmean` added.
 
   .. py:function:: mean(values)
 
@@ -1978,6 +1969,19 @@ functions (such as for the :ref:`species_fitness_func <species-fitness-func-labe
 
     .. versionchanged:: 0.92
       Previously not functional on Python 3.X due to changes to `map`.
+
+  .. py:data:: stat_functions
+
+    Lookup table for commonly used ``{value} -> value`` functions, namely `max`, `min`, `mean`, `median`, `median2`, and `tmean`.
+    The :ref:`species_fitness_func <species-fitness-func-label>` (used for :py:class:`stagnation.DefaultStagnation`) is required to be one of these, as
+    is the :ref:`fitness_criterion <fitness-criterion-label>` used for determining termination based on :term:`fitness` (if
+    :ref:`no_fitness_termination <no-fitness-termination-label>` is not set).
+
+    .. versionchanged:: 0.92
+      `median2` added.
+
+    .. versionchanged:: 0.92-multiparam_funcs
+      `tmean` added.
 
 .. index:: activation_function
 .. index:: aggregation_function
@@ -2451,6 +2455,8 @@ reproduction
 Handles creation of genomes, either from scratch or by sexual or asexual reproduction from parents. For class requirements, see :ref:`reproduction-interface-label`. Implements the default NEAT-python reproduction scheme: explicit fitness sharing with fixed-time species stagnation. 
 
   .. index:: TODO
+  .. index:: fitness_min_divisor
+  .. index:: min_species_size
 
   .. py:class:: DefaultReproduction(config, reporters, stagnation)
 
@@ -2465,14 +2471,19 @@ Handles creation of genomes, either from scratch or by sexual or asexual reprodu
     :type reporters: :datamodel:`instance <index-48>`
     :param stagnation: A :py:class:`DefaultStagnation <stagnation.DefaultStagnation>` instance - the current code partially depends on internals of this class (a TODO is noted to correct this).
     :type stagnation: :datamodel:`instance <index-48>`
+    :raises ValueError: If :ref:`min_species_size <min-species-size-label>` is below 2 (the minimum needed for :term:`crossover`), or if :ref:`fitness_min_divisor <fitness-min-divisor-label>` is below 0.0.
 
     .. versionchanged:: 0.92
       Configuration changed to use DefaultClassConfig, instead of a dictionary, and inherit write_config.
 
+    .. versionchanged:: 0.92-multiparam_funcs
+      Fitness_min_divisor and min_species_size checks added.
+
     .. py:classmethod:: parse_config(param_dict)
 
-      Required interface method. Provides defaults for :index:`elitism`, :index:`survival_threshold`, and :index:`min_species_size` parameters and updates
-      them from the :ref:`configuration file <reproduction-config-label>`, in this implementation using :py:class:`config.DefaultClassConfig`.
+      Required interface method. Provides defaults for :index:`elitism`, :index:`survival_threshold`, :index:`min_species_size`, and
+      :index:`fitness_min_divisor` parameters and updates them from the :ref:`configuration file <reproduction-config-label>`, in this implementation
+      using :py:class:`config.DefaultClassConfig`.
 
       :param param_dict: Dictionary of parameters from configuration file.
       :type param_dict: dict(str, str)
@@ -2481,6 +2492,9 @@ Handles creation of genomes, either from scratch or by sexual or asexual reprodu
 
       .. versionchanged:: 0.92
         Configuration changed to use DefaultClassConfig instead of a dictionary.
+
+      .. versionchanged:: 0.92-multiparam_funcs
+        Fitness_min_divisor added.
 
     .. index:: genome
 
@@ -2521,16 +2535,16 @@ Handles creation of genomes, either from scratch or by sexual or asexual reprodu
     .. index:: ! species_stagnant()
     .. index:: stagnation
     .. index:: ! info()
-    .. index:: TODO
+    .. index:: ! fitness_min_divisor
 
     .. py:method:: reproduce(config, species, pop_size, generation)
 
       Required interface method. Creates the population to be used in the next generation from the given configuration instance, SpeciesSet instance,
       :ref:`desired size of the population <pop-size-label>`, and current generation number.  This method is called after all genomes have been evaluated and
       their ``fitness`` member assigned.  This method should use the stagnation instance given to the initializer to remove species deemed to have stagnated.
-      Note: Determines relative fitnesses by transforming into (ideally) a 0-1 scale; however, if the top and bottom fitnesses are not at least 1 apart, the
-      range may be less than 0-1, as a check against dividing by a too-small number. TODO: Make minimum difference configurable (defaulting to 1 to
-      preserve compatibility).
+      Determines relative fitnesses by transforming into (ideally) a 0-1 scale; however, if the top and bottom fitnesses are not at least some amount apart, the
+      range may be less than 0-1, as a check against dividing by a too-small number. The minimum divisor is determined by the configuration variable
+      :ref:`fitness_min_divisor <fitness-min-divisor-label>`.
 
       :param config: A :py:class:`Config <config.Config>` instance.
       :type config: :datamodel:`instance <index-48>`
@@ -2540,12 +2554,16 @@ Handles creation of genomes, either from scratch or by sexual or asexual reprodu
       :param int generation: :term:`Generation <generation>` count.
       :return: New population, as a dict of unique genome :term:`ID/key <key>` vs :term:`genome`.
       :rtype: dict(int, :datamodel:`instance <index-48>`)
+      :raises RuntimeWarning: If, at the first :term:`generation` (number 0), the pop_size is less than (rounded up) 4/:ref:`survival_threshold <survival-threshold-label>`, and thus would not have room for at least two species for which the survival_threshold can be enforced.
 
       .. versionchanged:: 0.92
         Previously, the minimum and maximum relative fitnesses were determined (contrary to the comments in the code) including members of species being removed due to
         stagnation; it is now determined using only the non-stagnant species. The minimum size of species was (and is) the greater of the
         :ref:`min_species_size <min-species-size-label>` and :ref:`elitism <elitism-label>` configuration parameters; previously, this was not taken into account for 
         :py:meth:`compute_spawn`; this made it more likely to have a population size above the :ref:`configured population size <pop-size-label>`.
+
+      .. versionchanged:: 0.92-multiparam_funcs
+         Fitness_min_divisor configuration variable introduced; warning for too-low population size introduced.
 
 .. py:module:: six_util
    :synopsis: Provides Python 2/3 portability with three dictionary iterators; copied from the `six` module.

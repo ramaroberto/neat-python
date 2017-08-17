@@ -11,7 +11,6 @@ def mean(values):
     values = list(values)
     return math.fsum(map(float, values)) / len(values)
 
-
 def median(values):
     values = list(values)
     values.sort()

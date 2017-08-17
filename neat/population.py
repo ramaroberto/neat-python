@@ -38,7 +38,8 @@ class Population(object):
             self.population = self.reproduction.create_new(config.genome_type,
                                                            config.genome_config,
                                                            config.pop_size)
-            self.species = config.species_set_type(config.species_set_config, self.reporters)
+            self.species = config.species_set_type(config.species_set_config, self.reporters,
+                                                   self.reproduction)
             self.generation = 0
             self.species.speciate(config, self.population, self.generation)
         else:

@@ -132,6 +132,12 @@ class DefaultGenomeConfig(object):
 
         return new_id
 
+    def get_compatibility_info(self):
+        to_return_dict = {}
+        to_return_dict['disjoint_coefficient'] = self.compatibility_disjoint_coefficient
+        to_return_dict['weight_coefficient'] = self.compatibility_weight_coefficient
+        return to_return_dict
+
     def check_structural_mutation_surer(self):
         if self.structural_mutation_surer == 'true':
             return True

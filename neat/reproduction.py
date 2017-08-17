@@ -6,6 +6,7 @@ from __future__ import division, print_function
 
 import math
 import random
+import warnings
 
 from itertools import count
 from sys import stderr, float_info
@@ -31,7 +32,8 @@ class DefaultReproduction(DefaultClassConfig):
                                   [ConfigParameter('elitism', int, 0),
                                    ConfigParameter('survival_threshold', float, 0.2),
                                    ConfigParameter('min_species_size', int, 2),
-                                   ConfigParameter('fitness_min_divisor', float, 1.0)])
+                                   ConfigParameter('fitness_min_divisor', float, 1.0),
+                                   ConfigParameter('double_mutate_clones', bool, False)])
 
     def __init__(self, config, reporters, stagnation):
         # pylint: disable=super-init-not-called
@@ -41,8 +43,24 @@ class DefaultReproduction(DefaultClassConfig):
         self.stagnation = stagnation
         self.ancestors = {}
 
-        if config.fitness_min_divisor < 0.0:
-            raise RuntimeError(
+        if config.survival_threshold <= 0.0: # NEEDS TEST
+            raise ValueError(
+                "Survival_threshold cannot be 0 or negative ({0:n})".format(
+                    config.survival_threshold))
+        if config.survival_threshold > 1.0: # NEEDS TEST
+            raise ValueError(
+                "Survival_threshold cannot be above 1.0 ({0:n})".format(
+                    config.survival_threshold))
+        if config.survival_threshold < NORM_EPSILON: # NEEDS TEST!
+            print("Survival_threshold {0:n} is too low; increasing to {1:n}".format(
+                config.survival_threshold, NORM_EPSILON),
+                  file=stderr)
+            stderr.flush()
+            config.survival_threshold = NORM_EPSILON
+                  
+
+        if config.fitness_min_divisor < 0.0: # NEEDS TEST
+            raise ValueError(
                 "Fitness_min_divisor cannot be negative ({0:n})".format(
                     config.fitness_min_divisor))
         elif config.fitness_min_divisor == 0.0:
@@ -53,13 +71,23 @@ class DefaultReproduction(DefaultClassConfig):
             stderr.flush()
             config.fitness_min_divisor = float_info.epsilon
 
-        if config.min_species_size < 2:
-            raise RuntimeError(
+        if config.min_species_size < 2: # NEEDS TEST
+            raise ValueError(
                 "Min_species_size must be at least 2 (not {0:n}) for crossover parents".format(
                     config.min_species_size))
 
+    def get_species_size_info(self):
+        to_return_dict = {}
+        to_return_dict['min_size'] = max(self.reproduction_config.elitism,
+                                         self.reproduction_config.min_species_size)
+        to_return_dict['min_good_size'] = int(
+            math.ceil(2/self.reproduction_config.survival_threshold))
+        # below - for info about weight, disjoint coefficients
+        to_return_dict['genome_config'] = self.genome_config
+        return to_return_dict
 
     def create_new(self, genome_type, genome_config, num_genomes):
+        self.genome_config = genome_config # for get_species_size_info
         new_genomes = {}
         for i in range(num_genomes):
             key = next(self.genome_indexer)
@@ -112,12 +140,11 @@ class DefaultReproduction(DefaultClassConfig):
 
         if (generation == 0) and (pop_size
                                   < math.ceil(4/self.reproduction_config.survival_threshold)):
-            print("Population size {0:n} is too small".format(pop_size)
-                  + " - with a survival_threshold of {1:n},".format(
-                      self.reproduction_config.survival_threshold)
-                  + " a minimum of {2:n} is recommended".format(
-                      math.ceil(4/self.reproduction_config.survival_threshold)),
-                  file=stderr)
+            warnings.warn("Population size {0:n} is too small".format(pop_size)
+                          + " - with a survival_threshold of {1:n},".format(
+                              self.reproduction_config.survival_threshold)
+                          + " a minimum of {2:n} is recommended".format(
+                              math.ceil(4/self.reproduction_config.survival_threshold)))
 
         # Filter out stagnated species, collect the set of non-stagnated
         # species members, and compute their average adjusted fitness.
@@ -208,12 +235,14 @@ class DefaultReproduction(DefaultClassConfig):
                 parent1_id, parent1 = random.choice(old_members)
                 parent2_id, parent2 = random.choice(old_members)
 
-                # Note that if the parents are not distinct, crossover will produce a
+                # Note that if the parents are not distinct, crossover (before mutation) will produce a
                 # genetically identical clone of the parent (but with a different ID).
                 gid = next(self.genome_indexer)
                 child = config.genome_type(gid)
                 child.configure_crossover(parent1, parent2, config.genome_config)
                 child.mutate(config.genome_config)
+                if self.reproduction_config.double_mutate_clones and (parent1_id == parent2_id):
+                    child.mutate(config.genome_config)
                 new_population[gid] = child
                 self.ancestors[gid] = (parent1_id, parent2_id)
 

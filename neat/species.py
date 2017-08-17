@@ -1,4 +1,7 @@
 """Divides the population into species based on genomic distances."""
+import math
+import warnings
+
 from itertools import count
 
 from neat.math_util import mean, stdev
@@ -49,18 +52,81 @@ class GenomeDistanceCache(object):
 class DefaultSpeciesSet(DefaultClassConfig):
     """ Encapsulates the default speciation scheme. """
 
-    def __init__(self, config, reporters):
+    def __init__(self, config, reporters, reproduction=None):
         # pylint: disable=super-init-not-called
         self.species_set_config = config
         self.reporters = reporters
+        self.reproduction = reproduction
         self.indexer = count(1)
         self.species = {}
         self.genome_to_species = {}
+        if config.compatibility_threshold_adjust.lower() != 'fixed':
+            self.orig_compatibility_threshold = config.compatibility_threshold
+            if (reproduction is None):
+                raise RuntimeError(
+                    "Need reproduction to retrieve species info for threshold_adjust {0!s}".format(
+                        self.compatibility_threshold_adjust))
+            self.threshold_adjust_dict = reproduction.get_species_size_info()
+            self.threshold_adjust_dict.update(
+                self.threshold_adjust_dict['genome_config'].get_compatibility_info())
+            # below is based on configuration values from Stanley's website as
+            # compared to advised adjustment size.
+            self.base_threshold_adjust = 0.3*max(
+                self.threshold_adjust_dict['weight_coefficient'],
+                (self.threshold_adjust_dict['disjoint_coefficient']/2),
+                (self.orig_compatibility_threshold/6))
 
     @classmethod
     def parse_config(cls, param_dict):
         return DefaultClassConfig(param_dict,
-                                  [ConfigParameter('compatibility_threshold', float)])
+                                  [ConfigParameter('compatibility_threshold', float),
+                                   ConfigParameter('compatibility_threshold_adjust', str, 'fixed'),
+                                   ConfigParameter('desired_species_num', int, 0)])
+
+    def find_desired_num_species(self, pop_size):
+        if self.species_set_config.desired_species_num > 1:
+            max_num_usable = math.floor(pop_size/self.threshold_adjust_dict['min_size'])
+            max_num_usable = max(max_num_usable,2)
+            if self.species_set_config.desired_species_num > max_num_usable:
+                warnings.warn(
+                    "Desired_species_num {0:n} is too high; max is {1:n}".format(
+                        self.species_set_config.desired_species_num,
+                        max_num_usable))
+                self.species_set_config.desired_species_num = max_num_usable
+            return self.species_set_config.desired_species_num
+
+        return max(2,(math.floor(pop_size/
+                                 self.threshold_adjust_dict['min_good_size'])))
+
+    def adjust_compatibility_threshold(self, increase):
+        old_threshold = self.species_set_config.compatibility_threshold
+        if increase:
+            mult_threshold = 1.05*old_threshold
+            add_threshold = old_threshold + self.base_threshold_adjust
+            if old_threshold > self.orig_compatibility_threshold:
+                new_threshold = min(mult_threshold,add_threshold)
+            else:
+                new_threshold = max(min(mult_threshold,add_threshold),
+                                    min(self.orig_compatibility_threshold,
+                                        max(mult_threshold,add_threshold)))
+            which = 'increased'
+        else:
+            div_threshold = old_threshold/1.05
+            sub_threshold = old_threshold - self.base_threshold_adjust
+            if old_threshold < self.orig_compatibility_threshold:
+                new_threshold = max(div_threshold,sub_threshold)
+            else:
+                new_threshold = min(max(div_threshold,sub_threshold),
+                                    max(self.orig_compatibility_threshold,
+                                        min(div_threshold,sub_threshold)))
+            which = 'decreased'
+        self.species_set_config.compatibility_threshold = new_threshold
+        self.reporters.info(
+            "Compatibility threshold (orig {0:n}) {1!s} to {2:n} from {3:n}".format(
+                self.orig_compatibility_threshold,
+                which,
+                self.species_set_config.compatibility_threshold,
+                old_threshold))
 
     def speciate(self, config, population, generation):
         """
@@ -72,7 +138,17 @@ class DefaultSpeciesSet(DefaultClassConfig):
         assumption, you should make sure other necessary parts of the code are updated to reflect
         the new behavior.
         """
-        assert isinstance(population, dict)
+        if not isinstance(population, dict): # TEST NEEDED!
+            raise TypeError("Population ({0!r}) should be a dict, not {1!s}".format(
+                population, type(population)))
+
+        if len(self.species):
+            if self.species_set_config.compatibility_threshold_adjust.lower() == 'number':
+                desired_num_species = self.find_desired_num_species(len(population))
+                if len(self.species) < desired_num_species:
+                    self.adjust_compatibility_threshold(increase=True)
+                elif len(self.species) > desired_num_species:
+                    self.adjust_compatibility_threshold(increase=False)
 
         compatibility_threshold = self.species_set_config.compatibility_threshold
 

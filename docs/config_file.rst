@@ -138,6 +138,8 @@ required for your particular implementation.
 * *elitism*
     The number of most-fit individuals in each species that will be preserved as-is from one generation to the next. **This defaults to 0.**
 
+.. _survival-threshold-label:
+
 .. index:: ! survival_threshold
 
 * *survival_threshold*
@@ -149,6 +151,13 @@ required for your particular implementation.
 
 * *min_species_size*
     The minimum number of genomes per species after reproduction. **This defaults to 2, which is also the minimum.**
+
+.. index:: ! fitness_min_divisor
+
+* *fitness_min_divisor*
+    The minimum divisor for determining relative fitnesses in :py:meth:`reproduction.DefaultReproduction.reproduce()`. **This defaults to 1.0,
+    for backward compatibility.** Must be set to at least 0.0, for which :py:data:`NORM_EPSILON <math_util.NORM_EPSILON>` is substituted,
+    and if above 0.0 but below `sys.float_info.epsilon`, is set to that number.
 
 .. index:: genome
 .. index:: DefaultGenome
