@@ -154,6 +154,8 @@ required for your particular implementation.
 
 .. index:: ! fitness_min_divisor
 
+.. _fitness-min-divisor-label:
+
 * *fitness_min_divisor*
     The minimum divisor for determining relative fitnesses in :py:meth:`reproduction.DefaultReproduction.reproduce()`. **This defaults to 1.0,
     for backward compatibility.** Must be set to at least 0.0, for which :py:data:`NORM_EPSILON <math_util.NORM_EPSILON>` is substituted,
