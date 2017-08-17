@@ -517,13 +517,52 @@ def test_run_nn_recurrent():
 
     stats.save()
 
+
+def eval_dummy_genomes_nn_automatic(genomes, config):
+    for ignored_genome_id, genome in genomes:
+        net = neat.nn.create(genome, config)
+        ignored_output = net.activate((0.5,0.5))
+        net.reset()
+        genome.fitness = 0.0
+
+def test_run_nn_automatic(feed_forward=True, config_file='test_configuration'):
+    """Test automatic determination of recurrent/not w/non-recurrent."""
+    # Load configuration.
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, 'test_configuration')
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_path)
+    config.feed_forward = feed_forward
+
+    # Create the population, which is the top-level object for a NEAT run.
+    p = neat.Population(config)
+
+    # Add a stdout reporter to show progress in the terminal.
+    p.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+    p.add_reporter(neat.Checkpointer(1, 5))
+
+    # Run for up to 19 generations.
+    p.run(eval_dummy_genomes_nn_automatic, 19)
+
+    stats.save()
+
+def test_run_nn_automatic_recurrent():
+    """Test automatic determination of recurrent/not w/recurrent."""
+    test_run_nn_automatic(False)
+
+def test_run_nn_automatic_maybe_recurrent():
+    """Test automatic determination of recurrent/not w/partial, possibly recurrent."""
+    test_run_nn_automatic(feed_forward=False, config_file='test_configuration2')
+
 def eval_dummy_genomes_nn_recurrent_bad(genomes, config):
     for ignored_genome_id, genome in genomes:
         net = neat.nn.RecurrentNetwork.create(genome, config)
         ignored_output = net.activate((0.5,0.5,0.5))
         net.reset()
         genome.fitness = 0.0
-
 
 def test_run_nn_recurrent_bad():
     """Make sure nn.recurrent gives error on bad input."""
@@ -533,6 +572,7 @@ def test_run_nn_recurrent_bad():
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
+
     config.feed_forward = False
 
     # Create the population, which is the top-level object for a NEAT run.
