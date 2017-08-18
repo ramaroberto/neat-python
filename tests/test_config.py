@@ -1,6 +1,9 @@
 import os
+import warnings
+
 import neat
 
+warnings.simplefilter('default')
 
 def test_nonexistent_config():
     """Check that attempting to open a non-existent config file raises

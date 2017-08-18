@@ -1,8 +1,10 @@
 import os
+import warnings
 
 import neat
 from neat import aggregations, multiparameter
 
+warnings.simplefilter('default')
 
 # TODO: These tests are just smoke tests to make sure nothing has become badly broken.  Expand
 # to include more detailed tests of actual functionality.

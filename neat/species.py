@@ -1,7 +1,9 @@
 """Divides the population into species based on genomic distances."""
 import math
+import sys
 import warnings
 
+from argparse import Namespace
 from itertools import count
 
 from neat.math_util import mean, stdev
@@ -12,12 +14,95 @@ class Species(object):
     def __init__(self, key, generation):
         self.key = key
         self.created = generation
-        self.last_improved = generation
         self.representative = None
         self.members = {}
-        self.fitness = None
-        self.adjusted_fitness = None
-        self.fitness_history = []
+        self.reproduction_namespace = Namespace()
+        self.reproduction_namespace.adjusted_fitness = None
+        self.stagnation_namespace = Namespace()
+        self.stagnation_namespace.fitness = None
+        self.stagnation_namespace.last_improved = generation
+        self.stagnation_namespace.fitness_history = []
+
+    def getAdjustedFitness(self):
+        """
+        Backwards compatibility wrapper for species.adjusted_fitness;
+        use species.reproduction_namespace.adjusted_fitness instead.
+        """
+        warnings.warn("Use species.reproduction_namespace for adjusted_fitness",
+                      DeprecationWarning, stacklevel=2)
+        return self.reproduction_namespace.adjusted_fitness
+
+    def setAdjustedFitness(self,value):
+        if not isinstance(value, float):
+            raise TypeError(
+                "Adjusted_fitness ({0!r}) should be a float, not {1!s}".format(
+                    value, type(value)))
+        warnings.warn("Use species.reproduction_namespace for adjusted_fitness",
+                      DeprecationWarning, stacklevel=2)
+        self.reproduction_namespace.adjusted_fitness = value
+
+    def delAdjustedFitness(self):
+        warnings.warn("Use species.reproduction_namespace for adjusted_fitness",
+                      DeprecationWarning, stacklevel=2)
+        self.reproduction_namespace.adjusted_fitness = None
+    
+    adjusted_fitness = property(getAdjustedFitness,
+                                setAdjustedFitness,
+                                delAdjustedFitness)
+
+    def getFitness(self):
+        """
+        Backwards compatibility wrapper for species.fitness;
+        use species.stagnation_namespace.fitness instead.
+        """
+        warnings.warn("Use species.stagnation_namespace for fitness",
+                      DeprecationWarning, stacklevel=2)
+        return self.stagnation_namespace.fitness
+
+    def setFitness(self,value):
+        if not isinstance(value, float):
+            raise TypeError(
+                "Fitness ({0!r}) should be a float, not {1!s}".format(
+                    value, type(value)))
+        warnings.warn("Use species.stagnation_namespace for fitness",
+                      DeprecationWarning, stacklevel=2)
+        self.stagnation_namespace.fitness = value
+
+    def delFitness(self):
+        warnings.warn("Use species.stagnation_namespace for fitness",
+                      DeprecationWarning, stacklevel=2)
+        self.stagnation_namespace.fitness = None
+
+    fitness = property(getFitness,
+                       setFitness,
+                       delFitness)
+
+    def getLastImproved(self):
+        """
+        Backwards compatibility wrapper for species.last_improved;
+        use species.stagnation_namespace.last_improved instead.
+        """
+        warnings.warn("Use species.stagnation_namespace for last_improved",
+                      DeprecationWarning, stacklevel=2)
+        return self.stagnation_namespace.last_improved
+
+    def setLastImproved(self, value):
+        if not isinstance(value, int):
+            raise TypeError(
+                "Last_improved ({0!r}) should be an int, not {1!s}".format(
+                    value, type(value)))
+        warnings.warn("Use species.stagnation_namespace for last_improved",
+                      DeprecationWarning, stacklevel=2)
+        self.stagnation_namespace.last_improved = value
+    last_improved = property(getLastImproved,
+                             setLastImproved)
+
+    @property
+    def fitness_history(self):
+        """Sole method available for this one, given is a list..."""
+        warnings.warn("Use species.stagnation_namespace for fitness_history",
+                      stacklevel=2)
+        return self.stagnation_namespace.fitness_history
 
     def update(self, representative, members):
         self.representative = representative
@@ -62,11 +147,15 @@ class DefaultSpeciesSet(DefaultClassConfig):
         self.genome_to_species = {}
         if config.compatibility_threshold_adjust.lower() != 'fixed':
             self.orig_compatibility_threshold = config.compatibility_threshold
-            if (reproduction is None):
+            if reproduction is None:
                 raise RuntimeError(
-                    "Need reproduction to retrieve species info for threshold_adjust {0!s}".format(
+                    "Need reproduction instance for species info (threshold_adjust {0!s})".format(
                         self.compatibility_threshold_adjust))
             self.threshold_adjust_dict = reproduction.get_species_size_info()
+            if self.threshold_adjust_dict['genome_config'] is None:
+                raise RuntimeError(
+                    "Need genome_config instance for species info (threshold_adjust {0!s})".format(
+                        self.compatibility_threshold_adjust))
             self.threshold_adjust_dict.update(
                 self.threshold_adjust_dict['genome_config'].get_compatibility_info())
             # below is based on configuration values from Stanley's website as
@@ -80,30 +169,42 @@ class DefaultSpeciesSet(DefaultClassConfig):
     def parse_config(cls, param_dict):
         return DefaultClassConfig(param_dict,
                                   [ConfigParameter('compatibility_threshold', float),
-                                   ConfigParameter('compatibility_threshold_adjust', str, 'fixed'),
+                                   ConfigParameter('compatibility_threshold_adjust',
+                                                   str, 'fixed'),
                                    ConfigParameter('desired_species_num', int, 0)])
 
-    def find_desired_num_species(self, pop_size):
-        if self.species_set_config.desired_species_num > 1:
+    def find_desired_num_species(self, pop_size): # DOCUMENT!
+        if self.species_set_config.desired_species_num > 1: # NEED TEST!
             max_num_usable = math.floor(pop_size/self.threshold_adjust_dict['min_size'])
+            if max_num_usable < 2:
+                raise ValueError(
+                    "Pop_size {0:n} is too low for effective min species size {1:n}".format(
+                        pop_size, max_num_usable))
             max_num_usable = max(max_num_usable,2)
-            if self.species_set_config.desired_species_num > max_num_usable:
+            if self.species_set_config.desired_species_num > max_num_usable: # NEED TEST!
                 warnings.warn(
-                    "Desired_species_num {0:n} is too high; max is {1:n}".format(
-                        self.species_set_config.desired_species_num,
-                        max_num_usable))
+                    "Desired_species_num {0:n} is too high for pop_size {1:n};".format(
+                        self.species_set_config.desired_species_num,pop_size)
+                    + " adjusting to max {0:n}".format(max_num_usable))
                 self.species_set_config.desired_species_num = max_num_usable
+                sys.stderr.flush()
             return self.species_set_config.desired_species_num
 
-        return max(2,(math.floor(pop_size/
-                                 self.threshold_adjust_dict['min_good_size'])))
+        poss_num = math.floor(pop_size/
+                              self.threshold_adjust_dict['min_good_size'])
+        if poss_num < 2: # NEED TEST!
+            raise ValueError(
+                "Pop_size {0:n} is too low to determine desired num species;".format(pop_size)
+                + " need minimum of {0:n}".format(
+                    2*math.ceil(2/self.threshold_adjust_dict['min_good_size'])))
+        return poss_num
 
-    def adjust_compatibility_threshold(self, increase):
+    def adjust_compatibility_threshold(self, increase): # DOCUMENT!
         old_threshold = self.species_set_config.compatibility_threshold
         if increase:
             mult_threshold = 1.05*old_threshold
             add_threshold = old_threshold + self.base_threshold_adjust
-            if old_threshold > self.orig_compatibility_threshold:
+            if old_threshold >= self.orig_compatibility_threshold:
                 new_threshold = min(mult_threshold,add_threshold)
             else:
                 new_threshold = max(min(mult_threshold,add_threshold),
@@ -113,7 +214,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
         else:
             div_threshold = old_threshold/1.05
             sub_threshold = old_threshold - self.base_threshold_adjust
-            if old_threshold < self.orig_compatibility_threshold:
+            if old_threshold <= self.orig_compatibility_threshold:
                 new_threshold = max(div_threshold,sub_threshold)
             else:
                 new_threshold = min(max(div_threshold,sub_threshold),
@@ -122,9 +223,10 @@ class DefaultSpeciesSet(DefaultClassConfig):
             which = 'decreased'
         self.species_set_config.compatibility_threshold = new_threshold
         self.reporters.info(
-            "Compatibility threshold (orig {0:n}) {1!s} to {2:n} from {3:n}".format(
+            "Compatibility threshold (orig {0:n}) {1!s} by {2:n} to {3:n} (from {4:n})".format(
                 self.orig_compatibility_threshold,
                 which,
+                abs(self.species_set_config.compatibility_threshold-old_threshold),
                 self.species_set_config.compatibility_threshold,
                 old_threshold))
 
@@ -141,14 +243,6 @@ class DefaultSpeciesSet(DefaultClassConfig):
         if not isinstance(population, dict): # TEST NEEDED!
             raise TypeError("Population ({0!r}) should be a dict, not {1!s}".format(
                 population, type(population)))
-
-        if len(self.species):
-            if self.species_set_config.compatibility_threshold_adjust.lower() == 'number':
-                desired_num_species = self.find_desired_num_species(len(population))
-                if len(self.species) < desired_num_species:
-                    self.adjust_compatibility_threshold(increase=True)
-                elif len(self.species) > desired_num_species:
-                    self.adjust_compatibility_threshold(increase=False)
 
         compatibility_threshold = self.species_set_config.compatibility_threshold
 
@@ -213,6 +307,13 @@ class DefaultSpeciesSet(DefaultClassConfig):
         gdstdev = stdev(itervalues(distances.distances))
         self.reporters.info(
             'Mean genetic distance {0:.3f}, standard deviation {1:.3f}'.format(gdmean, gdstdev))
+
+        if self.species_set_config.compatibility_threshold_adjust.lower() == 'number':
+            desired_num_species = self.find_desired_num_species(len(population))
+            if len(self.species) < desired_num_species:
+                self.adjust_compatibility_threshold(increase=True)
+            elif len(self.species) > desired_num_species:
+                self.adjust_compatibility_threshold(increase=False)
 
     def get_species_id(self, individual_id):
         return self.genome_to_species[individual_id]

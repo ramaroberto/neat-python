@@ -3,6 +3,7 @@ from __future__ import print_function, division
 import math
 import os
 import sys
+import warnings
 
 from operator import itemgetter
 
@@ -12,6 +13,8 @@ from neat.multiparameter import MultiParameterSet
 from neat.aggregations import AggregationFunctionSet
 from neat.math_util import NORM_EPSILON, median2
 from neat.six_util import iterkeys
+
+warnings.simplefilter('default')
 
 save_to_print = {}
 save_exact_to_print = {}

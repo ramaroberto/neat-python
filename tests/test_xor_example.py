@@ -1,8 +1,11 @@
 from __future__ import print_function
 
 import os
+import warnings
 
 import neat
+
+warnings.simplefilter('default')
 
 def test_xor_example_multiparam_relu():
     test_xor_example(activation_default='multiparam_relu')

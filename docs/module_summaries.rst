@@ -2060,8 +2060,28 @@ The basis for :term:`multiparameter` :term:`activation <activation function>` an
       :type kwargs: dict(str, dict(str,object))
       :raises InvalidFunctionError: If the function does not meet the requirements specified above.
 
+.. py:module:: nn
+  :synopsis: Handles standard neural networks, either feed-forward or recurrent.
+
+nn
+---
+Handles standard neural networks, either :term:`feed-forward` or :term:`recurrent`.
+
 .. py:module:: nn.feed_forward
-   :synopsis: A straightforward feed-forward neural network NEAT implementation.
+  :synopsis: A straightforward feed-forward neural network NEAT implementation.
+
+  .. py:function:: create(genome, config)
+
+    Returns either a RecurrentNetwork or a FeedForwardNetwork for this genome, based on the genome's maybe_recurrent attribute (a conservative estimate).
+
+    :param genome: Genome to return phenotype for.
+    :type genome: :datamodel:`instance <index-48>`
+    :param config: Configuration object.
+    :type config: :datamodel:`instance <index-48>`
+    :return: A :py:class:`nn.feed_forward.FeedForwardNetwork` or :py:class:`nn.recurrent.RecurrentNetwork` instance.
+    :rtype: :datamodel:`instance <index-48>`
+
+    .. versionadded: 0.92-multiparam_funcs
 
 nn.feed_forward
 ----------------------

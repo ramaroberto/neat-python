@@ -59,16 +59,16 @@ class StatisticsReporter(BaseReporter):
         """Get the per-generation median fitness."""
         return self.get_fitness_stat(median2)
 
-    def get_average_cross_validation_fitness(self): # pragma: no cover
-        """Get the per-generation average cross_validation fitness."""
-        avg_cross_validation_fitness = []
-        for stats in self.generation_cross_validation_statistics:
-            scores = []
-            for fitness in stats.values():
-                scores.extend(fitness)
-            avg_cross_validation_fitness.append(mean(scores))
+##    def get_average_cross_validation_fitness(self): # pragma: no cover
+##        """Get the per-generation average cross_validation fitness."""
+##        avg_cross_validation_fitness = []
+##        for stats in self.generation_cross_validation_statistics:
+##            scores = []
+##            for fitness in stats.values():
+##                scores.extend(fitness)
+##            avg_cross_validation_fitness.append(mean(scores))
 
-        return avg_cross_validation_fitness
+##        return avg_cross_validation_fitness
 
     def best_unique_genomes(self, n):
         """Returns the most n fit genomes, with no duplication."""

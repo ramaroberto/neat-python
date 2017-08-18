@@ -1,4 +1,8 @@
 import random
+import warnings
+
+warnings.simplefilter('default')
+
 from neat.graphs import creates_cycle, required_for_output, feed_forward_layers
 
 

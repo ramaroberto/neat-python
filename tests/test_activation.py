@@ -2,9 +2,12 @@ from __future__ import print_function, division
 import os
 import math
 import sys
+import warnings
 
 import neat
 from neat import activations, multiparameter
+
+warnings.simplefilter('default')
 
 # TODO: These tests are just smoke tests to make sure nothing has become badly broken.  Expand
 # to include more detailed tests of actual functionality.

@@ -38,6 +38,7 @@ class DefaultReproduction(DefaultClassConfig):
     def __init__(self, config, reporters, stagnation):
         # pylint: disable=super-init-not-called
         self.reproduction_config = config
+        self.genome_config = None
         self.reporters = reporters
         self.genome_indexer = count(1)
         self.stagnation = stagnation
@@ -76,16 +77,6 @@ class DefaultReproduction(DefaultClassConfig):
                 "Min_species_size must be at least 2 (not {0:n}) for crossover parents".format(
                     config.min_species_size))
 
-    def get_species_size_info(self):
-        to_return_dict = {}
-        to_return_dict['min_size'] = max(self.reproduction_config.elitism,
-                                         self.reproduction_config.min_species_size)
-        to_return_dict['min_good_size'] = int(
-            math.ceil(2/self.reproduction_config.survival_threshold))
-        # below - for info about weight, disjoint coefficients
-        to_return_dict['genome_config'] = self.genome_config
-        return to_return_dict
-
     def create_new(self, genome_type, genome_config, num_genomes):
         self.genome_config = genome_config # for get_species_size_info
         new_genomes = {}
@@ -97,6 +88,16 @@ class DefaultReproduction(DefaultClassConfig):
             self.ancestors[key] = tuple()
 
         return new_genomes
+
+    def get_species_size_info(self): # DOCUMENT!
+        to_return_dict = {}
+        to_return_dict['min_size'] = max(self.reproduction_config.elitism,
+                                         self.reproduction_config.min_species_size)
+        to_return_dict['min_good_size'] = int(
+            math.ceil(2/self.reproduction_config.survival_threshold))
+        # below - for info about weight, disjoint coefficients
+        to_return_dict['genome_config'] = self.genome_config
+        return to_return_dict
 
     @staticmethod
     def compute_spawn(adjusted_fitness, previous_sizes, pop_size, min_species_size):
@@ -138,13 +139,21 @@ class DefaultReproduction(DefaultClassConfig):
         # TODO: I don't like this modification of the species and stagnation objects,
         # because it requires internal knowledge of the objects.
 
+        if pop_size < (2*max(self.reproduction_config.elitism,
+                             self.reproduction_config.min_species_size)):
+            raise ValueError(
+                "Population size must be at least {0:n}, not {1:n}".format(
+                    (2*max(self.reproduction_config.elitism,
+                           self.reproduction_config.min_species_size)),
+                    pop_size))
+
         if (generation == 0) and (pop_size
-                                  < math.ceil(4/self.reproduction_config.survival_threshold)):
-            warnings.warn("Population size {0:n} is too small".format(pop_size)
-                          + " - with a survival_threshold of {1:n},".format(
+                                  < (2*math.ceil(2/self.reproduction_config.survival_threshold))):
+            warnings.warn("Population size {0:n} is too small".format(pop_size) # NEEDS TEST!
+                          + " - with a survival_threshold of {0:n},".format(
                               self.reproduction_config.survival_threshold)
-                          + " a minimum of {2:n} is recommended".format(
-                              math.ceil(4/self.reproduction_config.survival_threshold)))
+                          + " a minimum of {0:n} is recommended".format(
+                              2*math.ceil(2/self.reproduction_config.survival_threshold)))
 
         # Filter out stagnated species, collect the set of non-stagnated
         # species members, and compute their average adjusted fitness.
@@ -156,8 +165,9 @@ class DefaultReproduction(DefaultClassConfig):
         for stag_sid, stag_s, stagnant in self.stagnation.update(species, generation):
             if stagnant:
                 self.reporters.species_stagnant(stag_sid, stag_s)
+                del(species.species[stag_sid]) # for non-ref-tracking garbage collection
             else:
-                all_fitnesses.extend(m.fitness for m in itervalues(stag_s.members))
+                all_fitnesses.extend(stag_s.get_fitnesses())
                 remaining_species.append(stag_s)
         # The above comment was not quite what was happening - now getting fitnesses
         # only from members of non-stagnated species.
@@ -180,9 +190,9 @@ class DefaultReproduction(DefaultClassConfig):
             # get a chance to reproduce. This is a compromise between mean and max.
             msf = mean([m.fitness for m in itervalues(afs.members)])
             af = (msf - min_fitness) / fitness_range
-            afs.adjusted_fitness = af
+            afs.reproduction_namespace.adjusted_fitness = af
 
-        adjusted_fitnesses = [s.adjusted_fitness for s in remaining_species]
+        adjusted_fitnesses = [s.reproduction_namespace.adjusted_fitness for s in remaining_species]
         avg_adjusted_fitness = mean(adjusted_fitnesses) # type: float
         self.reporters.info("Average adjusted fitness: {:.3f}".format(avg_adjusted_fitness))
 

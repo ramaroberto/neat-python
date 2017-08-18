@@ -59,8 +59,7 @@ def maxabs_tmean_aggregation(x, a):
     _check_value_range(a, -1.0, 1.0, 'maxabs_tmean', 'a')
     if a >= 0.0:
         return maxabs_mean_aggregation(x, a=a)
-    else:
-        return multiparam_tmean_aggregation(x, a=abs(a/2))
+    return multiparam_tmean_aggregation(x, a=abs(a/2))
 
 def sum_product_aggregation(x, a):
     _check_value_range(a, 0.0, 1.0, 'sum_product', 'a')
@@ -113,7 +112,6 @@ def product_mean_aggregation(x, a, use_median):
 
     if use_median:
         return math.copysign(transformed_product, median2(input_list))
-    
     return math.copysign(transformed_product, tmp_product)
 
 def sum_product_mean_aggregation(x, a, b, use_median):
@@ -121,7 +119,7 @@ def sum_product_mean_aggregation(x, a, b, use_median):
     _check_value_range(b, 0.0, 1.0, 'sum_product_mean', 'b')
     return ((b*sum_mean_aggregation(x, a))+
             ((1.0-b)*product_mean_aggregation(x, a, use_median)))
-    
+
 
 class AggregationFunctionSet(object):
     """Contains aggregation functions and methods to add and retrieve them."""

@@ -3,7 +3,6 @@ import unittest
 
 import neat
 
-
 class PopulationTests(unittest.TestCase):
     def test_valid_fitness_criterion(self):
         for c in ('max', 'min', 'mean'):

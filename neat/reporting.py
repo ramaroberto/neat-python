@@ -114,9 +114,15 @@ class StdOutReporter(BaseReporter):
                 s = species_set.species[sid]
                 a = self.generation - s.created
                 n = len(s.members)
-                f = "--" if s.fitness is None else "{:.1f}".format(s.fitness)
-                af = "--" if s.adjusted_fitness is None else "{:.3f}".format(s.adjusted_fitness)
-                st = self.generation - s.last_improved
+                if s.stagnation_namespace.fitness is None:
+                    f = "--"
+                else:
+                    f = "{:.1f}".format(s.stagnation_namespace.fitness)
+                if s.reproduction_namespace.adjusted_fitness is None:
+                    af = "--"
+                else:
+                    af = "{:.3f}".format(s.reproduction_namespace.adjusted_fitness)
+                st = self.generation - s.stagnation_namespace.last_improved
                 print(
                     "  {: >4}  {: >3}  {: >4}  {: >7}  {: >7}  {: >4}".format(sid, a, n, f, af, st))
         else:

@@ -51,7 +51,6 @@ def tmean(values, trim=0.25):
         prop_trim = (0.5-trim)/0.25
         return (prop_trim*tmean(values, 0.25))+((1.0-prop_trim)*median2(values))
     orig_len = len(values)
-    orig_values = values
     trim_fully = int(math.floor(trim*orig_len))
     trim_partially = trim*orig_len
     if trim_fully:

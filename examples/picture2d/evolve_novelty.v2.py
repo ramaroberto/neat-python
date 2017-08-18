@@ -26,17 +26,14 @@ def evaluate_lowres(genome, config, scheme):
     elif scheme == 'color':
         return tuple([eval_color_image(genome, config, WIDTH, HEIGHT),
                       eval_color_image(genome, config, int(WIDTH/2), int(HEIGHT/2))])
-    elif scheme == 'mono':
-        return tuple([eval_mono_image(genome, config, WIDTH, HEIGHT),
-                      eval_mono_image(genome, config, int(WIDTH/2), int(HEIGHT/2))])
 
-    raise Exception('Unexpected scheme: {0!r}'.format(scheme))
+    raise ValueError('Unexpected scheme: {0!r}'.format(scheme))
 
 
 class NoveltyEvaluator(object):
     def __init__(self, num_workers, scheme):
         self.num_workers = num_workers
-        self.scheme = scheme
+        self.scheme = scheme # note: 'mono' not usable
         self.pool = Pool(num_workers)
         self.archive = []
         self.out_index = 1
@@ -79,17 +76,14 @@ class NoveltyEvaluator(object):
             pillow_image = self.image_from_array(image)
             pillow_image = pillow_image.filter(ImageFilter.UnsharpMask)
             pillow_image = pillow_image.filter(ImageFilter.FIND_EDGES)
-            if self.scheme != 'mono':
-                pillow_image = ImageOps.autocontrast(pillow_image)
+            pillow_image = ImageOps.autocontrast(pillow_image)
             pillow_array = self.array_from_image(pillow_image)
             float_pillow_image = pillow_array.astype(np.float32) / 255.0
 
             pillow2_image = self.image_from_array(image2)
-            if self.scheme != 'mono':
-                pillow2_image = ImageOps.autocontrast(pillow2_image)
+            pillow2_image = ImageOps.autocontrast(pillow2_image)
             pillow2_image = pillow2_image.filter(ImageFilter.FIND_EDGES)
-            if self.scheme != 'mono':
-                pillow2_image = ImageOps.autocontrast(pillow2_image)
+            pillow2_image = ImageOps.autocontrast(pillow2_image)
             pillow2_array = self.array_from_image(pillow2_image)
             float_pillow2_image = pillow2_array.astype(np.float32) / 255.0
 
@@ -101,21 +95,25 @@ class NoveltyEvaluator(object):
                 pairs1 = zip(pillow_flattened, a1)
                 pairs2 = zip(pillow2_flattened, a2)
                 pairs3 = zip(flattened, a3)
+                dist1 = []
+                dist2 = []
                 dist = []
                 for i, j in pairs1:
-                    dist.append(float(abs(i-j)))
+                    dist1.append(float(abs(i-j)))
                 for i, j in pairs2:
-                    dist.append(float(abs(i-j))*4)
+                    dist2.append(float(abs(i-j)))
                 for i, j in pairs3:
                     dist.append(float(abs(i-j))/(WIDTH*HEIGHT)) # max is actually 2* this
+                dist.append(math.fsum(dist1)/max(1,np.count_nonzero(pillow_flattened),np.count_nonzero(a1)))
+                dist.append(math.fsum(dist2)/max(1,np.count_nonzero(pillow2_flattened),np.count_nonzero(a2)))
                 adist = math.fsum(dist)
-                #adist = float(np.linalg.norm(float_image.ravel() - a.ravel(), ord=2))
+                #adist = float(np.linalg.norm(float_image.ravel() - a.ravel()))
                 if genome.fitness < 0.0:
                     genome.fitness = adist
                 else:
                     genome.fitness = min(genome.fitness, adist)
 
-            chance = 1.0/len(genomes)
+            chance = 0.5/len(genomes)
             if random.random() < chance:
                 new_archive_entries.append((pillow_flattened,pillow2_flattened,pillow_flattened))
                 #im = self.image_from_array(image)
@@ -125,10 +123,8 @@ class NoveltyEvaluator(object):
                     image = eval_gray_image(genome, config, FULL_SCALE * WIDTH, FULL_SCALE * HEIGHT)
                 elif self.scheme == 'color':
                     image = eval_color_image(genome, config, FULL_SCALE * WIDTH, FULL_SCALE * HEIGHT)
-                elif self.scheme == 'mono':
-                    image = eval_mono_image(genome, config, FULL_SCALE * WIDTH, FULL_SCALE * HEIGHT)
                 else:
-                    raise Exception('Unexpected scheme: {0!r}'.format(self.scheme))
+                    raise ValueError('Unexpected scheme: {0!r}'.format(self.scheme))
 
                 im = np.clip(np.array(image), 0, 255).astype(np.uint8)
                 im = self.image_from_array(im)
@@ -155,7 +151,7 @@ def run():
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    ne = NoveltyEvaluator(4, 'color')
+    ne = NoveltyEvaluator(4, 'color') # do not use 'mono'
     if ne.scheme == 'color':
         config.output_nodes = 3
     else:
@@ -174,10 +170,8 @@ def run():
             image = eval_gray_image(winner, config, FULL_SCALE * WIDTH, FULL_SCALE * HEIGHT)
         elif ne.scheme == 'color':
             image = eval_color_image(winner, config, FULL_SCALE * WIDTH, FULL_SCALE * HEIGHT)
-        elif ne.scheme == 'mono':
-            image = eval_mono_image(winner, config, FULL_SCALE * WIDTH, FULL_SCALE * HEIGHT)
         else:
-            raise Exception('Unexpected scheme: {0!r}'.format(ne.scheme))
+            raise ValueError('Unexpected scheme: {0!r}'.format(ne.scheme))
 
         im = np.clip(np.array(image), 0, 255).astype(np.uint8)
         im = ne.image_from_array(im)
@@ -194,11 +188,8 @@ def run():
         elif ne.scheme == 'color':
             image = eval_color_image(winner, config, WIDTH, HEIGHT)
             image2 = eval_color_image(winner, config, int(WIDTH/2), int(HEIGHT/2))
-        elif ne.scheme == 'mono':
-            image = eval_mono_image(winner, config, WIDTH, HEIGHT)
-            image2 = eval_mono_image(winner, config, int(WIDTH/2), int(HEIGHT/2))
         else:
-            raise Exception('Unexpected scheme: {0!r}'.format(ne.scheme))
+            raise ValueError('Unexpected scheme: {0!r}'.format(ne.scheme))
 
         im = np.clip(np.array(image), 0, 255).astype(np.uint8)
         float_image = im.astype(np.float32) / 255.0
@@ -206,19 +197,16 @@ def run():
         pillow_image = ne.image_from_array(im)
         pillow_image = pillow_image.filter(ImageFilter.UnsharpMask)
         pillow_image = pillow_image.filter(ImageFilter.FIND_EDGES)
-        if ne.scheme != 'mono':
-            pillow_image = ImageOps.autocontrast(pillow_image)
+        pillow_image = ImageOps.autocontrast(pillow_image)
         pillow_image.save('winning-novelty-{0:06d}-edge-small.png'.format(pop.generation))
         pillow_array = ne.array_from_image(pillow_image)
         float_pillow_image = pillow_array.astype(np.float32) / 255.0
 
         im = np.clip(np.array(image2), 0, 255).astype(np.uint8)
         pillow2_image = ne.image_from_array(im)
-        if ne.scheme != 'mono':
-            pillow2_image = ImageOps.autocontrast(pillow2_image)
+        pillow2_image = ImageOps.autocontrast(pillow2_image)
         pillow2_image = pillow2_image.filter(ImageFilter.FIND_EDGES)
-        if ne.scheme != 'mono':
-            pillow2_image = ImageOps.autocontrast(pillow2_image)
+        pillow2_image = ImageOps.autocontrast(pillow2_image)
         pillow2_array = ne.array_from_image(pillow2_image)
         float_pillow2_image = pillow2_array.astype(np.float32) / 255.0
 

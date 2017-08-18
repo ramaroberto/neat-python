@@ -1,5 +1,6 @@
 import sys
 import unittest
+
 from neat.reproduction import DefaultReproduction
 
 class TestSpawnComputation(unittest.TestCase):

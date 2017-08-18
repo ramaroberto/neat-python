@@ -32,27 +32,29 @@ class DefaultStagnation(DefaultClassConfig):
         Required interface method. Updates species fitness history information,
         checking for ones that have not improved in max_stagnation generations,
         and - unless it would result in the number of species dropping below the configured
-        species_elitism parameter if they were removed,
-        in which case the highest-fitness species are spared -
-        returns a list with stagnant species marked for removal.
+        species_elitism parameter if they were removed, in which case the highest-fitness
+        species are spared - returns a list with stagnant species marked for removal.
         """
-        species_data = []
+        species_data = [] # TODO: Move s.XXX, other than fitness, used by stagnation to a
+        # s.stagnation_namespace object, added when the species is created; existing
+        # uses should be caught by __[get|set]?__ (usual? property?), a DeprecationWarning given,
+        # and diverted to the namespace. Ditto for reproduction.
         for sid, s in iteritems(species_set.species):
-            if s.fitness_history:
-                prev_fitness = max(s.fitness_history)
+            if s.stagnation_namespace.fitness_history:
+                prev_fitness = max(s.stagnation_namespace.fitness_history)
             else:
                 prev_fitness = -sys.float_info.max
 
-            s.fitness = self.species_fitness_func(s.get_fitnesses())
-            s.fitness_history.append(s.fitness)
-            s.adjusted_fitness = None
-            if prev_fitness is None or s.fitness > prev_fitness:
-                s.last_improved = generation
+            s.stagnation_namespace.fitness = self.species_fitness_func(s.get_fitnesses())
+            s.stagnation_namespace.fitness_history.append(s.stagnation_namespace.fitness)
+            #s.adjusted_fitness = None # ???
+            if prev_fitness is None or s.stagnation_namespace.fitness > prev_fitness:
+                s.stagnation_namespace.last_improved = generation
 
             species_data.append((sid, s))
 
         # Sort in ascending fitness order.
-        species_data.sort(key=lambda x: x[1].fitness)
+        species_data.sort(key=lambda x: x[1].stagnation_namespace.fitness)
 
         result = []
         species_fitnesses = []
@@ -62,10 +64,10 @@ class DefaultStagnation(DefaultClassConfig):
             # result in the total number of species dropping below the limit.
             # Because species are in ascending fitness order, less fit species
             # will be marked as stagnant first.
-            stagnant_time = generation - s.last_improved
+            stagnant_time = generation - s.stagnation_namespace.last_improved
             is_stagnant = False
             if num_non_stagnant > self.stagnation_config.species_elitism:
-                is_stagnant = stagnant_time >= self.stagnation_config.max_stagnation
+                is_stagnant = bool(stagnant_time >= self.stagnation_config.max_stagnation)
 
             if (len(species_data) - idx) <= self.stagnation_config.species_elitism:
                 is_stagnant = False
@@ -74,6 +76,6 @@ class DefaultStagnation(DefaultClassConfig):
                 num_non_stagnant -= 1
 
             result.append((sid, s, is_stagnant))
-            species_fitnesses.append(s.fitness)
+            species_fitnesses.append(s.stagnation_namespace.fitness)
 
         return result

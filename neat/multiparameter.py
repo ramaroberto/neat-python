@@ -167,20 +167,20 @@ class MultiParameterFunction(object):
             else:
                 self.evolved_param_dicts[n].setdefault('mutate_power', 0.0)
 
-            param_dict2 = copy.deepcopy(param_dict)
-            del param_dict2['param_type']
+##            param_dict2 = copy.deepcopy(param_dict)
+##            del param_dict2['param_type']
 
-            self.evolved_param_attributes[n] = FloatAttribute(name=tmp_name, # TODO: IntAttribute
-                                                              **param_dict2)
+            self.evolved_param_attributes[n] = FloatAttribute(name=tmp_name) # TODO: IntAttribute
+##                                                              **param_dict2)
         elif param_dict['param_type'] == 'bool':
             self.evolved_param_dicts[n].setdefault('mutate_rate', 0.1)
             self.evolved_param_dicts[n].setdefault('default', 'random')
 
-            param_dict2 = copy.deepcopy(param_dict)
-            del param_dict2['param_type']
+##            param_dict2 = copy.deepcopy(param_dict)
+##            del param_dict2['param_type']
 
-            self.evolved_param_attributes[n] = BoolAttribute(name=tmp_name,
-                                                             **param_dict2)
+            self.evolved_param_attributes[n] = BoolAttribute(name=tmp_name)
+##                                                             **param_dict2)
         else:
             raise RuntimeError(
                 "Unknown param_type {0!r} for MultiParameterFunction {1!s}".format(

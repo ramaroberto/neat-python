@@ -41,7 +41,7 @@ class DefaultGenomeConfig(object):
                         ConfigParameter('conn_delete_prob', float),
                         ConfigParameter('node_add_prob', float),
                         ConfigParameter('node_delete_prob', float),
-                        ConfigParameter('single_structural_mutation', bool, 'false'),
+                        ConfigParameter('single_structural_mutation', bool, False),
                         ConfigParameter('structural_mutation_surer', str, 'default'),
                         ConfigParameter('initial_connection', str, 'unconnected')]
 
@@ -132,7 +132,7 @@ class DefaultGenomeConfig(object):
 
         return new_id
 
-    def get_compatibility_info(self):
+    def get_compatibility_info(self): # DOCUMENT!
         to_return_dict = {}
         to_return_dict['disjoint_coefficient'] = self.compatibility_disjoint_coefficient
         to_return_dict['weight_coefficient'] = self.compatibility_weight_coefficient

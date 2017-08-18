@@ -19,8 +19,7 @@ def sigmoid_activation(z):
     except ArithmeticError:
         if z > 0.0:
             return 1.0
-        else:
-            return 0.0
+        return 0.0
     else:
         return to_return
 
@@ -31,8 +30,7 @@ def tanh_activation(z):
     except ArithmeticError:
         if z > 0.0:
             return 1.0
-        else:
-            return -1.0
+        return -1.0
     else:
         return to_return
 
@@ -61,8 +59,7 @@ def softplus_activation(z):
     except ArithmeticError:
         if z > 0.0: # pragma: no cover
             return z
-        else:
-            return 0.0
+        return 0.0
     else:
         return to_return
 
@@ -150,9 +147,8 @@ def multiparam_elu_activation_inner(z, a, b):
         z = min(((60.0-b)/math.exp(a)), max(((-60.0-b)/math.exp(a)), z))
         if (abs(z) < abs(old_z)) or (abs(a) < abs(old_a)) or (abs(b) < abs(old_b)):
             return multiparam_elu_activation_inner(z, a, b)
-        else:
-            return multiparam_elu_activation_inner(old_z, min(2.0,max(-1.0,a)),
-                                                   min(2.0,max(-2.0,b)))
+        return multiparam_elu_activation_inner(old_z, min(2.0,max(-1.0,a)),
+                                               min(2.0,max(-2.0,b)))
     else:
         return result
 
@@ -232,9 +228,8 @@ def multiparam_log_inv_activation(z, a): # mostly intended for CPPNs
     assert a >= -1.0, "'a' for multiparam_log_inv must be -1.0 or above, not {!r}".format(a)
     if a >= 0:
         return scaled_expanded_log_activation(z,(a+1.0))
-    else:
-        return ((abs(a)*inv_activation(-1*z))
-                +((1.0-abs(a))*scaled_expanded_log_activation(z,1.0)))
+    return ((abs(a)*inv_activation(-1*z))
+            +((1.0-abs(a))*scaled_expanded_log_activation(z,1.0)))
 
 def scaled_log1p_activation(z, a):
     a = min(sys.float_info.max_10_exp, max(sys.float_info.min_10_exp, a))

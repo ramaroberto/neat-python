@@ -1,6 +1,9 @@
+import warnings
+
 from neat import activations
 from neat.nn import RecurrentNetwork
 
+warnings.simplefilter('default')
 
 def assert_almost_equal(x, y, tol):
     assert abs(x - y) < tol, "{!r} !~= {!r}".format(x, y)

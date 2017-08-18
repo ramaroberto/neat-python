@@ -1,8 +1,11 @@
 from __future__ import print_function
 
+import warnings
+
 import neat
 from neat.activations import sigmoid_activation
 
+warnings.simplefilter('default')
 
 def test_basic():
     # Create a fully-connected network of two neurons with no external inputs.

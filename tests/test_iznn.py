@@ -1,6 +1,9 @@
 import os
+import warnings
+
 import neat
 
+warnings.simplefilter('default')
 
 def test_basic():
     p = neat.iznn.REGULAR_SPIKING_PARAMS
