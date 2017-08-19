@@ -5,3 +5,8 @@ doc-warnings: true
 max-line-length: 100
 pyroma:
   run: true
+ignore-patterns:
+  - ^docs/*.py$
+ignore-paths:
+  - examples
+max-complexity: 15
