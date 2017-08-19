@@ -7,25 +7,34 @@ import neat
 
 warnings.simplefilter('default')
 
+MULTIPARAM_ONLY = False
+
 def test_xor_example_multiparam_relu():
-    test_xor_example(activation_default='multiparam_relu')
+    test_xor_example(activation_default='multiparam_relu',
+                     multiparam=True)
 
 def test_xor_example_multiparam_sigmoid_or_relu():
     test_xor_example(uniform_weights=True,
                      activation_default='random',
-                     activation_options=['multiparam_sigmoid','relu'])
+                     activation_options=['multiparam_sigmoid','relu'],
+                     multiparam=True)
 
 def test_xor_example_multiparam_aggregation():
     test_xor_example(uniform_weights=True,
                      activation_default='multiparam_sigmoid',
                      aggregation_default='random',
-                     aggregation_options=['sum','max_median_min','maxabs_mean'])
+                     aggregation_options=['sum_product','max_median_min','maxabs_tmean'],
+                     multiparam=True)
 
 def test_xor_example_uniform_weights():
+    if MULTIPARAM_ONLY:
+        return
     test_xor_example(uniform_weights=True)
 
 def test_xor_example(uniform_weights=False, activation_default=None, activation_options=None,
-                     aggregation_default=None, aggregation_options=None):
+                     aggregation_default=None, aggregation_options=None, multiparam=False):
+    if MULTIPARAM_ONLY and not multiparam:
+        return
     # 2-input XOR inputs and expected outputs.
     xor_inputs = [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]
     xor_outputs = [(0.0,), (1.0,), (1.0,), (0.0,)]
@@ -126,8 +135,10 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
 
 
 if __name__ == '__main__':
-    test_xor_example_uniform_weights()
+    if not MULTIPARAM_ONLY:
+        test_xor_example_uniform_weights()
     test_xor_example_multiparam_relu()
     test_xor_example_multiparam_sigmoid_or_relu()
     test_xor_example_multiparam_aggregation()
-    test_xor_example()
+    if not MULTIPARAM_ONLY:
+        test_xor_example()

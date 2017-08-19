@@ -4,17 +4,18 @@ with, as well as the usual input, one or more evolvable numeric parameters.
 """
 from __future__ import division
 
+import collections
 import copy
 import functools
 ##import sys
 import types
 import warnings
 
-from math import sqrt, isnan
+from math import sqrt
 
 from neat.attributes import FloatAttribute, BoolAttribute
 from neat.math_util import NORM_EPSILON
-from neat.six_util import iteritems
+from neat.six_util import iteritems, iterkeys
 
 class EvolvedMultiParameterFunction(object):
     """
@@ -51,11 +52,10 @@ class EvolvedMultiParameterFunction(object):
                                                           self.multi_param_func)
         self.__set_instance_name()
 
-    def set_values(self, **param_values): # TEST NEEDED; Perhaps do as @property?
+    def set_values(self, **param_values): # TEST NEEDED!
         for n, val in iteritems(param_values):
             if n in self.evolved_param_names:
-                if not isnan(val):
-                    self.current_param_values[n] = val
+                self.current_param_values[n] = val
             else:
                 raise LookupError(
                     "Parameter name {0!r} (val {1!r}) not among known ({2!s}) for {3!s}".format(
@@ -66,7 +66,7 @@ class EvolvedMultiParameterFunction(object):
         return self.instance_name
 
     def __repr__(self):
-        return str(self.__class__) + "({0!s}, {1!r}).set_values({2!r})".format(
+        return str(self.__class__) + "({0!r}, {1!r}).set_values({2!r})".format(
             self.name, self.multi_param_func, self.current_param_values)
 
     def distance(self, other):
@@ -97,12 +97,18 @@ class EvolvedMultiParameterFunction(object):
         return max_diff
 
     def copy(self):
+        # I am uncertain about this one - deepcopy unfortunately takes forever, though.
         return copy.copy(self)
 
     def __copy__(self):
         other = EvolvedMultiParameterFunction(self.name[:], copy.copy(self.multi_param_func))
         for n in self.evolved_param_names:
-            other.current_param_values[n] = copy.copy(self.current_param_values[n])
+            if isinstance(other.current_param_values[n], (collections.Container,
+                                                          collections.Iterable,
+                                                          collections.Callable)):
+                other.current_param_values[n] = copy.deepcopy(self.current_param_values[n])
+            else:
+                other.current_param_values[n] = copy.copy(self.current_param_values[n])
         other.instance_name = self.instance_name[:]
         return other
 
@@ -128,7 +134,7 @@ class MultiParameterFunction(object):
         self.orig_name = name
         self.which_type = which_type # activation or aggregation
         self.user_func = user_func
-        self.evolved_param_names = evolved_param_names
+        self.evolved_param_names = evolved_param_names # for the ordering
         self.evolved_param_dicts = evolved_param_dicts
         self.evolved_param_attributes = {}
 
@@ -137,10 +143,8 @@ class MultiParameterFunction(object):
 
     def init_defaults(self, n):
         """
-        Initializes (or re-initializes after user settings changes - the user will need to
-        remove existing entries in the evolved_param_dicts[n] dictionary, and keep in mind
-        that EvolvedMultiParameterFunctions generally share MultiParameterFunction instances)
-        defaults for one parameter's FloatAttribute settings for a multiparameter function.
+        Initializes (or re-initializes after user settings changes, provided the user deletes
+        any old settings not altered) defaults for one parameter's FloatAttribute settings for a multiparameter function.
         """
         self.evolved_param_dicts[n].setdefault('param_type', 'float')
         param_dict = self.evolved_param_dicts[n]
@@ -202,16 +206,37 @@ class MultiParameterFunction(object):
     def init_instance(self):
         return EvolvedMultiParameterFunction(self.orig_name, self)
 
-##    def set_attribute_settings(self, n, **param_dict): # TEST NEEDED! Perhaps do as @property?
-##        """
-##        Sets the FloatAttribute settings for one of a function's parameters. Note that this will
-##        change these for all MultiParameterFunctionInstances derived from MultiParameterFunction
-##        class instance, although such changes will not have an effect until the next mutation
-##        (including reinitialization). It is advisable to make a copy first, and alter that.
-##        """
-##        for x, y in iteritems(param_dict):
-##            self.evolved_param_dicts[n][x] = y
-##        self.init_defaults(n)
+    def copy_and_change(self, del_not_changed=False, del_param_dicts=None, new_param_dicts=None): # TEST NEEDED!
+        """
+        Makes a copy of the MultiParameterFunction instance, does deletions and
+        substitutions, initializes any remaining defaults, and returns the new instance.
+        If del_not_changed is True, any values for parameters in new_param_dicts that are not
+        set will be deleted and reinitialized.
+        """
+        new = copy.deepcopy(self)
+        n_done = set([])
+        if del_param_dicts is not None:
+            for n in iterkeys(del_param_dicts):
+                if isinstance(del_param_dicts[n], (collections.Sequence,collections.Iterable)):
+                    for x in del_param_dicts[n]:
+                        del new.evolved_param_dicts[n][x]
+                elif isinstance(del_param_dicts[n], collections.Hashable):
+                    del new.evolved_param_dicts[n][del_param_dicts[n]]
+                else:
+                    del new.evolved_param_dicts[n]
+                    new.evolved_param_dicts[n] = {}
+                n_done.add(n)
+        if new_param_dicts is not None:
+            for n in iterkeys(new_param_dicts):
+                if del_not_changed:
+                    del new.evolved_param_dicts[n]
+                    new.evolved_param_dicts[n] = {}
+                for x, y in iteritems(new_param_dicts[n]):
+                    new.evolved_param_dicts[n][x] = y
+                n_done.add(n)
+        for n in n_done:
+            new.init_defaults(n)
+        return new
 
     def __repr__(self): # TEST NEEDED! Should be able to duplicate by using this as an init...
         to_return_list = [self.orig_name,
@@ -220,14 +245,17 @@ class MultiParameterFunction(object):
                           self.evolved_param_names]
         to_return_list = list(map(repr,to_return_list))
         for n in self.evolved_param_names:
-            to_return_list.append(n + '=' + repr(self.evolved_param_dicts[n]))
+            to_return_list.append(repr(n) + '=' + repr(self.evolved_param_dicts[n]))
         return str(self.__class__) + '(' + ",".join(to_return_list) + ')'
 
     def __copy__(self):
+        new_evolved_param_dicts = {}
+        for n in self.evolved_param_names:
+            new_evolved_param_dicts[n] = copy.copy(self.evolved_param_dicts[n])
         return MultiParameterFunction(self.orig_name[:], self.which_type[:],
                                       copy.copy(self.user_func),
                                       copy.copy(self.evolved_param_names),
-                                      **copy.copy(self.evolved_param_dicts))
+                                      **new_evolved_param_dicts)
 
     def __deepcopy__(self, memo_dict):
         return MultiParameterFunction(self.orig_name[:], self.which_type[:],
@@ -269,7 +297,7 @@ class MultiParameterSet(object):
     def is_multiparameter(self, name, which_type):
         if name.endswith(')'):
             raise UnknownFunctionError("Called with uncertain name '{!s}'".format(name))
-        return name in self.multiparam_func_dict[which_type]
+        return bool(name in self.multiparam_func_dict[which_type])
 
     def init_multiparameter(self, name, instance, ignored_config=None):
         which_type = instance.name
@@ -286,7 +314,7 @@ class MultiParameterSet(object):
 
         if name in self.multiparam_func_dict[which_type]:
             mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]
-            # Allows for altering configuration, although tricky re already-existing ones
+            # Allows for altering configuration - preferably via copy_and_change!
             return mpfunc_dict[name]
         raise UnknownFunctionError("Unknown {!s} MPF function {!r}".format(which_type,name))
 
@@ -331,7 +359,7 @@ class MultiParameterSet(object):
 
         init_params = dict(zip(multiparam_func.evolved_param_names, param_values))
         params = {}
-        for name2 in init_params:
+        for name2 in multiparam_func.evolved_param_names:
             value = init_params[name2]
             if multiparam_func.evolved_param_dicts[name2]['param_type'] == 'float':
                 params[name2] = float(value)
@@ -363,9 +391,7 @@ class MultiParameterSet(object):
         Figures out what function, or function instance for multiparameter functions,
         is needed, and returns it.
         """
-        if isinstance(name, EvolvedMultiParameterFunction):
-            return name.get_func()
-        if hasattr(name, 'get_func'):
+        if isinstance(name, EvolvedMultiParameterFunction) or hasattr(name, 'get_func'):
             return name.get_func()
 
         if name in self.norm_func_dict[which_type]:
@@ -429,8 +455,7 @@ class MultiParameterSet(object):
                                                                                     kwargs))
 
         if func_code.co_argcount == 1:
-            func_dict = self.norm_func_dict[which_type]
-            func_dict[name] = user_func
+            self.norm_func_dict[which_type][name] = user_func
             return
 
         if ('(' in name) or (')' in name):

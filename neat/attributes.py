@@ -1,13 +1,14 @@
 """Deals with the attributes (variable parameters) of genes"""
 #from __future__ import print_function
+import sys
+
 from copy import deepcopy
 from random import choice, gauss, random, uniform
-from sys import version_info
 
 from neat.config import ConfigParameter
 from neat.six_util import iterkeys, iteritems
 
-if version_info.major > 2:
+if sys.version_info.major > 2:
     unicode = str # pylint: disable=redefined-builtin
 
 # TODO: There is probably a lot of room for simplification of these classes using metaprogramming.
