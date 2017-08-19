@@ -224,8 +224,10 @@ class MultiParameterFunction(object):
         return str(self.__class__) + '(' + ",".join(to_return_list) + ')'
 
     def __copy__(self):
-        return MultiParameterFunction(self.orig_name[:], self.which_type[:], self.user_func,
-                                      self.evolved_param_names, **self.evolved_param_dicts)
+        return MultiParameterFunction(self.orig_name[:], self.which_type[:],
+                                      copy.copy(self.user_func),
+                                      copy.copy(self.evolved_param_names),
+                                      **copy.copy(self.evolved_param_dicts))
 
     def __deepcopy__(self, memo_dict):
         return MultiParameterFunction(self.orig_name[:], self.which_type[:],
