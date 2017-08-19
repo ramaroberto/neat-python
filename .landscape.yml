@@ -9,6 +9,3 @@ ignore-patterns:
   - ^docs/*.py$
 ignore-paths:
   - examples
-mccabe:
-  options:
-	max-complexity: 15
