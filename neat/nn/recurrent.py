@@ -16,7 +16,7 @@ class RecurrentNetwork(object):
 
             for node, ignored_activ,ignored_aggr,ignored_bias,ignored_resp, links in self.node_evals:
                 v[node] = 0.0
-                for i, w in links:
+                for i, ignored_w in links:
                     v[i] = 0.0
         self.active = 0
 

@@ -73,8 +73,8 @@ class FloatAttribute(BaseAttribute):
                                                                     self.init_type_name))
 
     def mutate_value(self, value, config):
-         # mutate_rate is usually no lower than replace_rate,
-         # and frequently higher - so put first for efficiency
+        # mutate_rate is usually no lower than replace_rate,
+        # and frequently higher - so put first for efficiency
         mutate_rate = getattr(config, self.mutate_rate_name)
 
         r = random()

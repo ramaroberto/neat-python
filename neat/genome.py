@@ -120,7 +120,7 @@ class DefaultGenomeConfig(object):
         assert self.initial_connection in self.allowed_connectivity
 
         write_pretty_params(f, self, [p for p in self._params
-                                      if not 'initial_connection' in p.name])
+                                      if 'initial_connection' not in p.name])
 
     def get_new_node_key(self, node_dict):
         if self.node_indexer is None:
@@ -193,7 +193,8 @@ class DefaultGenome(object):
         # Fitness results.
         self.fitness = None
         # Should FeedForwardNetwork NOT be used for this genome?
-        # Direct cycle determination would be better given connection removal, but this is faster and simpler.
+        # Direct cycle determination would be better given connection removal and disabling,
+        # but this is faster and simpler.
         self.maybe_recurrent = False
 
     def configure_new(self, config):
@@ -410,9 +411,9 @@ class DefaultGenome(object):
         del_key = choice(available_nodes)
 
         connections_to_delete = set()
-        for k, v in iteritems(self.connections): # TODO: Why not just do iterkeys?
-            if del_key in v.key:
-                connections_to_delete.add(v.key)
+        for k in iterkeys(self.connections):
+            if del_key in k:
+                connections_to_delete.add(k)
 
         for key in connections_to_delete:
             del self.connections[key]

@@ -77,7 +77,8 @@ class ConfigParameter(object):
             if list == self.value_type:
                 return value.split(" ")
         except Exception:
-            raise RuntimeError("Error interpreting config item '{}' with value {!r} and type {}".format(
+            raise RuntimeError(
+                "Error interpreting config item '{}' with value {!r} and type {}".format(
                 self.name, value, self.value_type))
 
         raise RuntimeError("Unexpected configuration type: " + repr(self.value_type))
@@ -115,7 +116,7 @@ class DefaultClassConfig(object):
         for p in param_list:
             setattr(self, p.name, p.interpret(param_dict))
             param_list_names.append(p.name)
-        unknown_list = [x for x in iterkeys(param_dict) if not x in param_list_names]
+        unknown_list = [x for x in iterkeys(param_dict) if x not in param_list_names]
         if unknown_list:
             if len(unknown_list) > 1:
                 raise UnknownConfigItemError("Unknown configuration items:\n" +
@@ -178,7 +179,7 @@ class Config(object):
                                   DeprecationWarning)
             param_list_names.append(p.name)
         param_dict = dict(parameters.items('NEAT'))
-        unknown_list = [x for x in iterkeys(param_dict) if not x in param_list_names]
+        unknown_list = [x for x in iterkeys(param_dict) if x not in param_list_names]
         if unknown_list:
             if len(unknown_list) > 1:
                 raise UnknownConfigItemError("Unknown (section 'NEAT') configuration items:\n" +

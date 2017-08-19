@@ -62,7 +62,8 @@ class CTRNN(object):
             time_step = 0.5 * self.get_max_time_step()
 
         if len(self.input_nodes) != len(inputs):
-            raise RuntimeError("Expected {0} inputs, got {1}".format(len(self.input_nodes), len(inputs)))
+            raise RuntimeError("Expected {0:n} inputs, got {1:n}".format(
+                len(self.input_nodes), len(inputs)))
 
         while self.time_seconds < final_time_seconds:
             dt = min(time_step, final_time_seconds - self.time_seconds)
@@ -90,7 +91,9 @@ class CTRNN(object):
     def create(genome, config, time_constant):
         """ Receives a genome and returns its phenotype (a CTRNN). """
         genome_config = config.genome_config
-        required = required_for_output(genome_config.input_keys, genome_config.output_keys, genome.connections)
+        required = required_for_output(genome_config.input_keys,
+                                       genome_config.output_keys,
+                                       genome.connections)
 
         # Gather inputs and expressed connections.
         node_inputs = {}

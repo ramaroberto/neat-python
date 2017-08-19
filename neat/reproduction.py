@@ -80,7 +80,7 @@ class DefaultReproduction(DefaultClassConfig):
     def create_new(self, genome_type, genome_config, num_genomes):
         self.genome_config = genome_config # for get_species_size_info
         new_genomes = {}
-        for i in range(num_genomes):
+        for dummy in range(num_genomes):
             key = next(self.genome_indexer)
             g = genome_type(key)
             g.configure_new(genome_config)
@@ -245,7 +245,8 @@ class DefaultReproduction(DefaultClassConfig):
                 parent1_id, parent1 = random.choice(old_members)
                 parent2_id, parent2 = random.choice(old_members)
 
-                # Note that if the parents are not distinct, crossover (before mutation) will produce a
+                # Note that if the parents are not distinct,
+                # crossover (before mutation) will produce a
                 # genetically identical clone of the parent (but with a different ID).
                 gid = next(self.genome_indexer)
                 child = config.genome_type(gid)

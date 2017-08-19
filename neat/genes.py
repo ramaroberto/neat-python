@@ -22,7 +22,8 @@ class BaseGene(object):
         return '{0}({1})'.format(self.__class__.__name__, ", ".join(attrib))
 
     def __lt__(self, other):
-        assert isinstance(self.key,type(other.key)), "Cannot compare keys {0!r} and {1!r}".format(self.key,other.key)
+        assert isinstance(self.key,type(other.key)), "Cannot compare keys {0!r} and {1!r}".format(
+            self.key,other.key)
         return self.key < other.key
 
     @classmethod
@@ -95,7 +96,8 @@ class DefaultNodeGene(BaseGene):
                         FuncAttribute('aggregation', options='sum')]
 
     def __init__(self, key):
-        assert isinstance(key, int), "DefaultNodeGene key must be an int, not {!r}".format(key)
+        assert isinstance(key, int), "DefaultNodeGene key must be an int, not {!r}".format(
+            key)
         BaseGene.__init__(self, key)
 
     def distance(self, other, config):
@@ -125,7 +127,8 @@ class DefaultConnectionGene(BaseGene):
                         BoolAttribute('enabled')]
 
     def __init__(self, key):
-        assert isinstance(key, tuple), "DefaultConnectionGene key must be a tuple, not {!r}".format(key)
+        assert isinstance(key, tuple), "DefaultConnectionGene key must be a tuple, not {!r}".format(
+            key)
         BaseGene.__init__(self, key)
 
     def distance(self, other, config):

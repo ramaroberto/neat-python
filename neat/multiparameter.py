@@ -129,7 +129,13 @@ class EvolvedMultiParameterFunction(object):
 
 class MultiParameterFunction(object):
     """Holds and initializes configuration information for one multiparameter function."""
-    def __init__(self, name, which_type, user_func, evolved_param_names, full_init_defaults=True, **evolved_param_dicts):
+    def __init__(self,
+                 name,
+                 which_type,
+                 user_func,
+                 evolved_param_names,
+                 full_init_defaults=True,
+                 **evolved_param_dicts):
         self.name = name + "_MPF"
         self.orig_name = name
         self.which_type = which_type # activation or aggregation
@@ -144,7 +150,8 @@ class MultiParameterFunction(object):
     def init_defaults(self, n, full=True):
         """
         Initializes (or re-initializes after user settings changes, provided the user deletes
-        any old settings not altered) defaults for one parameter's attribute settings for a multiparameter function.
+        any old settings not altered) defaults for one parameter's attribute settings
+        for a multiparameter function.
         """
         self.evolved_param_dicts[n].setdefault('param_type', 'float')
         param_dict = self.evolved_param_dicts[n]
@@ -160,7 +167,8 @@ class MultiParameterFunction(object):
                 # below here is mainly intended for users wanting to use built-in
                 # multiparameter functions without too much initialization worries
                 self.evolved_param_dicts[n].setdefault('replace_rate', 0.1)
-                mutate_rate = min((1.0-param_dict['replace_rate']),(param_dict['replace_rate']*5.0))
+                mutate_rate = min((1.0-param_dict['replace_rate']),
+                                  (param_dict['replace_rate']*5.0))
                 self.evolved_param_dicts[n].setdefault('mutate_rate', mutate_rate)
                 for_stdev = min(abs(param_dict['max_value'] -
                                     param_dict['init_mean']),
@@ -174,7 +182,8 @@ class MultiParameterFunction(object):
                     # get a given initialization range that is not the same as the
                     # overall min/max range.
                 else:
-                    self.evolved_param_dicts[n].setdefault('init_stdev', ((4.0*for_stdev)/sqrt(12.0)))
+                    self.evolved_param_dicts[n].setdefault('init_stdev',
+                                                           ((4.0*for_stdev)/sqrt(12.0)))
                 if param_dict['mutate_rate'] > 0:
                     mutate_power = (min(1.0,(param_dict['replace_rate']/param_dict['mutate_rate']))*
                                     (abs(param_dict['max_value']-param_dict['min_value'])/sqrt(12.0)))
@@ -202,13 +211,17 @@ class MultiParameterFunction(object):
                 "Unknown param_type {0!r} for MultiParameterFunction {1!s}".format(
                     param_dict['param_type'], self.orig_name))
 
-        for x, y in iteritems(self.evolved_param_dicts[n]): # so that this can be used as a config for the attribute
+        for x, y in iteritems(self.evolved_param_dicts[n]):
+            # so that this can be used as a config for the attribute
             setattr(self, self.evolved_param_attributes[n].config_item_name(x), y)
 
     def init_instance(self):
         return EvolvedMultiParameterFunction(self.orig_name, self)
 
-    def copy_and_change(self, del_not_changed=False, del_param_dicts=None, new_param_dicts=None): # TEST NEEDED!
+    def copy_and_change(self,
+                        del_not_changed=False,
+                        del_param_dicts=None,
+                        new_param_dicts=None): # TEST NEEDED!
         """
         Makes a copy of the MultiParameterFunction instance, does deletions and
         substitutions, initializes any remaining defaults, and returns the new instance.
@@ -345,7 +358,7 @@ class MultiParameterSet(object):
                                        format(which_type,name))
 
         func_name = name[:param_start]
-        if not func_name in self.multiparam_func_dict[which_type]:
+        if func_name not in self.multiparam_func_dict[which_type]:
             raise UnknownFunctionError("Unknown {0!s} MPF function {1!r} (from {2!r})".
                                        format(which_type,func_name,name))
         multiparam_func = self.multiparam_func_dict[which_type][func_name]
@@ -412,7 +425,7 @@ class MultiParameterSet(object):
                                        format(which_type,name))
 
         func_name = name[:param_start]
-        if not func_name in self.multiparam_func_dict[which_type]:
+        if func_name not in self.multiparam_func_dict[which_type]:
             raise UnknownFunctionError("Unknown {0!s} function {1!r} (from {2!r})".
                                        format(which_type,func_name,name))
         multiparam_func = self.multiparam_func_dict[which_type][func_name]

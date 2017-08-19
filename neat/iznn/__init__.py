@@ -102,8 +102,10 @@ class IZNeuron(object):
         # TODO: The need to catch overflows indicates that the current method is
         # not stable for all possible network configurations and states.
         try:
-            self.v += 0.5 * dt_msec * (0.04 * self.v ** 2 + 5 * self.v + 140 - self.u + self.current)
-            self.v += 0.5 * dt_msec * (0.04 * self.v ** 2 + 5 * self.v + 140 - self.u + self.current)
+            self.v += 0.5 * dt_msec * (0.04 * self.v ** 2 + 5 * self.v + 140
+                                       - self.u + self.current)
+            self.v += 0.5 * dt_msec * (0.04 * self.v ** 2 + 5 * self.v + 140
+                                       - self.u + self.current)
             self.u += dt_msec * self.a * (self.b * self.v - self.u)
         except OverflowError:
             # Reset without producing a spike.
@@ -174,7 +176,9 @@ class IZNN(object):
     def create(genome, config):
         """ Receives a genome and returns its phenotype (a neural network). """
         genome_config = config.genome_config
-        required = required_for_output(genome_config.input_keys, genome_config.output_keys, genome.connections)
+        required = required_for_output(genome_config.input_keys,
+                                       genome_config.output_keys,
+                                       genome.connections)
 
         # Gather inputs and expressed connections.
         node_inputs = {}
