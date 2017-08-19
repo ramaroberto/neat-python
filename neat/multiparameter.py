@@ -65,6 +65,10 @@ class EvolvedMultiParameterFunction(object):
     def __str__(self):
         return self.instance_name
 
+    def __repr__(self):
+        return str(self.__class__) + "({0!s}, {1!r}).set_values({2!r})".format(
+            self.name, self.multi_param_func, self.current_param_values)
+
     def distance(self, other):
         if not isinstance(other, EvolvedMultiParameterFunction):
             return 1.0
@@ -76,31 +80,37 @@ class EvolvedMultiParameterFunction(object):
 
         max_diff = 0.0
         for n in self.evolved_param_names:
-            diff = abs(self.current_param_values[n] -
-                       other.current_param_values[n])
-            if diff:
-                param_dict = self.evolved_param_dicts[n]
-                this_diff = diff / max(NORM_EPSILON,
-                                       abs(param_dict['max_value'] - param_dict['min_value']))
-                max_diff = max(max_diff, this_diff)
+            param_dict = self.evolved_param_dicts[n]
+            if param_dict['param_type'] in ('float', 'int'):
+                diff = abs(self.current_param_values[n] -
+                           other.current_param_values[n])
+                if diff:
+                    this_diff = diff / max(NORM_EPSILON,
+                                           abs(param_dict['max_value'] - param_dict['min_value']))
+                    max_diff = max(max_diff, this_diff)
+            elif param_dict['param_type'] == 'bool':
+                if self.current_param_values[n] != other.current_param_values[n]:
+                    return 1.0
+            else:
+                raise ValueError("Unknown what to do with param_type {0!r} for {1!s}".format(
+                    param_dict['param_type'], self.name))
         return max_diff
 
     def copy(self):
-        #print("{0!s}: Copying myself {1!r}".format(self.instance_name,self),file=sys.stderr)
-        other = EvolvedMultiParameterFunction(self.name, copy.copy(self.multi_param_func))
-        for n in self.evolved_param_names:
-            other.current_param_values[n] = self.current_param_values[n]
-        other.instance_name = self.instance_name[:]
-        return other
+        return copy.copy(self)
 
     def __copy__(self):
-        return self.copy()
+        other = EvolvedMultiParameterFunction(self.name[:], copy.copy(self.multi_param_func))
+        for n in self.evolved_param_names:
+            other.current_param_values[n] = copy.copy(self.current_param_values[n])
+        other.instance_name = self.instance_name[:]
+        return other
 
     def __deepcopy__(self, memo_dict):
         other = EvolvedMultiParameterFunction(self.name[:],
                                               copy.deepcopy(self.multi_param_func,memo_dict))
         for n in self.evolved_param_names:
-            other.current_param_values[n] = self.current_param_values[n]
+            other.current_param_values[n] = copy.deepcopy(self.current_param_values[n],memo_dict)
         other.instance_name = self.instance_name[:]
         return other
 
@@ -129,7 +139,7 @@ class MultiParameterFunction(object):
         """
         Initializes (or re-initializes after user settings changes - the user will need to
         remove existing entries in the evolved_param_dicts[n] dictionary, and keep in mind
-        that MultiParameterFunctionInstances generally share MultiParameterFunction instances)
+        that EvolvedMultiParameterFunctions generally share MultiParameterFunction instances)
         defaults for one parameter's FloatAttribute settings for a multiparameter function.
         """
         self.evolved_param_dicts[n].setdefault('param_type', 'float')
@@ -167,22 +177,22 @@ class MultiParameterFunction(object):
             else:
                 self.evolved_param_dicts[n].setdefault('mutate_power', 0.0)
 
-##            param_dict2 = copy.deepcopy(param_dict)
-##            del param_dict2['param_type']
+            param_dict2 = copy.deepcopy(param_dict)
+            del param_dict2['param_type']
 
-            self.evolved_param_attributes[n] = FloatAttribute(name=tmp_name) # TODO: IntAttribute
-##                                                              **param_dict2)
+            self.evolved_param_attributes[n] = FloatAttribute(name=tmp_name, # TODO: IntAttribute
+                                                              **param_dict2)
         elif param_dict['param_type'] == 'bool':
             self.evolved_param_dicts[n].setdefault('mutate_rate', 0.1)
             self.evolved_param_dicts[n].setdefault('default', 'random')
 
-##            param_dict2 = copy.deepcopy(param_dict)
-##            del param_dict2['param_type']
+            param_dict2 = copy.deepcopy(param_dict)
+            del param_dict2['param_type']
 
-            self.evolved_param_attributes[n] = BoolAttribute(name=tmp_name)
-##                                                             **param_dict2)
+            self.evolved_param_attributes[n] = BoolAttribute(name=tmp_name,
+                                                             **param_dict2)
         else:
-            raise RuntimeError(
+            raise ValueError(
                 "Unknown param_type {0!r} for MultiParameterFunction {1!s}".format(
                     param_dict['param_type'], self.orig_name))
 
@@ -214,7 +224,7 @@ class MultiParameterFunction(object):
         return str(self.__class__) + '(' + ",".join(to_return_list) + ')'
 
     def __copy__(self):
-        return MultiParameterFunction(self.orig_name, self.which_type, self.user_func,
+        return MultiParameterFunction(self.orig_name[:], self.which_type[:], self.user_func,
                                       self.evolved_param_names, **self.evolved_param_dicts)
 
     def __deepcopy__(self, memo_dict):

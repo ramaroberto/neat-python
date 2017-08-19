@@ -1,6 +1,6 @@
 """Deals with the attributes (variable parameters) of genes"""
 #from __future__ import print_function
-from copy import copy
+from copy import deepcopy
 from random import choice, gauss, random, uniform
 from sys import version_info
 
@@ -17,6 +17,7 @@ class BaseAttribute(object):
     """Superclass for the type-specialized attribute subclasses, used by genes."""
     def __init__(self, name, **default_dict):
         self.name = name
+        self._config_items = deepcopy(self._config_items_init)
         for n, default in iteritems(default_dict):
             self._config_items[n] = [self._config_items[n][0], default]
         for n in iterkeys(self._config_items):
@@ -36,14 +37,14 @@ class FloatAttribute(BaseAttribute):
     Class for numeric attributes,
     such as the response of a node or the weight of a connection.
     """
-    _config_items = {"init_mean": [float, None],
-                     "init_stdev": [float, None],
-                     "init_type": [str, 'gaussian'],
-                     "replace_rate": [float, None],
-                     "mutate_rate": [float, None],
-                     "mutate_power": [float, None],
-                     "max_value": [float, None],
-                     "min_value": [float, None]}
+    _config_items_init = {"init_mean": [float, None],
+                          "init_stdev": [float, None],
+                          "init_type": [str, 'gaussian'],
+                          "replace_rate": [float, None],
+                          "mutate_rate": [float, None],
+                          "mutate_power": [float, None],
+                          "max_value": [float, None],
+                           "min_value": [float, None]}
 
     def clamp(self, value, config):
         min_value = getattr(config, self.min_value_name)
@@ -86,16 +87,16 @@ class FloatAttribute(BaseAttribute):
 
         return value
 
-    def validate(self, config): # pragma: no cover
-        pass
+##    def validate(self, config): # pragma: no cover
+##        pass
 
 
 class BoolAttribute(BaseAttribute):
     """Class for boolean attributes such as whether a connection is enabled or not."""
-    _config_items = {"default": [str, None],
-                     "mutate_rate": [float, None],
-                     "rate_to_true_add": [float, 0.0],
-                     "rate_to_false_add": [float, 0.0]}
+    _config_items_init = {"default": [str, None],
+                          "mutate_rate": [float, None],
+                          "rate_to_true_add": [float, 0.0],
+                          "rate_to_false_add": [float, 0.0]}
 
     def init_value(self, config):
         default = str(getattr(config, self.default_name)).lower()
@@ -129,8 +130,8 @@ class BoolAttribute(BaseAttribute):
 
         return value
 
-    def validate(self, config): # pragma: no cover
-        pass
+##    def validate(self, config): # pragma: no cover
+##        pass
 
 
 class StringAttribute(BaseAttribute):
@@ -138,9 +139,9 @@ class StringAttribute(BaseAttribute):
     Class for string attributes (such as, previously, the aggregation function of a node)
     that are selected from a list of options.
     """
-    _config_items = {"default": [str, 'random'],
-                     "options": [list, None],
-                     "mutate_rate": [float, None]}
+    _config_items_init = {"default": [str, 'random'],
+                          "options": [list, None],
+                          "mutate_rate": [float, None]}
 
     def init_value(self, config):
         default = getattr(config, self.default_name)
@@ -162,15 +163,15 @@ class StringAttribute(BaseAttribute):
 
         return value
 
-    def validate(self, config): # pragma: no cover
-        pass
+##    def validate(self, config): # pragma: no cover
+##        pass
 
 class FuncAttribute(BaseAttribute):
     """
     Handle attributes that may be simple strings
     or may be functions needing multiparameter handling.
     """
-    _config_items = copy(StringAttribute._config_items)
+    _config_items_init = deepcopy(StringAttribute._config_items_init)
 
     def init_value(self, config):
         default = getattr(config, self.default_name)
