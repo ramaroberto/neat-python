@@ -7,7 +7,7 @@ import neat
 
 warnings.simplefilter('default')
 
-MULTIPARAM_ONLY = False
+MULTIPARAM_ONLY = True
 
 def test_xor_example_multiparam_relu():
     test_xor_example(activation_default='multiparam_relu',

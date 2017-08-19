@@ -66,7 +66,7 @@ class EvolvedMultiParameterFunction(object):
         return self.instance_name
 
     def __repr__(self):
-        return str(self.__class__) + "({0!r}, {1!r}).set_values({2!r})".format(
+        return "EvolvedMultiParameterFunction({0!r}, {1!r}).set_values({2!r})".format(
             self.name, self.multi_param_func, self.current_param_values)
 
     def distance(self, other):
@@ -101,11 +101,11 @@ class EvolvedMultiParameterFunction(object):
         return copy.copy(self)
 
     def __copy__(self):
-        other = EvolvedMultiParameterFunction(self.name[:], copy.copy(self.multi_param_func))
+        other = EvolvedMultiParameterFunction(self.name[:], self.multi_param_func)
         for n in self.evolved_param_names:
-            if isinstance(other.current_param_values[n], (collections.Container,
-                                                          collections.Iterable,
-                                                          collections.Callable)):
+            if isinstance(self.current_param_values[n], (collections.Container,
+                                                         collections.Iterable,
+                                                         collections.Callable)):
                 other.current_param_values[n] = copy.deepcopy(self.current_param_values[n])
             else:
                 other.current_param_values[n] = copy.copy(self.current_param_values[n])
@@ -129,7 +129,7 @@ class EvolvedMultiParameterFunction(object):
 
 class MultiParameterFunction(object):
     """Holds and initializes configuration information for one multiparameter function."""
-    def __init__(self, name, which_type, user_func, evolved_param_names, **evolved_param_dicts):
+    def __init__(self, name, which_type, user_func, evolved_param_names, full_init_defaults=True, **evolved_param_dicts):
         self.name = name + "_MPF"
         self.orig_name = name
         self.which_type = which_type # activation or aggregation
@@ -139,58 +139,60 @@ class MultiParameterFunction(object):
         self.evolved_param_attributes = {}
 
         for n in evolved_param_names:
-            self.init_defaults(n)
+            self.init_defaults(n, full=full_init_defaults)
 
-    def init_defaults(self, n):
+    def init_defaults(self, n, full=True):
         """
         Initializes (or re-initializes after user settings changes, provided the user deletes
-        any old settings not altered) defaults for one parameter's FloatAttribute settings for a multiparameter function.
+        any old settings not altered) defaults for one parameter's attribute settings for a multiparameter function.
         """
         self.evolved_param_dicts[n].setdefault('param_type', 'float')
         param_dict = self.evolved_param_dicts[n]
         tmp_name = "{0}_{1}".format(self.name,n)
-
+        
         if param_dict['param_type'] in ('float','int'):
-            self.evolved_param_dicts[n].setdefault('init_type','uniform')
+            if full:
+                self.evolved_param_dicts[n].setdefault('init_type','uniform')
+                
+                middle = (param_dict['max_value'] +
+                          param_dict['min_value'])/2.0
+                self.evolved_param_dicts[n].setdefault('init_mean', middle)
+                # below here is mainly intended for users wanting to use built-in
+                # multiparameter functions without too much initialization worries
+                self.evolved_param_dicts[n].setdefault('replace_rate', 0.1)
+                mutate_rate = min((1.0-param_dict['replace_rate']),(param_dict['replace_rate']*5.0))
+                self.evolved_param_dicts[n].setdefault('mutate_rate', mutate_rate)
+                for_stdev = min(abs(param_dict['max_value'] -
+                                    param_dict['init_mean']),
+                                abs(param_dict['min_value'] -
+                                    param_dict['init_mean']))/2.0
+                if param_dict['init_type'] == 'uniform':
+                    self.evolved_param_dicts[n].setdefault('init_stdev', for_stdev)
+                    # actual standard deviation of uniform distribution is width/sqrt(12) -
+                    # use of 1/4 range in the uniform distribution FloatAttribute setup
+                    # (and thus the above) is to make it easier to figure out how to
+                    # get a given initialization range that is not the same as the
+                    # overall min/max range.
+                else:
+                    self.evolved_param_dicts[n].setdefault('init_stdev', ((4.0*for_stdev)/sqrt(12.0)))
+                if param_dict['mutate_rate'] > 0:
+                    mutate_power = (min(1.0,(param_dict['replace_rate']/param_dict['mutate_rate']))*
+                                    (abs(param_dict['max_value']-param_dict['min_value'])/sqrt(12.0)))
+                    self.evolved_param_dicts[n].setdefault('mutate_power', mutate_power)
+                else:
+                    self.evolved_param_dicts[n].setdefault('mutate_power', 0.0)
 
-            middle = (param_dict['max_value'] +
-                      param_dict['min_value'])/2.0
-            self.evolved_param_dicts[n].setdefault('init_mean', middle)
-            # below here is mainly intended for users wanting to use built-in
-            # multiparameter functions without too much initialization worries
-            self.evolved_param_dicts[n].setdefault('replace_rate', 0.1)
-            mutate_rate = min((1.0-param_dict['replace_rate']),(param_dict['replace_rate']*5.0))
-            self.evolved_param_dicts[n].setdefault('mutate_rate', mutate_rate)
-            for_stdev = min(abs(param_dict['max_value'] -
-                                param_dict['init_mean']),
-                            abs(param_dict['min_value'] -
-                                param_dict['init_mean']))/2.0
-            if param_dict['init_type'] == 'uniform':
-                self.evolved_param_dicts[n].setdefault('init_stdev', for_stdev)
-                # actual standard deviation of uniform distribution is width/sqrt(12) -
-                # use of 1/4 range in the uniform distribution FloatAttribute setup
-                # (and thus the above) is to make it easier to figure out how to
-                # get a given initialization range that is not the same as the
-                # overall min/max range.
-            else:
-                self.evolved_param_dicts[n].setdefault('init_stdev', ((4.0*for_stdev)/sqrt(12.0)))
-            if param_dict['mutate_rate'] > 0:
-                mutate_power = (min(1.0,(param_dict['replace_rate']/param_dict['mutate_rate']))*
-                                (abs(param_dict['max_value']-param_dict['min_value'])/sqrt(12.0)))
-                self.evolved_param_dicts[n].setdefault('mutate_power', mutate_power)
-            else:
-                self.evolved_param_dicts[n].setdefault('mutate_power', 0.0)
-
-            param_dict2 = copy.deepcopy(param_dict)
+            param_dict2 = copy.copy(param_dict)
             del param_dict2['param_type']
 
             self.evolved_param_attributes[n] = FloatAttribute(name=tmp_name, # TODO: IntAttribute
                                                               **param_dict2)
         elif param_dict['param_type'] == 'bool':
-            self.evolved_param_dicts[n].setdefault('mutate_rate', 0.1)
-            self.evolved_param_dicts[n].setdefault('default', 'random')
+            if full:
+                self.evolved_param_dicts[n].setdefault('mutate_rate', 0.1)
+                self.evolved_param_dicts[n].setdefault('default', 'random')
 
-            param_dict2 = copy.deepcopy(param_dict)
+            param_dict2 = copy.copy(param_dict)
             del param_dict2['param_type']
 
             self.evolved_param_attributes[n] = BoolAttribute(name=tmp_name,
@@ -200,7 +202,7 @@ class MultiParameterFunction(object):
                 "Unknown param_type {0!r} for MultiParameterFunction {1!s}".format(
                     param_dict['param_type'], self.orig_name))
 
-        for x, y in iteritems(param_dict): # so that this can be used as a config for the attribute
+        for x, y in iteritems(self.evolved_param_dicts[n]): # so that this can be used as a config for the attribute
             setattr(self, self.evolved_param_attributes[n].config_item_name(x), y)
 
     def init_instance(self):
@@ -239,28 +241,30 @@ class MultiParameterFunction(object):
         return new
 
     def __repr__(self): # TEST NEEDED! Should be able to duplicate by using this as an init...
-        to_return_list = [self.orig_name,
-                          self.which_type,
-                          self.user_func,
-                          self.evolved_param_names]
-        to_return_list = list(map(repr,to_return_list))
+        to_return_list = []
+        to_return_list[0] = 'orig_name=' + repr(self.orig_name)
+        to_return_list[1] = 'which_type=' + repr(self.which_type)
+        to_return_list[2] = 'user_func=' + str(self.user_func)
+        to_return_list[3] = 'evolved_param_names=' + repr(self.evolved_param_names)
         for n in self.evolved_param_names:
             to_return_list.append(repr(n) + '=' + repr(self.evolved_param_dicts[n]))
-        return str(self.__class__) + '(' + ",".join(to_return_list) + ')'
+        return 'MultiParameterFunction(' + ",".join(to_return_list) + ')'
 
     def __copy__(self):
         new_evolved_param_dicts = {}
         for n in self.evolved_param_names:
             new_evolved_param_dicts[n] = copy.copy(self.evolved_param_dicts[n])
-        return MultiParameterFunction(self.orig_name[:], self.which_type[:],
-                                      copy.copy(self.user_func),
-                                      copy.copy(self.evolved_param_names),
+        return MultiParameterFunction(name=self.orig_name[:], which_type=self.which_type[:],
+                                      user_func=copy.copy(self.user_func),
+                                      evolved_param_names=self.evolved_param_names[:],
+                                      full_init_defaults=False,
                                       **new_evolved_param_dicts)
 
     def __deepcopy__(self, memo_dict):
-        return MultiParameterFunction(self.orig_name[:], self.which_type[:],
-                                      copy.deepcopy(self.user_func, memo_dict),
-                                      copy.deepcopy(self.evolved_param_names, memo_dict),
+        return MultiParameterFunction(name=self.orig_name[:], which_type=self.which_type[:],
+                                      user_func=copy.deepcopy(self.user_func, memo_dict),
+                                      evolved_param_names=self.evolved_param_names[:],
+                                      full_init_defaults=False,
                                       **copy.deepcopy(self.evolved_param_dicts, memo_dict))
 
 

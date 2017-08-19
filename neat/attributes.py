@@ -1,6 +1,7 @@
 """Deals with the attributes (variable parameters) of genes"""
 #from __future__ import print_function
 import sys
+import warnings
 
 from copy import deepcopy
 from random import choice, gauss, random, uniform
@@ -78,7 +79,12 @@ class FloatAttribute(BaseAttribute):
 
         r = random()
         if r < mutate_rate:
-            mutate_power = getattr(config, self.mutate_power_name)
+            try:
+                mutate_power = getattr(config, self.mutate_power_name)
+            except AttributeError:
+                warnings.warn("Config {0!r} __dict__ is:\n\t".format(config)
+                              + "\n\t".join(dir(config)))
+                raise
             return self.clamp(value + gauss(0.0, mutate_power), config)
 
         replace_rate = getattr(config, self.replace_rate_name)
