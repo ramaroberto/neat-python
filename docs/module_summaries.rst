@@ -2067,9 +2067,6 @@ nn
 ---
 Handles standard neural networks, either :term:`feed-forward` or :term:`recurrent`.
 
-.. py:module:: nn.feed_forward
-  :synopsis: A straightforward feed-forward neural network NEAT implementation.
-
   .. py:function:: create(genome, config)
 
     Returns either a RecurrentNetwork or a FeedForwardNetwork for this genome, based on the genome's maybe_recurrent attribute (a conservative estimate).
@@ -2082,6 +2079,9 @@ Handles standard neural networks, either :term:`feed-forward` or :term:`recurren
     :rtype: :datamodel:`instance <index-48>`
 
     .. versionadded: 0.92-multiparam_funcs
+
+.. py:module:: nn.feed_forward
+  :synopsis: A straightforward feed-forward neural network NEAT implementation.
 
 nn.feed_forward
 ----------------------
