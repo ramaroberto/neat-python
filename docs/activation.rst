@@ -19,6 +19,7 @@ Old            New
 ======== =======================================================
 abs             multiparam_relu, multiparam_relu_softplus, or weighted_lu
 clamped      :ref:`clamped_tanh_step <clamped-tanh-step-label>`
+cube           :ref:`multiparam_pow <multiparam-pow-label>`
 gauss         :ref:`hat_gauss <hat-gauss-label>`
 hat             :ref:`hat_gauss <hat-gauss-label>`
 identity       multiparam_relu, multiparam_relu_softplus, or weighted_lu
@@ -27,6 +28,7 @@ log             :ref:`scaled_expanded_log <scaled-expanded-log-label>`, if for a
 relu            multiparam_relu, multiparam_relu_softplus, or weighted_lu
 sigmoid      :ref:`multiparam_sigmoid <multiparam-sigmoid-label>`
 softplus      :ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`
+square        :ref:`multiparam_pow <multiparam-pow-label>`
 tanh           :ref:`clamped_tanh_step <clamped-tanh-step-label>`
 ======== =======================================================
 
@@ -289,3 +291,12 @@ multiparam_log_inv
 .. figure:: activation-multiparam_log_inv.png
     :scale: 100 %
     :alt: Above 0.0, equivalent to scaled_expanded_log with a+1.0; below, weighted mean with inv of -1*x.
+
+.. _multiparam-pow-label:
+
+multiparam_pow
+^^^^^^^^^^^^^^^^^^^^
+
+.. figure:: activation-multiparam_pow.png
+    :scale: 100 %
+    :alt: Above a=1, pow(z, a); below 1, pow(z, pow(2,(a-1.0))

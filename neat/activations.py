@@ -249,6 +249,11 @@ def multiparam_tanh_log1p_activation(z, a, b):
 
     return tanh_part+other_part
 
+def multiparam_pow_activation(z, a):
+    if a < 1.0:
+        a = math.pow(2,(a-1.0))
+    return math.copysign(1.0,z)*math.pow(abs(z),a)
+
 class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""
     def __init__(self, multiparameterset=None):
@@ -316,6 +321,8 @@ class ActivationFunctionSet(object):
         self.add('multiparam_tanh_log1p', multiparam_tanh_log1p_activation,
                  a={'min_value':0.0, 'max_value':1.0},
                  b={'min_value':-1.0, 'max_value':1.0})
+        self.add('multiparam_pow', multiparam_pow_activation,
+                 a={'min_value':-1.0, 'max_value': 4.0})
 
 
     def add(self, name, function, **kwargs):

@@ -159,7 +159,7 @@ required for your particular implementation.
 * *fitness_min_divisor*
     The minimum divisor for determining relative fitnesses in :py:meth:`reproduction.DefaultReproduction.reproduce()`. **This defaults to 1.0,
     for backward compatibility.** Must be set to at least 0.0, for which :py:data:`NORM_EPSILON <math_util.NORM_EPSILON>` is substituted,
-    and if above 0.0 but below `sys.float_info.epsilon`, is set to that number.
+    and if above 0.0 but below `sys.float_info.epsilon`, is set to the latter.
 
 .. index:: genome
 .. index:: DefaultGenome

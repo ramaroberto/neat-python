@@ -1,12 +1,19 @@
-from __future__ import print_function
+from __future__ import print_function, division
 
 import copy
 import warnings
 
-import graphviz
-import matplotlib.pyplot as plt
-import numpy as np
+try:
+    import graphviz
+except ImportError:
+    graphviz = None
 
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
+
+import numpy as np
 
 def plot_stats(statistics, ylog=False, view=False, filename='avg_fitness.svg'):
     """ Plots the population's average and best fitness. """
