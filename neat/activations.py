@@ -131,6 +131,11 @@ def step_activation(z):
         return 1
     return z
 
+def square_wave_activation(z):
+    return step_activation(sin_activation(z))
+
+def triangle_wave_activation(z):
+    return min(1.0,max(-1.0,((2/math.pi)*math.asin(sin_activation(z)))))
 
 def multiparam_relu_activation(z, a):
     return max(z, (z*a))
@@ -254,6 +259,22 @@ def multiparam_pow_activation(z, a):
         a = math.pow(2,(a-1.0))
     return math.copysign(1.0,z)*math.pow(abs(z),a)
 
+def wave_activation(z, a):
+    _check_value_range(a, -1.0, 1.0, 'wave', 'a')
+    sin_wgt = 1.0-abs(a)
+
+    if a > 0.0:
+        to_return = ((a*triangle_wave_activation(z))
+                     +(sin_wgt*sin_activation(z)))
+    elif a < 0.0:
+        to_return = (((1-sin_wgt)*square_wave_activation(z))
+                     +(sin_wgt*sin_activation(z)))
+    else:
+        to_return = sin_activation(z)
+
+    return min(1.0,max(-1.0,to_return))
+        
+
 class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""
     def __init__(self, multiparameterset=None):
@@ -282,6 +303,8 @@ class ActivationFunctionSet(object):
         self.add('square', square_activation)
         self.add('cube', cube_activation)
         self.add('step', step_activation)
+        self.add('square_wave', square_wave_activation)
+        self.add('triangle_wave', triangle_wave_activation)
         self.add('multiparam_relu', multiparam_relu_activation,
                  a={'min_value':-1.0, 'max_value':1.0})
 ##        self.add('multiparam_elu', multiparam_elu_activation_inner,
@@ -323,6 +346,8 @@ class ActivationFunctionSet(object):
                  b={'min_value':-1.0, 'max_value':1.0})
         self.add('multiparam_pow', multiparam_pow_activation,
                  a={'min_value':-1.0, 'max_value': 4.0})
+        self.add('wave', wave_activation,
+                 a={'min_value':-1.0, 'max_value': 1.0})
 
 
     def add(self, name, function, **kwargs):

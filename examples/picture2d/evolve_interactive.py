@@ -7,6 +7,8 @@ and rendering are saved to disk.
 
 This example also demonstrates how to customize species stagnation.
 """
+from __future__ import division
+
 import math
 import os
 import pickle
@@ -39,7 +41,7 @@ class InteractiveStagnation(object):
 
     @classmethod
     def write_config(cls, f, config):
-        f.write('max_stagnation       = {}\n'.format(config['max_stagnation']))
+        f.write('max_stagnation       = {0:n}\n'.format(config['max_stagnation']))
 
     def update(self, species_set, generation):
         result = []
@@ -48,10 +50,10 @@ class InteractiveStagnation(object):
             # mark the species as improved.
             for m in s.members.values():
                 if m.fitness > 0:
-                    s.last_improved = generation
+                    s.stagnation_namespace.last_improved = generation
                     break
 
-            stagnant_time = generation - s.last_improved
+            stagnant_time = generation - s.stagnation_namespace.last_improved
             is_stagnant = stagnant_time >= self.max_stagnation
             result.append((s.key, s, is_stagnant))
 

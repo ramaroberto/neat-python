@@ -27,6 +27,7 @@ inv             :ref:`multiparam_log_inv <multiparam-log-inv-label>`, if for a C
 log             :ref:`scaled_expanded_log <scaled-expanded-log-label>`, if for a CPPN
 relu            multiparam_relu, multiparam_relu_softplus, or weighted_lu
 sigmoid      :ref:`multiparam_sigmoid <multiparam-sigmoid-label>`
+sin             :ref:`wave <wave-label>`
 softplus      :ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`
 square        :ref:`multiparam_pow <multiparam-pow-label>`
 tanh           :ref:`clamped_tanh_step <clamped-tanh-step-label>`
@@ -262,6 +263,20 @@ square
    :scale: 100 %
    :alt: square function
 
+square_wave
+^^^^^^^^^^^^^
+
+.. figure:: activation-square_wave.png
+    :scale: 100 %
+    :alt: Square wave with period matching sin activation function
+
+triangle_wave
+^^^^^^^^^^^^^
+
+.. figure:: activation-triangle_wave.png
+    :scale: 100 %
+    :alt: Triangle wave with period matching sin activation function
+
 CPPN-intended activation functions (multi-parameter)
 ---------------------------------------------------------------------------
 
@@ -272,16 +287,7 @@ hat_gauss
 
 .. figure:: activation-hat_gauss.png
     :scale: 100 %
-    :alt: Weighted average of gauss and hat functions.
-
-.. _scaled-expanded-log-label:
-
-scaled_expanded_log
-^^^^^^^^^^^^^^^^^^^^
-
-.. figure:: activation-scaled_expanded_log.png
-    :scale: 100 %
-    :alt: A version of expanded_log with variable scaling (with partially-counterbalancing weights both inside and outside the expanded_log function).
+    :alt: Weighted mean of gauss and hat functions.
 
 .. _multiparam-log-inv-label:
 
@@ -300,3 +306,21 @@ multiparam_pow
 .. figure:: activation-multiparam_pow.png
     :scale: 100 %
     :alt: Above a=1, pow(z, a); below 1, pow(z, pow(2,(a-1.0))
+
+.. _scaled-expanded-log-label:
+
+scaled_expanded_log
+^^^^^^^^^^^^^^^^^^^^
+
+.. figure:: activation-scaled_expanded_log.png
+    :scale: 100 %
+    :alt: A version of expanded_log with variable scaling (with partially-counterbalancing weights both inside and outside the expanded_log function).
+
+.. _wave-label:
+
+wave
+^^^^
+
+.. figure:: activation-wave.png
+    :scale: 100 %
+    :alt: Weighted mean of triangle_wave, sin, and square_wave activation functions.

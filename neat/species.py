@@ -179,8 +179,8 @@ class DefaultSpeciesSet(DefaultClassConfig):
             if max_num_usable < 2:
                 raise ValueError(
                     "Pop_size {0:n} is too low for effective min species size {1:n}".format(
-                        pop_size, max_num_usable))
-            max_num_usable = max(max_num_usable,2)
+                        pop_size, self.threshold_adjust_dict['min_size']))
+##            max_num_usable = max(max_num_usable,2)
             if self.species_set_config.desired_species_num > max_num_usable: # NEED TEST!
                 warnings.warn(
                     "Desired_species_num {0:n} is too high for pop_size {1:n};".format(
@@ -189,14 +189,20 @@ class DefaultSpeciesSet(DefaultClassConfig):
                 self.species_set_config.desired_species_num = max_num_usable
                 sys.stderr.flush()
             return self.species_set_config.desired_species_num
+        elif self.species_set_config.desired_species_num != 0:
+            warnings.warn(
+                "Desired_species_num of {0:n} not valid; treating as 0 (autoconfigure)".format(
+                    self.species_set_config.desired_species_num))
+            self.species_set_config.desired_species_num = 0
 
         poss_num = math.floor(pop_size/
                               self.threshold_adjust_dict['min_good_size'])
         if poss_num < 2: # NEED TEST!
             raise ValueError(
                 "Pop_size {0:n} is too low to determine desired num species;".format(pop_size)
-                + " need minimum of {0:n}".format(
-                    2*math.ceil(2/self.threshold_adjust_dict['min_good_size'])))
+                + " need minimum of {0:n} given min_good_size {1:n}".format(
+                    (3*self.threshold_adjust_dict['min_good_size']),
+                    self.threshold_adjust_dict['min_good_size'])
         return poss_num
 
     def adjust_compatibility_threshold(self, increase): # DOCUMENT!
@@ -314,6 +320,10 @@ class DefaultSpeciesSet(DefaultClassConfig):
                 self.adjust_compatibility_threshold(increase=True)
             elif len(self.species) > desired_num_species:
                 self.adjust_compatibility_threshold(increase=False)
+        elif self.species_set_config.compatibility_threshold_adjust.lower() != 'fixed':
+            raise ValueError(
+                "Unknown compatibility_threshold_adjust {!r}".format(
+                    self.species_set_config.compatibility_threshold_adjust))
 
     def get_species_id(self, individual_id):
         return self.genome_to_species[individual_id]

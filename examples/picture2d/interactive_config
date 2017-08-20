@@ -19,11 +19,11 @@ conn_delete_prob        = 0.1
 node_add_prob           = 0.1
 node_delete_prob        = 0.1
 activation_default      = random
-activation_options      = multiparam_relu clamped_tanh_step cube exp gauss hat inv log multiparam_sigmoid sin softplus square
-activation_mutate_rate  = 0.1
-aggregation_default     = sum
-aggregation_options     = sum product
-aggregation_mutate_rate = 0.1
+activation_options      = multiparam_relu_softplus clamped_tanh_step multiparam_pow hat_gauss multiparam_log_inv multiparam_sigmoid wave exp
+activation_mutate_rate  = 0.05
+aggregation_default     = sum_product
+aggregation_options     = sum_product maxabs_tmean max_median_min
+aggregation_mutate_rate = 0.05
 bias_init_mean          = 0.0
 bias_init_stdev         = 2.0
 bias_replace_rate       = 0.1
@@ -43,14 +43,18 @@ weight_max_value        = 30
 weight_min_value        = -30
 weight_init_mean        = 0.0
 weight_init_stdev       = 2.0
+weight_init_type         = uniform
 weight_mutate_rate      = 0.1
 weight_replace_rate     = 0.1
 weight_mutate_power     = 0.1
 enabled_default         = True
-enabled_mutate_rate     = 0.02
+enabled_mutate_rate     = 0.05
+enabled_rate_to_true_add = 0.05
 
 [DefaultSpeciesSet]
 compatibility_threshold = 5.0
+compatibility_threshold_adjust = number
+desired_species_num = 0
 
 [InteractiveStagnation]
 max_stagnation       = 5

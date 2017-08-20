@@ -160,6 +160,29 @@ def test_cube():
     assert activations.cube_activation(0.5) == 0.125
     assert activations.cube_activation(1.0) == 1.0
 
+def test_square_wave():
+    assert activations.square_wave_activation(-1.0) == 1.0
+    assert activations.square_wave_activation(-0.75) == 1.0
+    assert activations.square_wave_activation(-0.5) == -1.0
+    assert activations.square_wave_activation(-0.25) == -1.0
+    assert activations.square_wave_activation(0.0) == 0.0
+    assert activations.square_wave_activation(0.25) == 1.0
+    assert activations.square_wave_activation(0.5) == 1.0
+    assert activations.square_wave_activation(0.75) == -1.0
+    assert activations.square_wave_activation(1.0) == -1.0
+
+def test_triangle_wave():
+    assert activations.triangle_wave_activation(0.0) == 0.0
+    assert_almost_equal(activations.triangle_wave_activation(-0.75),
+                        -1*activations.triangle_wave_activation(0.75))
+    assert_almost_equal(activations.triangle_wave_activation(-0.5),
+                        -1*activations.triangle_wave_activation(0.5))
+    assert_almost_equal(activations.triangle_wave_activation(-0.25),
+                        -1*activations.triangle_wave_activation(0.25))
+    assert_almost_equal(activations.triangle_wave_activation(-1.0),
+                        -1*activations.triangle_wave_activation(1.0))
+
+
 def plus_activation(x):
     """ Not useful - just a check. """
     return abs(x+1)
@@ -506,6 +529,26 @@ def test_multiparam_pow():
     assert_almost_equal(activations.multiparam_pow_activation(-0.5,-1.0),
                         -1*activations.multiparam_pow_activation(0.5,-1.0))
 
+def test_wave():
+    assert activations.wave_activation(0.0,1.0) == 0.0
+    assert activations.wave_activation(0.0,0.5) == 0.0
+    assert activations.wave_activation(0.0,0.0) == 0.0
+    assert activations.wave_activation(0.0,-0.5) == 0.0
+    assert activations.wave_activation(-1.0,-1.0) == 1.0
+    assert activations.wave_activation(-0.5,-1.0) == -1.0
+    assert activations.wave_activation(0.0,-1.0) == 0.0
+    assert activations.wave_activation(0.5,-1.0) == 1.0
+    assert activations.wave_activation(1.0,-1.0) == -1.0
+    assert_almost_equal(activations.wave_activation(-0.5,1.0),-1*activations.wave_activation(0.5,1.0))
+    assert_almost_equal(activations.wave_activation(-0.5,0.5),-1*activations.wave_activation(0.5,0.5))
+    assert_almost_equal(activations.wave_activation(-0.75,0.0),-1*activations.wave_activation(0.75,0.0))
+    assert_almost_equal(activations.wave_activation(-0.5,0.0),-1*activations.wave_activation(0.5,0.0))
+    assert_almost_equal(activations.wave_activation(-0.5,-0.5),-1*activations.wave_activation(0.5,-0.5))
+    assert_almost_equal(activations.wave_activation(-1.0,1.0),-1*activations.wave_activation(1.0,1.0))
+    assert_almost_equal(activations.wave_activation(-1.0,0.5),-1*activations.wave_activation(1.0,0.5))
+    assert_almost_equal(activations.wave_activation(-0.25,0.0),-1*activations.wave_activation(0.25,0.0))
+    assert_almost_equal(activations.wave_activation(-1.0,0.0),-1*activations.wave_activation(1.0,0.0))
+    assert_almost_equal(activations.wave_activation(-1.0,-0.5),-1*activations.wave_activation(1.0,-0.5))
 
 def test_function_set():
     m = multiparameter.MultiParameterSet('activation')
@@ -527,6 +570,8 @@ def test_function_set():
     assert s.get('hat') is not None
     assert s.get('square') is not None
     assert s.get('cube') is not None
+    assert s.get('square_wave') is not None
+    assert s.get('triangle_wave') is not None
     assert m.get_MPF('multiparam_relu', 'activation') is not None
     assert m.get_MPF('multiparam_relu_softplus', 'activation') is not None
     assert m.get_MPF('multiparam_elu', 'activation') is not None
@@ -539,6 +584,7 @@ def test_function_set():
     assert m.get_MPF('scaled_log1p', 'activation') is not None
     assert m.get_MPF('multiparam_tanh_log1p', 'activation') is not None
     assert m.get_MPF('multiparam_pow', 'activation') is not None
+    assert m.get_MPF('wave', 'activation') is not None
 
     assert s.is_valid('sigmoid')
     assert s.is_valid('tanh')
@@ -557,6 +603,8 @@ def test_function_set():
     assert s.is_valid('hat')
     assert s.is_valid('square')
     assert s.is_valid('cube')
+    assert s.is_valid('square_wave')
+    assert s.is_valid('triangle_wave')
     assert s.is_valid('multiparam_relu')
     assert s.is_valid('multiparam_relu_softplus')
     assert s.is_valid('multiparam_elu')
@@ -569,6 +617,7 @@ def test_function_set():
     assert s.is_valid('scaled_log1p')
     assert s.is_valid('multiparam_tanh_log1p')
     assert s.is_valid('multiparam_pow')
+    assert m.is_valid('wave')
 
     assert not s.is_valid('foo')
 
@@ -689,6 +738,8 @@ if __name__ == '__main__':
     test_hat()
     test_square()
     test_cube()
+    test_square_wave()
+    test_triangle_wave()
     test_multiparam_relu()
     test_multiparam_elu()
     test_weighted_lu()
@@ -701,6 +752,7 @@ if __name__ == '__main__':
     test_scaled_log1p()
     test_multiparam_tanh_log1p()
     test_multiparam_pow()
+    test_wave()
     test_function_set()
     test_get_MPF()
     test_get_Evolved_MPF_simple()
