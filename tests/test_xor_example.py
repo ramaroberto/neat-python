@@ -7,7 +7,7 @@ import neat
 
 warnings.simplefilter('default')
 
-MULTIPARAM_ONLY = True
+MULTIPARAM_ONLY = False
 
 def test_xor_example_multiparam_relu():
     test_xor_example(activation_default='multiparam_relu',
@@ -60,6 +60,8 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
 
     if uniform_weights:
         config.genome_config.weight_init_type = 'uniform'
+    else:
+        config.species_set_config.compatibility_threshold_adjust = 'number'
 
     if activation_default is not None:
         config.genome_config.activation_default = activation_default
