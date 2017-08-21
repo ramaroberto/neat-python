@@ -8,7 +8,7 @@ import warnings
 from argparse import Namespace
 from itertools import count
 
-from neat.math_util import mean, stdev
+from neat.math_util import mean, stdev, tmean
 from neat.six_util import iteritems, iterkeys, itervalues
 from neat.config import ConfigParameter, DefaultClassConfig
 
