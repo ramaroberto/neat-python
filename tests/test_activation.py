@@ -617,7 +617,7 @@ def test_function_set():
     assert s.is_valid('scaled_log1p')
     assert s.is_valid('multiparam_tanh_log1p')
     assert s.is_valid('multiparam_pow')
-    assert m.is_valid('wave')
+    assert s.is_valid('wave')
 
     assert not s.is_valid('foo')
 
