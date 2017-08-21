@@ -25,7 +25,7 @@ class Species(object):
         self.stagnation_namespace.last_improved = generation
         self.stagnation_namespace.fitness_history = []
 
-    def getAdjustedFitness(self):
+    def getAdjustedFitness(self): # pragma: no cover
         """
         Backwards compatibility wrapper for species.adjusted_fitness;
         use species.reproduction_namespace.adjusted_fitness instead.
@@ -34,7 +34,7 @@ class Species(object):
                       DeprecationWarning, stacklevel=2)
         return self.reproduction_namespace.adjusted_fitness
 
-    def setAdjustedFitness(self,value):
+    def setAdjustedFitness(self,value): # pragma: no cover
         if not isinstance(value, float):
             raise TypeError(
                 "Adjusted_fitness ({0!r}) should be a float, not {1!s}".format(
@@ -43,7 +43,7 @@ class Species(object):
                       DeprecationWarning, stacklevel=2)
         self.reproduction_namespace.adjusted_fitness = value
 
-    def delAdjustedFitness(self):
+    def delAdjustedFitness(self): # pragma: no cover
         warnings.warn("Use species.reproduction_namespace for adjusted_fitness",
                       DeprecationWarning, stacklevel=2)
         self.reproduction_namespace.adjusted_fitness = None
@@ -52,7 +52,7 @@ class Species(object):
                                 setAdjustedFitness,
                                 delAdjustedFitness)
 
-    def getFitness(self):
+    def getFitness(self): # pragma: no cover
         """
         Backwards compatibility wrapper for species.fitness;
         use species.stagnation_namespace.fitness instead.
@@ -61,7 +61,7 @@ class Species(object):
                       DeprecationWarning, stacklevel=2)
         return self.stagnation_namespace.fitness
 
-    def setFitness(self,value):
+    def setFitness(self,value): # pragma: no cover
         if not isinstance(value, float):
             raise TypeError(
                 "Fitness ({0!r}) should be a float, not {1!s}".format(
@@ -70,7 +70,7 @@ class Species(object):
                       DeprecationWarning, stacklevel=2)
         self.stagnation_namespace.fitness = value
 
-    def delFitness(self):
+    def delFitness(self): # pragma: no cover
         warnings.warn("Use species.stagnation_namespace for fitness",
                       DeprecationWarning, stacklevel=2)
         self.stagnation_namespace.fitness = None
@@ -79,7 +79,7 @@ class Species(object):
                        setFitness,
                        delFitness)
 
-    def getLastImproved(self):
+    def getLastImproved(self): # pragma: no cover
         """
         Backwards compatibility wrapper for species.last_improved;
         use species.stagnation_namespace.last_improved instead.
@@ -88,7 +88,7 @@ class Species(object):
                       DeprecationWarning, stacklevel=2)
         return self.stagnation_namespace.last_improved
 
-    def setLastImproved(self, value):
+    def setLastImproved(self, value): # pragma: no cover
         if not isinstance(value, int):
             raise TypeError(
                 "Last_improved ({0!r}) should be an int, not {1!s}".format(
@@ -100,7 +100,7 @@ class Species(object):
                              setLastImproved)
 
     @property
-    def fitness_history(self):
+    def fitness_history(self): # pragma: no cover
         """Sole method available for this one, given is a list..."""
         warnings.warn("Use species.stagnation_namespace for fitness_history",
                       stacklevel=2)

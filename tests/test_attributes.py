@@ -156,8 +156,8 @@ def test_multiparam_repro(config_file='test_configuration6'):
     assert a1_dict['a'] == a2_dict['a'], "Clone has {0!r} but original has {1!r}".format(
         a1_dict, a2_dict)
 
-##    print("g1: {!r} at {!s}".format(g1.nodes[0].activation,id(g1.nodes[0].activation)))
-##    print("g2: {!r} at {!s}".format(g2.nodes[0].activation,id(g2.nodes[0].activation)))
+    print("g1: {!r} at {!s}".format(g1.nodes[0].activation,id(g1.nodes[0].activation)))
+    print("g2: {!r} at {!s}".format(g2.nodes[0].activation,id(g2.nodes[0].activation)))
 
     count = 0
 
