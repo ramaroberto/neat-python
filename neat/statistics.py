@@ -4,8 +4,9 @@ the most-fit genomes and information on genome/species fitness and species sizes
 """
 import copy
 import csv
+import functools
 
-from neat.math_util import mean, stdev, median2
+from neat.math_util import mean, stdev, median2, tmean
 from neat.reporting import BaseReporter
 from neat.six_util import iteritems
 
@@ -58,6 +59,10 @@ class StatisticsReporter(BaseReporter):
     def get_fitness_median(self):
         """Get the per-generation median fitness."""
         return self.get_fitness_stat(median2)
+
+    def get_fitness_tmean(self, trim=0.25): # TEST NEEDED
+        """Get the per-generation trimmed fitness."""
+        return self.get_fitness_stat(functools.partial(tmean,trim=trim))
 
 ##    def get_average_cross_validation_fitness(self): # pragma: no cover
 ##        """Get the per-generation average cross_validation fitness."""

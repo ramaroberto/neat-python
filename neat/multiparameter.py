@@ -15,6 +15,7 @@ from math import sqrt
 
 from neat.attributes import FloatAttribute, BoolAttribute
 from neat.math_util import NORM_EPSILON
+from neat.repr_util import repr_extract_function_name
 from neat.six_util import iteritems, iterkeys
 
 class EvolvedMultiParameterFunction(object):
@@ -33,24 +34,23 @@ class EvolvedMultiParameterFunction(object):
         self.evolved_param_attributes = multi_param_func.evolved_param_attributes
         self.evolved_param_dicts = multi_param_func.evolved_param_dicts
         self.current_param_values = {}
-        self.instance_name = ''
 
         self.init_value()
 
-    def __set_instance_name(self):
-        self.instance_name = self.name + '(' + ','.join([str(self.current_param_values[n])
-                                                         for n in self.evolved_param_names]) + ')'
-
+    @property
+    def instance_name(self):
+        return self.name + '(' + ','.join([self.user_func.__code__.co_varnames[0]]
+                                          + [str(self.current_param_values[n])
+                                             for n in self.evolved_param_names]) + ')'
+    
     def init_value(self, ignored_config=None):
         for n, m in iteritems(self.evolved_param_attributes):
             self.current_param_values[n] = m.init_value(self.multi_param_func)
-        self.__set_instance_name()
 
     def mutate_value(self, ignored_config=None):
         for n, m in iteritems(self.evolved_param_attributes):
             self.current_param_values[n] = m.mutate_value(self.current_param_values[n],
                                                           self.multi_param_func)
-        self.__set_instance_name()
 
     def set_values(self, **param_values): # TEST NEEDED!
         for n, val in iteritems(param_values):
@@ -60,7 +60,12 @@ class EvolvedMultiParameterFunction(object):
                 raise LookupError(
                     "Parameter name {0!r} (val {1!r}) not among known ({2!s}) for {3!s}".format(
                         n, val, self.evolved_param_names, self.name))
-        self.__set_instance_name()
+
+    def get_values(self, n=None):
+        if n is not None:
+            return self.current_param_values[n]
+        else:
+            return self.current_param_values # may want to return a copy...
 
     def __str__(self):
         return self.instance_name
@@ -85,8 +90,13 @@ class EvolvedMultiParameterFunction(object):
                 diff = abs(self.current_param_values[n] -
                            other.current_param_values[n])
                 if diff:
-                    this_diff = diff / max(NORM_EPSILON,
-                                           abs(param_dict['max_value'] - param_dict['min_value']))
+                    div_by = max(NORM_EPSILON,
+                                 abs(param_dict['max_value'] - param_dict['min_value']))
+                    this_diff = diff / div_by
+                    if this_diff > 1.0:
+                        raise RuntimeError(
+                            "This_diff {0:n} over 1.0 (diff {1:n}, div_by {2:n})".format(
+                                this_diff, diff, div_by))
                     max_diff = max(max_diff, this_diff)
             elif param_dict['param_type'] == 'bool':
                 if self.current_param_values[n] != other.current_param_values[n]:
@@ -97,27 +107,17 @@ class EvolvedMultiParameterFunction(object):
         return max_diff
 
     def copy(self):
-        # I am uncertain about this one - deepcopy unfortunately takes forever, though.
         return copy.copy(self)
 
     def __copy__(self):
-        other = EvolvedMultiParameterFunction(self.name[:], self.multi_param_func)
-        for n in self.evolved_param_names:
-            if isinstance(self.current_param_values[n], (collections.Container,
-                                                         collections.Iterable,
-                                                         collections.Callable)):
-                other.current_param_values[n] = copy.deepcopy(self.current_param_values[n])
-            else:
-                other.current_param_values[n] = copy.copy(self.current_param_values[n])
-        other.instance_name = self.instance_name[:]
+        other = EvolvedMultiParameterFunction(self.name[:], copy.copy(self.multi_param_func))
+        other.current_param_values = copy.deepcopy(self.current_param_values)
         return other
 
     def __deepcopy__(self, memo_dict):
         other = EvolvedMultiParameterFunction(self.name[:],
                                               copy.deepcopy(self.multi_param_func,memo_dict))
-        for n in self.evolved_param_names:
-            other.current_param_values[n] = copy.deepcopy(self.current_param_values[n],memo_dict)
-        other.instance_name = self.instance_name[:]
+        other.current_param_values = copy.deepcopy(self.current_param_values,memo_dict)
         return other
 
     def get_func(self):
@@ -125,6 +125,10 @@ class EvolvedMultiParameterFunction(object):
         setattr(partial, '__name__', self.instance_name)
         if hasattr(self.user_func, '__doc__'):
             setattr(partial, '__doc__', self.user_func.__doc__)
+        if hasattr(self.user_func, '__module__'):
+            setattr(partial, '__module__', self.user_func.__module__)
+        else:
+            setattr(partial, '__module__', self.__module__)
         return partial
 
 class MultiParameterFunction(object):
@@ -255,10 +259,10 @@ class MultiParameterFunction(object):
 
     def __repr__(self): # TEST NEEDED! Should be able to duplicate by using this as an init...
         to_return_list = []
-        to_return_list[0] = 'orig_name=' + repr(self.orig_name)
-        to_return_list[1] = 'which_type=' + repr(self.which_type)
-        to_return_list[2] = 'user_func=' + str(self.user_func)
-        to_return_list[3] = 'evolved_param_names=' + repr(self.evolved_param_names)
+        to_return_list.append('orig_name=' + repr(self.orig_name))
+        to_return_list.append('which_type=' + repr(self.which_type))
+        to_return_list.append('user_func=' + repr_extract_function_name(self.user_func))
+        to_return_list.append('evolved_param_names=' + repr(self.evolved_param_names))
         for n in self.evolved_param_names:
             to_return_list.append(repr(n) + '=' + repr(self.evolved_param_dicts[n]))
         return 'MultiParameterFunction(' + ",".join(to_return_list) + ')'
@@ -276,7 +280,8 @@ class MultiParameterFunction(object):
     def __deepcopy__(self, memo_dict):
         return MultiParameterFunction(name=self.orig_name[:], which_type=self.which_type[:],
                                       user_func=copy.deepcopy(self.user_func, memo_dict),
-                                      evolved_param_names=self.evolved_param_names[:],
+                                      evolved_param_names=copy.deepcopy(self.evolved_param_names,
+                                                                        memo_dict),
                                       full_init_defaults=False,
                                       **copy.deepcopy(self.evolved_param_dicts, memo_dict))
 
@@ -365,6 +370,10 @@ class MultiParameterSet(object):
 
         param_values = name[(param_start+1):(len(name)-1)].split(',')
 
+        if len(multiparam_func.evolved_param_names) == (len(param_values)-1):
+            if param_values[0] in ('x','z',multiparam_func.user_func.__code__.co_varnames[0]):
+                param_values=param_values[1:]
+
         if len(multiparam_func.evolved_param_names) < len(param_values):
             raise RuntimeError(
                 "Too many ({0:n}) param_values in name {1!r} - should be max {2:n}".format(
@@ -430,14 +439,51 @@ class MultiParameterSet(object):
                                        format(which_type,func_name,name))
         multiparam_func = self.multiparam_func_dict[which_type][func_name]
 
-        param_nums = list(map(float, name[(param_start+1):(len(name)-1)].split(',')))
+        param_values = name[(param_start+1):(len(name)-1)].split(',')
 
-        params = dict(zip(multiparam_func.evolved_param_names, param_nums))
+        if len(param_values) == (len(multiparam_func.evolved_param_names)+1):
+            if param_values[0] in ('x','z',multiparam_func.user_func.__code__.co_varnames[0]):
+                param_values = param_values[1:]
+
+        if len(multiparam_func.evolved_param_names) < len(param_values):
+            raise RuntimeError(
+                "Too many ({0:n}) param_values in name {1!r} - should be max {2:n}".format(
+                    len(param_values), name, len(multiparam_func.evolved_param_names)))
+        elif len(multiparam_func.evolved_param_names) > len(param_values):
+            warnings.warn(
+                "{0!r}: Only {1:n} param_values, but function takes {2:n}".format(
+                    name, len(param_values), len(multiparam_func.evolved_param_names)))
+
+        init_params = dict(zip(multiparam_func.evolved_param_names, param_values))
+        params = {}
+        for name2 in multiparam_func.evolved_param_names:
+            value = init_params[name2]
+            if multiparam_func.evolved_param_dicts[name2]['param_type'] == 'float':
+                params[name2] = float(value)
+            elif multiparam_func.evolved_param_dicts[name2]['param_type'] == 'int':
+                params[name2] = int(value)
+            elif multiparam_func.evolved_param_dicts[name2]['param_type'] == 'bool':
+                if value.lower() in ('false','off','0'):
+                    params[name2] = False
+                elif value.lower() in ('true', 'on', '1'):
+                    params[name2] = True
+                else:
+                    params[name2] = bool(value)
+            else:
+                raise RuntimeError(
+                    "{0!s}: Uninterpretable EMPF {1!s} param_type {2!r} for {3!r}".format(
+                        name, name2,
+                        multiparam_func.evolved_param_dicts[name2]['param_type'],
+                        multiparam_func))
 
         partial = functools.partial(multiparam_func.user_func, **params)
         setattr(partial, '__name__', name)
         if hasattr(multiparam_func.user_func, '__doc__'):
             setattr(partial, '__doc__', multiparam_func.user_func.__doc__)
+        if hasattr(multiparam_func.user_func, '__module__'):
+            setattr(partial, '__module__', multiparam_func.user_func.__module__)
+        else:
+            setattr(partial, '__module__', self.__module__)
         return partial
 
     def add_func(self, name, user_func, which_type, **kwargs):

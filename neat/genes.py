@@ -18,7 +18,7 @@ class BaseGene(object):
 
     def __str__(self):
         attrib = ['key'] + [a.name for a in self._gene_attributes]
-        attrib = ['{0}={1}'.format(a, getattr(self, a)) for a in attrib]
+        attrib = ['{0}={1}'.format(a, repr(getattr(self, a))) for a in attrib]
         return '{0}({1})'.format(self.__class__.__name__, ", ".join(attrib))
 
     def __lt__(self, other):
@@ -55,10 +55,11 @@ class BaseGene(object):
     def copy(self):
         new_gene = self.__class__(self.key)
         for a in self._gene_attributes:
-            if hasattr(a, 'copy'):
-                setattr(new_gene, a.name, a.copy())
+            value = getattr(self, a.name)
+            if hasattr(value, 'copy'):
+                setattr(new_gene, a.name, value.copy())
             else:
-                setattr(new_gene, a.name, getattr(self, a.name))
+                setattr(new_gene, a.name, value)
         return new_gene
 
     def __copy__(self):
@@ -73,10 +74,11 @@ class BaseGene(object):
         new_gene = self.__class__(self.key)
         for a in self._gene_attributes:
             if random() > 0.5:
-                if hasattr(a, 'copy'):
-                    setattr(new_gene, a.name, a.copy())
+                value = getattr(self, a.name)
+                if hasattr(value, 'copy'):
+                    setattr(new_gene, a.name, value.copy())
                 else:
-                    setattr(new_gene, a.name, getattr(self, a.name))
+                    setattr(new_gene, a.name, value)
             else:
                 gene2_attr = getattr(gene2, a.name)
                 if hasattr(gene2_attr, 'copy'):

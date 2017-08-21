@@ -87,13 +87,14 @@ def compute_fitness(genome, net, episodes, min_reward, max_reward):
 
 
 class PooledErrorCompute(object):
-    def __init__(self):
+    def __init__(self, control_random=False):
         if NUM_CORES < 2:
             self.pool = None
         else:
             self.pool = multiprocessing.Pool(NUM_CORES)
         self.test_episodes = []
         self.generation = 0
+        self.control_random = control_random
 
         self.min_reward = -200
         self.max_reward = 200
@@ -103,7 +104,10 @@ class PooledErrorCompute(object):
 
     def simulate(self, nets):
         scores = []
+        use_seed = env.seed()
         for ignored_genome, net in nets:
+            if self.control_random:
+                env.seed(seed=use_seed)
             observation = env.reset()
             step = 0
             data = []
@@ -152,6 +156,7 @@ class PooledErrorCompute(object):
         # Assign a composite fitness to each genome; genomes can make
         # progress either by improving their total reward or by making
         # more accurate reward estimates.
+        # TODO: I don't think the above comment is what is happening...
         print("Evaluating {0:n} test episodes".format(len(self.test_episodes)))
         if self.pool is None:
             for genome, net in nets:
@@ -232,6 +237,7 @@ def run():
                     step += 1
                     # Use the total reward estimates from all three networks to
                     # determine the best action given the current state.
+                    # TODO: Use softmax on outputs and add up to determine action
                     votes = np.zeros((4,))
                     for n in best_networks:
                         output = n.activate(observation)

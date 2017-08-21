@@ -1,9 +1,9 @@
 """Deals with the attributes (variable parameters) of genes"""
 #from __future__ import print_function
+import copy
 import sys
 import warnings
 
-from copy import deepcopy
 from random import choice, gauss, random, uniform
 
 from neat.config import ConfigParameter
@@ -19,7 +19,7 @@ class BaseAttribute(object):
     """Superclass for the type-specialized attribute subclasses, used by genes."""
     def __init__(self, name, **default_dict):
         self.name = name
-        self._config_items = deepcopy(self._config_items_init)
+        self._config_items = copy.deepcopy(self._config_items_init)
         for n, default in iteritems(default_dict):
             self._config_items[n] = [self._config_items[n][0], default]
         for n in iterkeys(self._config_items):
@@ -178,7 +178,10 @@ class FuncAttribute(BaseAttribute):
     Handle attributes that may be simple strings
     or may be functions needing multiparameter handling.
     """
-    _config_items_init = deepcopy(StringAttribute._config_items_init)
+    _config_items_init = copy.deepcopy(StringAttribute._config_items_init)
+
+##    def copy(self):
+##        return copy.deepcopy(self)
 
     def init_value(self, config):
         default = getattr(config, self.default_name)

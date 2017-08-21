@@ -1,4 +1,6 @@
 """Divides the population into species based on genomic distances."""
+from __future__ import division
+
 import math
 import sys
 import warnings
@@ -171,7 +173,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
                                   [ConfigParameter('compatibility_threshold', float),
                                    ConfigParameter('compatibility_threshold_adjust',
                                                    str, 'fixed'),
-                                   ConfigParameter('desired_species_num', int, 0)])
+                                   ConfigParameter('desired_species_num', float, 0.0)])
 
     def find_desired_num_species(self, pop_size): # DOCUMENT!
         if self.species_set_config.desired_species_num > 1: # NEED TEST!
@@ -195,14 +197,13 @@ class DefaultSpeciesSet(DefaultClassConfig):
                     self.species_set_config.desired_species_num))
             self.species_set_config.desired_species_num = 0
 
-        poss_num = math.floor(pop_size/
-                              self.threshold_adjust_dict['min_good_size'])
+        poss_num = pop_size/self.threshold_adjust_dict['min_good_size']
         if poss_num < 2: # NEED TEST!
             raise ValueError(
                 "Pop_size {0:n} is too low to determine desired num species;".format(pop_size)
                 + " need minimum of {0:n} given min_good_size {1:n}".format(
-                    (3*self.threshold_adjust_dict['min_good_size']),
-                    self.threshold_adjust_dict['min_good_size'])
+                    (2*self.threshold_adjust_dict['min_good_size']),
+                    self.threshold_adjust_dict['min_good_size']))
         return poss_num
 
     def adjust_compatibility_threshold(self, increase): # DOCUMENT!
@@ -310,15 +311,17 @@ class DefaultSpeciesSet(DefaultClassConfig):
             s.update(population[rid], member_dict)
 
         gdmean = mean(itervalues(distances.distances))
+        gdtmean = tmean(itervalues(distances.distances))
         gdstdev = stdev(itervalues(distances.distances))
         self.reporters.info(
-            'Mean genetic distance {0:.3f}, standard deviation {1:.3f}'.format(gdmean, gdstdev))
+            'Mean genetic distance {0:.3f}, 50% trimmed mean {0:.3f}, standard deviation {1:.3f}'.format(
+                gdmean, gdtmean, gdstdev))
 
         if self.species_set_config.compatibility_threshold_adjust.lower() == 'number':
             desired_num_species = self.find_desired_num_species(len(population))
-            if len(self.species) < desired_num_species:
+            if len(self.species) < math.floor(desired_num_species):
                 self.adjust_compatibility_threshold(increase=True)
-            elif len(self.species) > desired_num_species:
+            elif len(self.species) > math.ceil(desired_num_species):
                 self.adjust_compatibility_threshold(increase=False)
         elif self.species_set_config.compatibility_threshold_adjust.lower() != 'fixed':
             raise ValueError(
