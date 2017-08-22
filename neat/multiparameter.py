@@ -93,7 +93,7 @@ class EvolvedMultiParameterFunction(object):
                     div_by = max(NORM_EPSILON,
                                  abs(param_dict['max_value'] - param_dict['min_value']))
                     this_diff = diff / div_by
-                    if this_diff > 1.0:
+                    if this_diff > 1.0: # pragma: no cover
                         raise RuntimeError(
                             "This_diff {0:n} over 1.0 (diff {1:n}, div_by {2:n})".format(
                                 this_diff, diff, div_by))
@@ -199,6 +199,7 @@ class MultiParameterFunction(object):
             del param_dict2['param_type']
 
             self.evolved_param_attributes[n] = FloatAttribute(name=tmp_name, # TODO: IntAttribute
+                                                              default_ok=True,
                                                               **param_dict2)
         elif param_dict['param_type'] == 'bool':
             if full:
@@ -209,6 +210,7 @@ class MultiParameterFunction(object):
             del param_dict2['param_type']
 
             self.evolved_param_attributes[n] = BoolAttribute(name=tmp_name,
+                                                             default_ok=True,
                                                              **param_dict2)
         else:
             raise ValueError(
@@ -239,9 +241,16 @@ class MultiParameterFunction(object):
                 if isinstance(del_param_dicts[n], (collections.Sequence,collections.Iterable)):
                     for x in del_param_dicts[n]:
                         del new.evolved_param_dicts[n][x]
+                elif del_param_dicts[n] is None:
+                    del new.evolved_param_dicts[n]
+                    new.evolved_param_dicts[n] = {}
                 elif isinstance(del_param_dicts[n], collections.Hashable):
                     del new.evolved_param_dicts[n][del_param_dicts[n]]
-                else:
+                else: # pragma: no cover
+                    warnings.warn(
+                        "Deleting all evolved_param_dicts[{0!r}] due to unhashable {1!r}".format(
+                            n, del_param_dicts[n]),
+                        RuntimeWarning)
                     del new.evolved_param_dicts[n]
                     new.evolved_param_dicts[n] = {}
                 n_done.add(n)
@@ -261,7 +270,8 @@ class MultiParameterFunction(object):
         to_return_list = []
         to_return_list.append('orig_name=' + repr(self.orig_name))
         to_return_list.append('which_type=' + repr(self.which_type))
-        to_return_list.append('user_func=' + repr_extract_function_name(self.user_func))
+        to_return_list.append('user_func=' + repr_extract_function_name(self.user_func,
+                                                                        with_module=True))
         to_return_list.append('evolved_param_names=' + repr(self.evolved_param_names))
         for n in self.evolved_param_names:
             to_return_list.append(repr(n) + '=' + repr(self.evolved_param_dicts[n]))

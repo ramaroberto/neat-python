@@ -14,18 +14,24 @@ from neat.six_util import iterkeys
 
 class ConfigParameter(object):
     """Contains information about one configuration item."""
-    def __init__(self, name, value_type, default=None):
+    def __init__(self, name, value_type, default=None, default_ok=False):
         self.name = name
         self.value_type = value_type
         self.default = default
+        self.default_ok = default_ok
+        self.used_default = False
 
     def __repr__(self):
         if self.default is None:
-            return "ConfigParameter({!r}, {!r})".format(self.name,
-                                                        self.value_type)
-        return "ConfigParameter({!r}, {!r}, {!r})".format(self.name,
-                                                          self.value_type,
-                                                          self.default)
+            return "ConfigParameter({0!r}, {1!r})".format(self.name,
+                                                          self.value_type)
+        if self.default_ok:
+            return "ConfigParameter({0!r}, {1!r}, {2!r}, default_ok=True)".format(self.name,
+                                                                                  self.value_type,
+                                                                                  self.default)
+        return "ConfigParameter({0!r}, {1!r}, {2!r})".format(self.name,
+                                                             self.value_type,
+                                                             self.default)
 
     def parse(self, section, config_parser):
         if int == self.value_type:
@@ -53,8 +59,11 @@ class ConfigParameter(object):
             if self.default is None:
                 raise RuntimeError('Missing configuration item: ' + self.name)
             else:
-                warnings.warn("Using default {!r} for '{!s}'".format(self.default, self.name),
-                              DeprecationWarning)
+                if not self.default_ok:
+                    warnings.warn("Using default {0!r} for '{1}'".format(
+                        self.default, self.name),
+                                  DeprecationWarning)
+                self.used_default = True
                 if (str != self.value_type) and isinstance(self.default, self.value_type):
                     return self.default
                 else:
@@ -78,7 +87,7 @@ class ConfigParameter(object):
                 return value.split(" ")
         except Exception:
             raise RuntimeError(
-                "Error interpreting config item '{}' with value {!r} and type {}".format(
+                "Error interpreting config item '{0}' with value {1!r} and type {2}".format(
                 self.name, value, self.value_type))
 
         raise RuntimeError("Unexpected configuration type: " + repr(self.value_type))
@@ -91,13 +100,38 @@ class ConfigParameter(object):
 
 def write_pretty_params(f, config, params):
     param_names = [p.name for p in params]
-    longest_name = max(len(name) for name in param_names)
+    longest_name_len = max(len(name) for name in param_names)
     param_names.sort()
     params = dict((p.name, p) for p in params)
 
-    for name in param_names:
-        p = params[name]
-        f.write('{} = {}\n'.format(p.name.ljust(longest_name), p.format(getattr(config, p.name))))
+    param_names_used_default = [name for name in param_names
+                                if (params[name].used_default
+                                    and not params[name].default_ok)]
+    param_names_default_ok = [name for name in param_names
+                              if (params[name].used_default
+                                  and params[name].default_ok)]
+    param_names_not_defaulted = [name for name in param_names
+                                 if not params[name].used_default]
+
+    if param_names_not_defaulted:
+        for name in param_names_not_defaulted:
+            p = params[name]
+            f.write('{} = {}\n'.format(p.name.ljust(longest_name_len),
+                                       p.format(getattr(config, p.name))))
+
+    if param_names_default_ok:
+        f.write('\n# Used expected default:\n')
+        for name in param_names_default_ok:
+            p = params[name]
+            f.write('{} = {}\n'.format(p.name.ljust(longest_name_len),
+                                       p.format(getattr(config, p.name))))
+
+    if param_names_used_default:
+        f.write('\n# Used possibly-unexpected default:\n')
+        for name in param_names_used_default:
+            p = params[name]
+            f.write('{} = {}\n'.format(p.name.ljust(longest_name_len),
+                                       p.format(getattr(config, p.name))))
 
 
 class UnknownConfigItemError(NameError):
@@ -173,10 +207,19 @@ class Config(object):
                     setattr(self, p.name, p.parse('NEAT', parameters))
                     if getattr(self, p.name) is None:
                         setattr(self, p.name, p.default)
+                        p.used_default=True
+                        if not p.default_ok:
+                            warnings.warn("Using default {!r} for '{!s}'".format(
+                                p.default, p.name),
+                                          DeprecationWarning)
                 except (Error, RuntimeError):
                     setattr(self, p.name, p.default)
-                    warnings.warn("Using default {!r} for '{!s}'".format(p.default, p.name),
-                                  DeprecationWarning)
+                    p.used_default = True
+                    if not p.default_ok:
+                        warnings.warn("Using default {!r} for '{!s}'".format(p.default, p.name),
+                                      DeprecationWarning)
+                if getattr(self, p.name) != p.default:
+                    p.used_default = False # Why needed???
             param_list_names.append(p.name)
         param_dict = dict(parameters.items('NEAT'))
         unknown_list = [x for x in iterkeys(param_dict) if x not in param_list_names]

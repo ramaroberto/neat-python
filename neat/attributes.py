@@ -17,11 +17,16 @@ if sys.version_info.major > 2:
 
 class BaseAttribute(object):
     """Superclass for the type-specialized attribute subclasses, used by genes."""
-    def __init__(self, name, **default_dict):
+    def __init__(self, name, default_ok=False, **default_dict):
         self.name = name
         self._config_items = copy.deepcopy(self._config_items_init)
+        self.default_ok = {}
+        for n in iterkeys(self._config_items):
+            self.default_ok[n] = False
         for n, default in iteritems(default_dict):
             self._config_items[n] = [self._config_items[n][0], default]
+            if default_ok and (default is not None):
+                self.default_ok[n] = True
         for n in iterkeys(self._config_items):
             setattr(self, n + "_name", self.config_item_name(n))
 
@@ -31,7 +36,8 @@ class BaseAttribute(object):
     def get_config_params(self):
         return [ConfigParameter(self.config_item_name(n),
                                 self._config_items[n][0],
-                                self._config_items[n][1])
+                                default=self._config_items[n][1],
+                                default_ok=self.default_ok[n])
                 for n in iterkeys(self._config_items)]
 
 class FloatAttribute(BaseAttribute):
@@ -46,7 +52,7 @@ class FloatAttribute(BaseAttribute):
                           "mutate_rate": [float, None],
                           "mutate_power": [float, None],
                           "max_value": [float, None],
-                           "min_value": [float, None]}
+                          "min_value": [float, None]}
 
     def clamp(self, value, config):
         min_value = getattr(config, self.min_value_name)

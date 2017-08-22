@@ -42,7 +42,8 @@ class DefaultGenomeConfig(object):
                         ConfigParameter('node_add_prob', float),
                         ConfigParameter('node_delete_prob', float),
                         ConfigParameter('single_structural_mutation', bool, False),
-                        ConfigParameter('structural_mutation_surer', str, 'default'),
+                        ConfigParameter('structural_mutation_surer',
+                                        str, 'default', default_ok=True),
                         ConfigParameter('initial_connection', str, 'unconnected')]
 
         # Gather configuration data from the gene classes.

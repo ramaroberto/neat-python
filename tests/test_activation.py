@@ -182,6 +182,16 @@ def test_triangle_wave():
     assert_almost_equal(activations.triangle_wave_activation(-1.0),
                         -1*activations.triangle_wave_activation(1.0))
 
+def test_rectangular():
+    assert activations.rectangular_activation(-1.0) == 0.0
+    assert activations.rectangular_activation(-0.75) == 0.0
+    assert activations.rectangular_activation(-0.5) == 0.5
+    assert activations.rectangular_activation(-0.25) == 1.0
+    assert activations.rectangular_activation(0.0) == 1.0
+    assert activations.rectangular_activation(0.25) == 1.0
+    assert activations.rectangular_activation(0.5) == 0.5
+    assert activations.rectangular_activation(0.75) == 0.0
+    assert activations.rectangular_activation(1.0) == 0.0
 
 def plus_activation(x):
     """ Not useful - just a check. """
@@ -371,16 +381,35 @@ def test_multiparam_sigmoid():
     assert activations.multiparam_sigmoid_activation(0.0,-1.0) == 0.5
     assert activations.multiparam_sigmoid_activation(1.0,-1.0) == 1.0
 
-def test_hat_gauss():
-    assert activations.hat_gauss_activation(-1.0,1.0) == 0.0
-    assert activations.hat_gauss_activation(0.0,1.0) == 1.0
-    assert activations.hat_gauss_activation(1.0,1.0) == 0.0
-    for m in [0.0,0.25,0.5,0.75]:
-        assert activations.hat_gauss_activation(0.0,m) == 1.0
-        for n in [1.0,0.75,0.5,0.25]:
-            assert_almost_equal(activations.hat_gauss_activation(n,m),
-                                activations.hat_gauss_activation(-n,m))
-
+def test_hat_gauss_rectangular():
+    assert activations.hat_gauss_rectangular_activation(-1.0,1.0,1.0) == 0.0
+    assert activations.hat_gauss_rectangular_activation(-0.5,1.0,1.0) == 0.5
+    assert activations.hat_gauss_rectangular_activation(0.0,1.0,1.0) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.5,1.0,1.0) == 0.5
+    assert activations.hat_gauss_rectangular_activation(1.0,1.0,1.0) == 0.0
+    assert activations.hat_gauss_rectangular_activation(0.0,1.0,0.75) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,1.0,0.25) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,1.0,0.0) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.75,1.0) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.75,0.5) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.75,0.0) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.5,1.0) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.5,0.75) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.5,0.5) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.5,0.25) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.5,0.0) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.25,1.0) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.25,0.5) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.25,0.0) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.0,1.0) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.0,0.75) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.0,0.5) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.0,0.25) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,0.0,0.0) == 1.0
+    assert_almost_equal(activations.hat_gauss_rectangular_activation(-1.0,0.0,0.0),
+                        activations.hat_gauss_rectangular_activation(1.0,0.0,0.0))
+    assert_almost_equal(activations.hat_gauss_rectangular_activation(-0.5,0.0,0.0),
+                        activations.hat_gauss_rectangular_activation(0.5,0.0,0.0))
 
 def test_scaled_expanded_log():
     assert activations.scaled_expanded_log_activation(-1.0,2.0) == -1.0
@@ -572,13 +601,14 @@ def test_function_set():
     assert s.get('cube') is not None
     assert s.get('square_wave') is not None
     assert s.get('triangle_wave') is not None
+    assert s.get('rectangular') is not None
     assert m.get_MPF('multiparam_relu', 'activation') is not None
     assert m.get_MPF('multiparam_relu_softplus', 'activation') is not None
     assert m.get_MPF('multiparam_elu', 'activation') is not None
     assert m.get_MPF('weighted_lu', 'activation') is not None
     assert m.get_MPF('clamped_tanh_step', 'activation') is not None
     assert m.get_MPF('multiparam_sigmoid', 'activation') is not None
-    assert m.get_MPF('hat_gauss', 'activation') is not None
+    assert m.get_MPF('hat_gauss_rectangular', 'activation') is not None
     assert m.get_MPF('scaled_expanded_log', 'activation') is not None
     assert m.get_MPF('multiparam_log_inv', 'activation') is not None
     assert m.get_MPF('scaled_log1p', 'activation') is not None
@@ -605,13 +635,14 @@ def test_function_set():
     assert s.is_valid('cube')
     assert s.is_valid('square_wave')
     assert s.is_valid('triangle_wave')
+    assert s.is_valid('rectangular')
     assert s.is_valid('multiparam_relu')
     assert s.is_valid('multiparam_relu_softplus')
     assert s.is_valid('multiparam_elu')
     assert s.is_valid('weighted_lu')
     assert s.is_valid('clamped_tanh_step')
     assert s.is_valid('multiparam_sigmoid')
-    assert s.is_valid('hat_gauss')
+    assert s.is_valid('hat_gauss_rectangular')
     assert s.is_valid('scaled_expanded_log')
     assert s.is_valid('multiparam_log_inv')
     assert s.is_valid('scaled_log1p')
@@ -740,13 +771,14 @@ if __name__ == '__main__':
     test_cube()
     test_square_wave()
     test_triangle_wave()
+    test_rectangular()
     test_multiparam_relu()
     test_multiparam_elu()
     test_weighted_lu()
     test_multiparam_relu_softplus()
     test_clamped_tanh_step()
     test_multiparam_sigmoid()
-    test_hat_gauss()
+    test_hat_gauss_rectangular()
     test_scaled_expanded_log()
     test_multiparam_log_inv()
     test_scaled_log1p()

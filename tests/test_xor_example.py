@@ -7,7 +7,7 @@ import neat
 
 warnings.simplefilter('default')
 
-MULTIPARAM_ONLY = False
+MULTIPARAM_ONLY = False # may make error out on travis if True!
 
 def test_xor_example_multiparam_relu():
     test_xor_example(activation_default='multiparam_relu',
@@ -19,6 +19,13 @@ def test_xor_example_multiparam_sigmoid_or_relu():
                      activation_options=['multiparam_sigmoid','relu'],
                      multiparam=True)
 
+def test_xor_example_multiparam_sigmoid_or_relu_adjust():
+    test_xor_example(uniform_weights=True,
+                     activation_default='random',
+                     activation_options=['multiparam_sigmoid','relu'],
+                     compatibility_adjust=True,
+                     multiparam=True)
+
 def test_xor_example_multiparam_aggregation():
     test_xor_example(uniform_weights=True,
                      activation_default='multiparam_sigmoid',
@@ -26,13 +33,28 @@ def test_xor_example_multiparam_aggregation():
                      aggregation_options=['sum_product','max_median_min','maxabs_tmean'],
                      multiparam=True)
 
+def test_xor_example_multiparam_aggregation_adjust():
+    test_xor_example(uniform_weights=True,
+                     activation_default='multiparam_sigmoid',
+                     aggregation_default='random',
+                     aggregation_options=['sum_product','max_median_min','maxabs_tmean'],
+                     compatibility_adjust=True,
+                     multiparam=True)
+
 def test_xor_example_uniform_weights():
     if MULTIPARAM_ONLY:
         return
     test_xor_example(uniform_weights=True)
 
+def test_xor_example_uniform_weights_adjust():
+    if MULTIPARAM_ONLY:
+        return
+    test_xor_example(uniform_weights=True,
+                     compatibility_adjust=True)
+
 def test_xor_example(uniform_weights=False, activation_default=None, activation_options=None,
-                     aggregation_default=None, aggregation_options=None, multiparam=False):
+                     aggregation_default=None, aggregation_options=None, multiparam=False,
+                     compatibility_adjust=False):
     if MULTIPARAM_ONLY and not multiparam:
         return
     # 2-input XOR inputs and expected outputs.
@@ -51,7 +73,10 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
     # here so that the script will run successfully regardless of the
     # current working directory.
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'test_configuration')
+    if compatibility_adjust:
+        config_path = os.path.join(local_dir, 'test_configuration_adjust_number')
+    else:
+        config_path = os.path.join(local_dir, 'test_configuration')
 
     # Load configuration.
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
@@ -60,8 +85,6 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
 
     if uniform_weights:
         config.genome_config.weight_init_type = 'uniform'
-    else:
-        config.species_set_config.compatibility_threshold_adjust = 'number'
 
     if activation_default is not None:
         config.genome_config.activation_default = activation_default
@@ -93,11 +116,11 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
     checkpointer = neat.Checkpointer(25, 10)
     p.add_reporter(checkpointer)
 
-    # Run for up to 100 generations, allowing extinction.
+    # Run for up to 101 generations, allowing extinction.
     winner = None
     try:
-        winner = p.run(eval_genomes, 100)
-    except neat.CompleteExtinctionException as e:
+        winner = p.run(eval_genomes, 101)
+    except neat.CompleteExtinctionException:
         pass
 
     assert len(stats.get_fitness_median()), "Nothing returned from get_fitness_median()"
@@ -115,7 +138,7 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
             output = winner_net.activate(xi)
             print("input {!r}, expected output {!r}, got {!r}".format(xi, xo, output))
 
-    if (checkpointer.last_generation_checkpoint >= 0) and (checkpointer.last_generation_checkpoint < 100):
+    if (checkpointer.last_generation_checkpoint >= 0) and (checkpointer.last_generation_checkpoint < 101):
         filename = 'neat-checkpoint-{0}'.format(checkpointer.last_generation_checkpoint)
         print("Restoring from {!s}".format(filename))
         p2 = neat.checkpoint.Checkpointer.restore_checkpoint(filename)
@@ -139,8 +162,11 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
 if __name__ == '__main__':
     if not MULTIPARAM_ONLY:
         test_xor_example_uniform_weights()
+        test_xor_example_uniform_weights_adjust()
     test_xor_example_multiparam_relu()
     test_xor_example_multiparam_sigmoid_or_relu()
+    test_xor_example_multiparam_sigmoid_or_relu_adjust()
     test_xor_example_multiparam_aggregation()
+    test_xor_example_multiparam_aggregation_adjust()
     if not MULTIPARAM_ONLY:
         test_xor_example()

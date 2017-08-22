@@ -20,8 +20,8 @@ Old            New
 abs             multiparam_relu, multiparam_relu_softplus, or weighted_lu
 clamped      :ref:`clamped_tanh_step <clamped-tanh-step-label>`
 cube           :ref:`multiparam_pow <multiparam-pow-label>`
-gauss         :ref:`hat_gauss <hat-gauss-label>`
-hat             :ref:`hat_gauss <hat-gauss-label>`
+gauss         :ref:`hat_gauss_rectangular <hat-gauss-rectangular-label>`
+hat             :ref:`hat_gauss_rectangular <hat-gauss--rectangular-label>`
 identity       multiparam_relu, multiparam_relu_softplus, or weighted_lu
 inv             :ref:`multiparam_log_inv <multiparam-log-inv-label>`, if for a CPPN
 log             :ref:`scaled_expanded_log <scaled-expanded-log-label>`, if for a CPPN
@@ -242,6 +242,13 @@ log
    :scale: 100 %
    :alt: log function
 
+rectangular
+^^^^^^^^^^^
+
+.. figure:: activation-rectangular.png
+    :scale: 100 %
+    :alt: rectangular impulse function
+
 sin
 ^^^
 
@@ -280,14 +287,14 @@ triangle_wave
 CPPN-intended activation functions (multi-parameter)
 ---------------------------------------------------------------------------
 
-.. _hat-gauss-label:
+.. _hat-gauss-rectangular-label:
 
-hat_gauss
+hat_gauss_rectangular
 ^^^^^^^^^^^
 
-.. figure:: activation-hat_gauss.png
+.. figure:: activation-hat_gauss_rectangular.png
     :scale: 100 %
-    :alt: Weighted mean of gauss and hat functions.
+    :alt: Weighted mean of hat, gauss, and rectangular functions.
 
 .. _multiparam-log-inv-label:
 

@@ -43,6 +43,7 @@ class DefaultReproduction(DefaultClassConfig):
         self.genome_indexer = count(1)
         self.stagnation = stagnation
         self.ancestors = {}
+        self.fitness_min_divisor = config.fitness_min_divisor
 
         if config.survival_threshold <= 0.0: # NEEDS TEST
             raise ValueError(
@@ -65,12 +66,13 @@ class DefaultReproduction(DefaultClassConfig):
                 "Fitness_min_divisor cannot be negative ({0:n})".format(
                     config.fitness_min_divisor))
         elif config.fitness_min_divisor == 0.0:
-            config.fitness_min_divisor = NORM_EPSILON
+            self.fitness_min_divisor = NORM_EPSILON
         elif config.fitness_min_divisor < float_info.epsilon:
             print("Fitness_min_divisor {0:n} is too low; increasing to {1:n}".format(
                 config.fitness_min_divisor,float_info.epsilon), file=stderr)
             stderr.flush()
             config.fitness_min_divisor = float_info.epsilon
+            self.fitness_min_divisor = float_info.epsilon
 
         if config.min_species_size < 2: # NEEDS TEST
             raise ValueError(
@@ -93,10 +95,19 @@ class DefaultReproduction(DefaultClassConfig):
         to_return_dict = {}
         to_return_dict['min_size'] = max(self.reproduction_config.elitism,
                                          self.reproduction_config.min_species_size)
+        num_try = max(2,to_return_dict['min_size'])
         to_return_dict['min_good_size'] = int(
-            math.ceil(2/self.reproduction_config.survival_threshold))
+            math.ceil(num_try/self.reproduction_config.survival_threshold))
+        while ((num_try*(num_try-1)/2) # number of possible parent combinations
+               < (to_return_dict['min_good_size']-num_try)) and (to_return_dict['min_good_size']
+                                                                 < 50): # half of min pop size 100
+            num_try += 1
+            to_return_dict['min_good_size'] = int(
+                math.ceil(num_try/self.reproduction_config.survival_threshold))
         # below - for info about weight, disjoint coefficients
         to_return_dict['genome_config'] = self.genome_config
+        # for max_stagnation
+        to_return_dict['stagnation'] = self.stagnation
         return to_return_dict
 
     @staticmethod
@@ -182,7 +193,7 @@ class DefaultReproduction(DefaultClassConfig):
         min_fitness = min(all_fitnesses)
         max_fitness = max(all_fitnesses)
         # Do not allow the fitness range to be zero, as we divide by it below.
-        fitness_range = max(self.reproduction_config.fitness_min_divisor, max_fitness - min_fitness)
+        fitness_range = max(self.fitness_min_divisor, max_fitness - min_fitness)
         for afs in remaining_species:
             # Compute adjusted fitness.
             # TODO: One variant suggested by Stanley on his webpage is to only use the

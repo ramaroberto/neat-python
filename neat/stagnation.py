@@ -27,6 +27,11 @@ class DefaultStagnation(DefaultClassConfig):
 
         self.reporters = reporters
 
+    def get_stagnation_info(self):
+        to_return_dict = {}
+        to_return_dict['max_stagnation'] = self.stagnation_config.max_stagnation
+        return to_return_dict
+
     def update(self, species_set, generation):
         """
         Required interface method. Updates species fitness history information,

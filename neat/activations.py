@@ -9,7 +9,7 @@ import math
 import sys
 import warnings
 
-from neat.math_util import NORM_EPSILON
+from neat.math_util import NORM_EPSILON, softmax
 from neat.multiparameter import MultiParameterSet
 from neat.multiparameter import BadFunctionError as InvalidActivationFunction # pylint: disable=unused-import
 
@@ -137,6 +137,13 @@ def square_wave_activation(z):
 def triangle_wave_activation(z):
     return min(1.0,max(-1.0,((2/math.pi)*math.asin(sin_activation(z)))))
 
+def rectangular_activation(z):
+    if abs(z) == 0.5:
+        return 0.5
+    if abs(z) < 0.5:
+        return 1.0
+    return 0.0
+
 def multiparam_relu_activation(z, a):
     return max(z, (z*a))
 
@@ -218,10 +225,26 @@ def multiparam_sigmoid_activation(z, a):
     """Conversion of clamped_tanh_step_activation to a 0-1 output range"""
     return max(0.0,min(1.0,((clamped_tanh_step_activation(z, a)+1.0)/2.0)))
 
-def hat_gauss_activation(z, a):
-    _check_value_range(a, 0.0, 1.0, 'hat_gauss', 'a')
+def hat_gauss_rectangular_activation(z, a, b):
+    _check_value_range(a, 0.0, 1.0, 'hat_gauss_rectangular', 'a')
+    _check_value_range(b, 0.0, 1.0, 'hat_gauss_rectangular', 'b')
 
-    return (a*hat_activation(z))+((1.0-a)*gauss_activation(z))
+    gauss_init = 1.0-((a+b)/2.0)
+    total_weight = a+b+gauss_init
+    hat_weight = a/total_weight
+    gauss_weight = gauss_init/total_weight
+    rectangular_weight = b/total_weight
+
+    to_return = 0.0
+
+    if hat_weight > 0.0:
+        to_return += hat_weight*hat_activation(z)
+    if gauss_weight > 0.0:
+        to_return += gauss_weight*gauss_activation(z)
+    if rectangular_weight > 0.0:
+        to_return += rectangular_weight*rectangular_activation(z)
+
+    return max(-1.0,min(1.0,to_return))
 
 def scaled_expanded_log_activation(z, a): # mostly intended for CPPNs
     a = min(sys.float_info.max_10_exp, max(sys.float_info.min_10_exp, a))
@@ -258,6 +281,15 @@ def multiparam_pow_activation(z, a):
     if a < 1.0:
         a = math.pow(2,(a-1.0))
     return math.copysign(1.0,z)*math.pow(abs(z),a)
+
+##def multiparam_exp_activation(z, a):
+##    _check_value_range(a, 0.0, 1.0, 'multiparam_exp', 'a')
+
+##    a = min(1.0,((a*(1-NORM_EPSILON)) + NORM_EPSILON))
+
+##    if z >= math.log(a):
+##        return math.exp(z)
+##    return -1.0*math.exp(math.log(a)-z)
 
 def wave_activation(z, a):
     _check_value_range(a, -1.0, 1.0, 'wave', 'a')
@@ -305,6 +337,7 @@ class ActivationFunctionSet(object):
         self.add('step', step_activation)
         self.add('square_wave', square_wave_activation)
         self.add('triangle_wave', triangle_wave_activation)
+        self.add('rectangular', rectangular_activation)
         self.add('multiparam_relu', multiparam_relu_activation,
                  a={'min_value':-1.0, 'max_value':1.0})
 ##        self.add('multiparam_elu', multiparam_elu_activation_inner,
@@ -333,8 +366,9 @@ class ActivationFunctionSet(object):
                  a={'min_value':-1.0, 'max_value':1.0})
         self.add('multiparam_sigmoid', multiparam_sigmoid_activation,
                  a={'min_value':-1.0, 'max_value':1.0})
-        self.add('hat_gauss', hat_gauss_activation,
-                 a={'min_value':0.0, 'max_value':1.0})
+        self.add('hat_gauss_rectangular', hat_gauss_rectangular_activation,
+                 a={'min_value':0.0, 'max_value':1.0},
+                 b={'min_value':0.0, 'max_value':1.0})
         self.add('scaled_expanded_log', scaled_expanded_log_activation,
                  a={'min_value':0.0, 'max_value':2.0})
         self.add('multiparam_log_inv', multiparam_log_inv_activation,
@@ -346,6 +380,8 @@ class ActivationFunctionSet(object):
                  b={'min_value':-1.0, 'max_value':1.0})
         self.add('multiparam_pow', multiparam_pow_activation,
                  a={'min_value':-1.0, 'max_value': 4.0})
+##        self.add('multiparam_exp', multiparam_exp_activation,
+##                 a={'min_value':0.0, 'max_value':1.0})
         self.add('wave', wave_activation,
                  a={'min_value':-1.0, 'max_value': 1.0})
 
