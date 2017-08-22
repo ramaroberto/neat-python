@@ -205,6 +205,8 @@ class MultiParameterFunction(object):
             if full:
                 self.evolved_param_dicts[n].setdefault('mutate_rate', 0.1)
                 self.evolved_param_dicts[n].setdefault('default', 'random')
+                self.evolved_param_dicts[n].setdefault('rate_to_true_add', 0.0)
+                self.evolved_param_dicts[n].setdefault('rate_to_false_add', 0.0)
 
             param_dict2 = copy.copy(param_dict)
             del param_dict2['param_type']
