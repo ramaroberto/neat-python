@@ -74,7 +74,7 @@ def repr_extract_function_name(function, no_match=WARN_IF_NO_MATCH, with_module=
                     poss_name = str(function.__name__)
                 else:
                     poss_name = result.group(1)
-    if poss_name is None:
+    if poss_name is None: # pragma: no cover
         repr_result = repr(function)
         result_partial = partial_re.match(repr_result)
         if result_partial:

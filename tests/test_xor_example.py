@@ -124,6 +124,7 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
         pass
 
     assert len(stats.get_fitness_median()), "Nothing returned from get_fitness_median()"
+    assert len(stats.get_fitness_tmean()), "Nothing returned from get_fitness_tmean()"
 
     if winner:
         if uniform_weights:
@@ -161,12 +162,12 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
 
 if __name__ == '__main__':
     if not MULTIPARAM_ONLY:
-        test_xor_example_uniform_weights()
+        #test_xor_example_uniform_weights()
         test_xor_example_uniform_weights_adjust()
-    test_xor_example_multiparam_relu()
-    test_xor_example_multiparam_sigmoid_or_relu()
+    #test_xor_example_multiparam_relu()
+    #test_xor_example_multiparam_sigmoid_or_relu()
     test_xor_example_multiparam_sigmoid_or_relu_adjust()
-    test_xor_example_multiparam_aggregation()
+    #test_xor_example_multiparam_aggregation()
     test_xor_example_multiparam_aggregation_adjust()
-    if not MULTIPARAM_ONLY:
-        test_xor_example()
+    #if not MULTIPARAM_ONLY:
+        #test_xor_example()

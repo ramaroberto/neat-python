@@ -127,7 +127,7 @@ class EvolvedMultiParameterFunction(object):
             setattr(partial, '__doc__', self.user_func.__doc__)
         if hasattr(self.user_func, '__module__'):
             setattr(partial, '__module__', self.user_func.__module__)
-        else:
+        else: # pragma: no cover
             setattr(partial, '__module__', self.__module__)
         return partial
 
@@ -192,7 +192,7 @@ class MultiParameterFunction(object):
                     mutate_power = (min(1.0,(param_dict['replace_rate']/param_dict['mutate_rate']))*
                                     (abs(param_dict['max_value']-param_dict['min_value'])/sqrt(12.0)))
                     self.evolved_param_dicts[n].setdefault('mutate_power', mutate_power)
-                else:
+                else: # pragma: no cover
                     self.evolved_param_dicts[n].setdefault('mutate_power', 0.0)
 
             param_dict2 = copy.copy(param_dict)
@@ -492,7 +492,7 @@ class MultiParameterSet(object):
             setattr(partial, '__doc__', multiparam_func.user_func.__doc__)
         if hasattr(multiparam_func.user_func, '__module__'):
             setattr(partial, '__module__', multiparam_func.user_func.__module__)
-        else:
+        else: # pragma: no cover
             setattr(partial, '__module__', self.__module__)
         return partial
 

@@ -196,7 +196,7 @@ class FuncAttribute(BaseAttribute):
             options = getattr(config, self.options_name)
             default = choice(options)
 
-        if hasattr(default, 'init_value'):
+        if hasattr(default, 'init_value'): # pragma: no cover
             default.init_value(config)
         elif not isinstance(default, (str, unicode)): # put in test for
             raise RuntimeError("Unknown what to do with value {0!r} for {1!s}".format(default,

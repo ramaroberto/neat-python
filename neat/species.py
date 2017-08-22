@@ -147,19 +147,19 @@ class DefaultSpeciesSet(DefaultClassConfig):
         self.indexer = count(1)
         self.species = {}
         self.genome_to_species = {}
-        self.min_pop_seen = 10**sys.float_info.dig
-        self.max_pop_seen = 0
+        self.orig_compatibility_threshold = config.compatibility_threshold
         if ((config.compatibility_threshold_adjust.lower() != 'fixed') or
             (reproduction is not None)):
-            self.orig_compatibility_threshold = config.compatibility_threshold
-            if reproduction is None:
+            self.min_pop_seen = 10**sys.float_info.dig
+            self.max_pop_seen = 0
+            if reproduction is None: # pragma: no cover
                 raise RuntimeError(
                     "Need reproduction instance for species info (threshold_adjust {0!s})".format(
                         self.compatibility_threshold_adjust))
             self.threshold_adjust_dict = reproduction.get_species_size_info()
             if ((config.compatibility_threshold_adjust.lower() != 'fixed') or
                 (self.threshold_adjust_dict['genome_config'] is not None)):
-                if self.threshold_adjust_dict['genome_config'] is None:
+                if self.threshold_adjust_dict['genome_config'] is None: # pragma: no cover
                     raise RuntimeError(
                         "Need genome_config instance for species info (threshold_adjust {0!s})".format(
                             self.compatibility_threshold_adjust))
@@ -227,7 +227,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
                                             self.threshold_adjust_dict['min_good_size']))-1.0))
         return (poss_num_high,poss_num_low)
 
-    def adjust_compatibility_threshold(self, increase, curr_tmean): # DOCUMENT!
+    def adjust_compatibility_threshold(self, increase, curr_tmean, max_rep_dist): # DOCUMENT!
         old_threshold = self.species_set_config.compatibility_threshold
         if increase:
             mult_threshold = 1.05*old_threshold
@@ -253,6 +253,8 @@ class DefaultSpeciesSet(DefaultClassConfig):
                 new_threshold = min(max(div_threshold,sub_threshold),
                                     max(self.orig_compatibility_threshold,
                                         min(div_threshold,sub_threshold)))
+
+            new_threshold = max(new_threshold,min(max_rep_dist,old_threshold))
             which = 'decreased'
         self.species_set_config.compatibility_threshold = new_threshold
         self.reporters.info(
@@ -280,25 +282,45 @@ class DefaultSpeciesSet(DefaultClassConfig):
         # Find the best representatives for each existing species.
         unspeciated = set(iterkeys(population))
         distances = GenomeDistanceCache(config.genome_config)
+        gid_min_dist = dict((gid, sys.float_info.max) for gid in unspeciated)
         new_representatives = {}
         new_members = {}
-        for sid, s in iteritems(self.species):
+        species_list = list(iterkeys(self.species))
+        species_list.sort(reverse=True,
+                          key=lambda x: self.species[x].reproduction_namespace.adjusted_fitness)
+        max_rep_dist = 0.0
+        for sid in species_list:
+            s = self.species[sid]
             candidates = []
             for gid in unspeciated:
                 g = population[gid]
                 d = distances(s.representative, g)
                 candidates.append((d, g))
+                gid_min_dist[gid] = min(gid_min_dist[gid], d)
 
             # The new representative is the genome closest to the current representative.
-            ignored_rdist, new_rep = min(candidates, key=lambda x: x[0])
+            rdist, new_rep = min(candidates, key=lambda x: x[0])
+            max_rep_dist = max(max_rep_dist, rdist)
             new_rid = new_rep.key
+            if rdist >= self.species_set_config.compatibility_threshold: # pragma: no cover
+                warnings.warn(
+                    "Closest genome {0:n} to species {1:n}: dist {2:n} (thresh {3:n})".format(
+                        new_rid, sid, rdist, self.species_set_config.compatibility_threshold))
             new_representatives[sid] = new_rid
             new_members[sid] = [new_rid]
             unspeciated.remove(new_rid)
 
+        self.reporters.info(
+            "Furthest rep from old species representatives was at {0:n} ({1:n}%)".format(
+                max_rep_dist,
+                (100.0*max_rep_dist/self.species_set_config.compatibility_threshold)))
+
+        unspeciated_list = list(unspeciated)
+        # Putting most distant from any others first, to serve as clustering seeds
+        unspeciated_list.sort(reverse=True, key=lambda x: gid_min_dist[x])
+
         # Partition population into species based on genetic similarity.
-        while unspeciated:
-            gid = unspeciated.pop()
+        for gid in unspeciated_list:
             g = population[gid]
 
             # Find the species with the most similar representative.
@@ -355,7 +377,9 @@ class DefaultSpeciesSet(DefaultClassConfig):
                 self.reporters.info(
                     "Species num {0:n} below desired minimum {1:n}".format(
                         len(self.species), desired_num_species_low))
-                self.adjust_compatibility_threshold(increase=False,curr_tmean=gdtmean)
+                self.adjust_compatibility_threshold(increase=False,
+                                                    curr_tmean=gdtmean,
+                                                    max_rep_dist=max_rep_dist)
             elif len(self.species) > desired_num_species_high:
                 self.reporters.info(
                     "Species num {0:n} above desired maximum {1:n}".format(
@@ -363,8 +387,17 @@ class DefaultSpeciesSet(DefaultClassConfig):
                 if (('max_stagnation' not in self.threshold_adjust_dict)
                     or (generation >= self.threshold_adjust_dict['max_stagnation'])
                     or (self.species_set_config.compatibility_threshold <
-                        self.orig_compatibility_threshold)):
-                    self.adjust_compatibility_threshold(increase=True,curr_tmean=gdtmean)
+                        self.orig_compatibility_threshold)
+                    or (self.species_set_config.compatibility_threshold <=
+                        max_rep_dist)):
+                    self.adjust_compatibility_threshold(increase=True,
+                                                        curr_tmean=gdtmean,
+                                                        max_rep_dist=max_rep_dist)
+            elif ((self.species_set_config.compatibility_threshold <= max_rep_dist)
+                  and (len(self.species) > desired_num_species_low)):
+                self.adjust_compatibility_threshold(increase=True,
+                                                    curr_tmean=gdtmean,
+                                                    max_rep_dist=max_rep_dist)
         elif self.species_set_config.compatibility_threshold_adjust.lower() != 'fixed':
             raise ValueError(
                 "Unknown compatibility_threshold_adjust {!r}".format(
@@ -373,6 +406,6 @@ class DefaultSpeciesSet(DefaultClassConfig):
     def get_species_id(self, individual_id):
         return self.genome_to_species[individual_id]
 
-    def get_species(self, individual_id):
+    def get_species(self, individual_id): # NEED TEST!
         sid = self.genome_to_species[individual_id]
         return self.species[sid]
