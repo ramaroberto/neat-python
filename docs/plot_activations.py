@@ -131,7 +131,7 @@ def do_prints():
                   + "\n\t".join(save_exact_to_print[result]))
     save_exact_to_print = {}
 
-num_subfigures = 5
+num_subfigures = 5 # ODD NUMBERS ONLY!
 
 x = np.linspace(-2.5, 2.5, 5000)
 
@@ -175,11 +175,15 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
             fig.suptitle("{0}(x,{1},{2})".format(n,param_name,param2_name))
         else:
             fig.suptitle("{0}(x,{1})".format(n, param_name))
-        min_value = mpf.evolved_param_dicts[param_name]['min_value']
-        max_value = mpf.evolved_param_dicts[param_name]['max_value']
+        dict1 = mpf.evolved_param_dicts[param_name]
+        min_value = dict1.get('min_init_value', dict1['min_value'])
+        max_value = dict1.get('max_init_value', dict1['max_value'])
+        init_type = dict1.get('init_type', 'uniform')
         if param2_name is not None:
-            min_value2 = mpf.evolved_param_dicts[param2_name]['min_value']
-            max_value2 = mpf.evolved_param_dicts[param2_name]['max_value']
+            dict2 = mpf.evolved_param_dicts[param2_name]
+            min_value2 = dict2.get('min_init_value', dict2['min_value'])
+            max_value2 = dict2.get('max_init_value', dict2['max_value'])
+            init_type2 = dict2.get('init_type', 'uniform')
         if do_swap:
             param_use = param2_name
             param2_use = param_name
@@ -187,32 +191,59 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
             min_value_use = min_value2
             max_value2_use = max_value
             min_value2_use = min_value
+            init_use = init_type2
+            init2_use = init_type
         else:
             param_use = param_name
             param2_use = param2_name
             max_value_use = max_value
             min_value_use = min_value
+            init_use = init_type
             if param2_name is not None:
                 max_value2_use = max_value2
                 min_value2_use = min_value2
-        
-        param_value_list = np.linspace(max_value_use, min_value_use, num_subfigures)
-        middle_param_value = median2(param_value_list)
+                init2_use = init_type2
+
+        if init_use.lower() in 'uniform':
+            param_value_list = np.linspace(max_value_use, min_value_use, num_subfigures)
+            middle_param_value = median2(param_value_list)
+            important_nums = (min_value_use,middle_param_value,max_value_use)
+        elif init_use.lower() in ('gaussian', 'normal'):
+            param_value_list = [round(a,2) for a in np.linspace(max_value_use, min_value_use, (num_subfigures+2))]
+            del param_value_list[-2]
+            del param_value_list[1]
+            middle_param_value = median2(param_value_list)
+            tmp_param_value_list = sorted(param_value_list, key=lambda x: abs(x-middle_param_value))
+            important_nums = (middle_param_value, tmp_param_value_list[1], tmp_param_value_list[2])
+        else:
+            raise ValueError(
+                "{0}: Unknown init_type {1!r} for param_use '{2}'".format(
+                    n, init_use, param_use))
         subplot_num = 0
         for a in param_value_list:
             subplot_num += 1
             fig.add_subplot(1,num_subfigures,subplot_num)
             if param2_name is not None:
                 param2_value_list = np.linspace(max_value2_use, min_value2_use, 5)
-                for b, color in zip(param2_value_list, ['c-','g--','b-','r--','m-']):
+                if init2_use.lower() in ('gaussian','normal'):
+                    colors_use = ['c--','g-','b-','r-','m--']
+                    important_colors = ('g-','b-','r-')
+                elif init2_use.lower() in 'uniform':
+                    colors_use = ['c-','g--','b-','r--','m-']
+                    important_colors = ('c-', 'b-', 'm-')
+                else:
+                    raise ValueError(
+                        "{0}: Unknown init_type {1!r} for param2_use '{2}'".format(
+                            n, init2_use, param2_use))
+                for b, color in zip(param2_value_list, colors_use):
                     if do_swap:
                         plt.plot(x, [f(i,b,a) for i in x], color, label="{0}={1}".format(param2_use,b))
                     else:
                         plt.plot(x, [f(i,a,b) for i in x], color, label="{0}={1}".format(param2_use,b))
-                        if (color in ('c-', 'b-', 'm-')) and (a in (min_value_use,middle_param_value,max_value_use)):
+                        if (color in important_colors) and (a in important_nums):
                             for i in (-1.0,-0.5,0.0,0.5,1.0):
                                 print_for_testing("{0}_activation({1!s},{2!r},{3!r})".format(n,i,a,b),f(i,a,b))
-                        elif (color in ('c-', 'b-', 'm-')) or (a in (min_value_use,middle_param_value,max_value_use)):
+                        elif (color in important_colors) or (a in important_nums):
                             for i in (-1.0,0.0,1.0):
                                 print_for_testing("{0}_activation({1!s},{2!r},{3!r})".format(n,i,a,b),f(i,a,b))
             else:

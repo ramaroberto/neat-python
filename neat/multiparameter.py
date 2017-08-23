@@ -164,9 +164,18 @@ class MultiParameterFunction(object):
         if param_dict['param_type'] in ('float','int'):
             if full:
                 self.evolved_param_dicts[n].setdefault('init_type','uniform')
+
+                self.evolved_param_dicts[n].setdefault('max_init_value',
+                                                       param_dict['max_value'])
+                self.evolved_param_dicts[n].setdefault('min_init_value',
+                                                       param_dict['min_value'])
+                self.evolved_param_dicts[n].setdefault('max_value',
+                                                       param_dict['max_init_value'])
+                self.evolved_param_dicts[n].setdefault('min_value',
+                                                       param_dict['min_init_value'])
                 
-                middle = (param_dict['max_value'] +
-                          param_dict['min_value'])/2.0
+                middle = (param_dict['max_init_value'] +
+                          param_dict['min_init_value'])/2.0
                 self.evolved_param_dicts[n].setdefault('init_mean', middle)
                 # below here is mainly intended for users wanting to use built-in
                 # multiparameter functions without too much initialization worries
@@ -174,9 +183,9 @@ class MultiParameterFunction(object):
                 mutate_rate = min((1.0-param_dict['replace_rate']),
                                   (param_dict['replace_rate']*5.0))
                 self.evolved_param_dicts[n].setdefault('mutate_rate', mutate_rate)
-                for_stdev = min(abs(param_dict['max_value'] -
+                for_stdev = min(abs(param_dict['max_init_value'] -
                                     param_dict['init_mean']),
-                                abs(param_dict['min_value'] -
+                                abs(param_dict['min_init_value'] -
                                     param_dict['init_mean']))/2.0
                 if param_dict['init_type'] == 'uniform':
                     self.evolved_param_dicts[n].setdefault('init_stdev', for_stdev)
@@ -189,14 +198,22 @@ class MultiParameterFunction(object):
                     self.evolved_param_dicts[n].setdefault('init_stdev',
                                                            ((4.0*for_stdev)/sqrt(12.0)))
                 if param_dict['mutate_rate'] > 0:
-                    mutate_power = (min(1.0,(param_dict['replace_rate']/param_dict['mutate_rate']))*
-                                    (abs(param_dict['max_value']-param_dict['min_value'])/sqrt(12.0)))
+                    mutate_power = (min(1.0,(param_dict['replace_rate']/
+                                             param_dict['mutate_rate']))*
+                                    (abs(param_dict['max_init_value']
+                                         -param_dict['min_init_value'])/
+                                     sqrt(12.0)))
                     self.evolved_param_dicts[n].setdefault('mutate_power', mutate_power)
                 else: # pragma: no cover
                     self.evolved_param_dicts[n].setdefault('mutate_power', 0.0)
+                    warnings.warn("Mutate_rate for param {0!r} of {1!r} is {2:n}".format(
+                        n, self.orig_name, param_dict['mutate_rate']),
+                                  RuntimeWarning)
 
             param_dict2 = copy.copy(param_dict)
             del param_dict2['param_type']
+            del param_dict2['min_init_value']
+            del param_dict2['max_init_value']
 
             self.evolved_param_attributes[n] = FloatAttribute(name=tmp_name, # TODO: IntAttribute
                                                               default_ok=True,

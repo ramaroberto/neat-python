@@ -379,7 +379,9 @@ class ActivationFunctionSet(object):
                  a={'min_value':0.0, 'max_value':1.0},
                  b={'min_value':-1.0, 'max_value':1.0})
         self.add('multiparam_pow', multiparam_pow_activation,
-                 a={'min_value':-1.0, 'max_value': 4.0})
+                 a={'min_init_value':-1.0, 'max_init_value':4.0,
+                    'min_value':-3.0, 'max_value':16.0,
+                    'init_type':'gaussian'})
 ##        self.add('multiparam_exp', multiparam_exp_activation,
 ##                 a={'min_value':0.0, 'max_value':1.0})
         self.add('wave', wave_activation,

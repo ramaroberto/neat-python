@@ -96,7 +96,7 @@ class DefaultReproduction(DefaultClassConfig):
         to_return_dict['min_size'] = max(self.reproduction_config.elitism,
                                          self.reproduction_config.min_species_size)
         num_try = max(2,to_return_dict['min_size'])
-        to_return_dict['min_good_size'] = int(
+        to_return_dict['min_OK_size'] = to_return_dict['min_good_size'] = int(
             math.ceil(num_try/self.reproduction_config.survival_threshold))
         while ((num_try*(num_try-1)/2) # number of possible parent combinations
                < (to_return_dict['min_good_size']-num_try)) and (to_return_dict['min_good_size']

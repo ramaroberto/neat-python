@@ -213,18 +213,16 @@ class DefaultSpeciesSet(DefaultClassConfig):
                     self.species_set_config.desired_species_num))
             self.species_set_config.desired_species_num = 0
 
-        poss_num_high = math.floor(max(math.sqrt(pop_size_high),
-                                       (pop_size_high/
-                                        self.threshold_adjust_dict['min_good_size']))+1.0)
+        poss_num_high = math.floor((pop_size_high/
+                                    self.threshold_adjust_dict['min_OK_size'])+1.0)
         if poss_num_high < 2: # NEED TEST!
             raise ValueError(
                 "Pop_size {0:n} is too low to determine desired num species;".format(pop_size)
                 + " need minimum of {0:n} given min_good_size {1:n}".format(
-                    (2*self.threshold_adjust_dict['min_good_size']),
-                    self.threshold_adjust_dict['min_good_size']))
-        poss_num_low = max(2,math.ceil(min(math.sqrt(pop_size_low),
-                                           (pop_size_low/
-                                            self.threshold_adjust_dict['min_good_size']))-1.0))
+                    (2*self.threshold_adjust_dict['min_OK_size']),
+                    self.threshold_adjust_dict['min_OK_size']))
+        poss_num_low = max(2,math.ceil((pop_size_low/
+                                        self.threshold_adjust_dict['min_good_size'])-1.0))
         return (poss_num_high,poss_num_low)
 
     def adjust_compatibility_threshold(self, increase, curr_tmean, max_rep_dist): # DOCUMENT!
