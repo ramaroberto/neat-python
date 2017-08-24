@@ -48,7 +48,7 @@ class DefaultStagnation(DefaultClassConfig):
             if s.stagnation_namespace.fitness_history:
                 prev_fitness = max(s.stagnation_namespace.fitness_history)
             else:
-                prev_fitness = -sys.float_info.max
+                prev_fitness = None
 
             s.stagnation_namespace.fitness = self.species_fitness_func(s.get_fitnesses())
             s.stagnation_namespace.fitness_history.append(s.stagnation_namespace.fitness)

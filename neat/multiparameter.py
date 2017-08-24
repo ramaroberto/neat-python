@@ -18,6 +18,20 @@ from neat.math_util import NORM_EPSILON
 from neat.repr_util import repr_extract_function_name
 from neat.six_util import iteritems, iterkeys
 
+def _make_partial(user_func, name=None, **params):
+    partial = functools.partial(user_func, **params)
+    if name is not None:
+        setattr(partial, '__name__', name)
+    elif hasattr(user_func, '__name__'):
+        setattr(partial, '__name__', user_func.__name__)
+    if hasattr(user_func, '__doc__'):
+        setattr(partial, '__doc__', user_func.__doc__)
+    if hasattr(user_func, '__module__') and (user_func.__module__ is not None):
+        setattr(partial, '__module__', user_func.__module__)
+    else: # pragma: no cover
+        setattr(partial, '__module__', make_partial.__module__)
+    return partial
+
 class EvolvedMultiParameterFunction(object):
     """
     Holds, initializes, and mutates the evolved parameters for one instance
@@ -121,15 +135,7 @@ class EvolvedMultiParameterFunction(object):
         return other
 
     def get_func(self):
-        partial = functools.partial(self.user_func, **self.current_param_values)
-        setattr(partial, '__name__', self.instance_name)
-        if hasattr(self.user_func, '__doc__'):
-            setattr(partial, '__doc__', self.user_func.__doc__)
-        if hasattr(self.user_func, '__module__'):
-            setattr(partial, '__module__', self.user_func.__module__)
-        else: # pragma: no cover
-            setattr(partial, '__module__', self.__module__)
-        return partial
+        return _make_partial(self.user_func, self.instance_name, **self.current_param_values)
 
 class MultiParameterFunction(object):
     """Holds and initializes configuration information for one multiparameter function."""
@@ -505,15 +511,7 @@ class MultiParameterSet(object):
                         multiparam_func.evolved_param_dicts[name2]['param_type'],
                         multiparam_func))
 
-        partial = functools.partial(multiparam_func.user_func, **params)
-        setattr(partial, '__name__', name)
-        if hasattr(multiparam_func.user_func, '__doc__'):
-            setattr(partial, '__doc__', multiparam_func.user_func.__doc__)
-        if hasattr(multiparam_func.user_func, '__module__'):
-            setattr(partial, '__module__', multiparam_func.user_func.__module__)
-        else: # pragma: no cover
-            setattr(partial, '__module__', self.__module__)
-        return partial
+        return _make_partial(multiparam_func.user_func, name=name, **params)
 
     def add_func(self, name, user_func, which_type, **kwargs):
         """Adds a new activation/aggregation function, potentially multiparameter."""
