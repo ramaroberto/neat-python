@@ -190,12 +190,12 @@ class DefaultSpeciesSet(DefaultClassConfig):
             if max_num_usable < 2:
                 raise ValueError(
                     "Pop_size {0:n} is too low for effective min species size {1:n}".format(
-                        pop_size, self.threshold_adjust_dict['min_size']))
+                        pop_size_high, self.threshold_adjust_dict['min_size']))
 ##            max_num_usable = max(max_num_usable,2)
             if self.species_set_config.desired_species_num > max_num_usable: # NEED TEST!
                 warnings.warn(
                     "Desired_species_num {0:n} is too high for pop_size {1:n};".format(
-                        self.species_set_config.desired_species_num,pop_size)
+                        self.species_set_config.desired_species_num,pop_size_high)
                     + " adjusting to max {0:n}".format(max_num_usable))
                 self.species_set_config.desired_species_num = max_num_usable
                 sys.stderr.flush()
@@ -217,7 +217,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
                                     self.threshold_adjust_dict['min_OK_size'])+1.0)
         if poss_num_high < 2: # NEED TEST!
             raise ValueError(
-                "Pop_size {0:n} is too low to determine desired num species;".format(pop_size)
+                "Pop_size {0:n} is too low to determine desired num species;".format(pop_size_high)
                 + " need minimum of {0:n} given min_good_size {1:n}".format(
                     (2*self.threshold_adjust_dict['min_OK_size']),
                     self.threshold_adjust_dict['min_OK_size']))

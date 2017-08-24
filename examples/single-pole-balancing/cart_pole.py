@@ -88,18 +88,17 @@ class CartPole(object):
 
 
 def continuous_actuator_force(action):
-    return -10.0 + 2.0 * action[0]
+    return min(10.0,max(-10.0,(-10.0 + 2.0 * action[0])))
 
 
-def noisy_continuous_actuator_force(action):
-    a = action[0] + random.gauss(0, 0.2)
-    return 10.0 if a > 0.5 else -10.0
-
+def noisy_continuous_actuator_force(action, noise=0.2):
+    a = action[0] + random.gauss(0, noise)
+    return continuous_actuator_force(a)
 
 def discrete_actuator_force(action):
     return 10.0 if action[0] > 0.5 else -10.0
 
 
-def noisy_discrete_actuator_force(action):
-    a = action[0] + random.gauss(0, 0.2)
+def noisy_discrete_actuator_force(action, noise=0.2):
+    a = action[0] + random.gauss(0, noise)
     return 10.0 if a > 0.5 else -10.0

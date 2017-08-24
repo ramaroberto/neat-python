@@ -4,6 +4,8 @@ from __future__ import print_function
 import re
 import warnings
 
+from pprint import saferepr
+
 ERR_IF_NO_MATCH = -1
 WARN_IF_NO_MATCH = 0
 OK_IF_NO_MATCH = 1
@@ -22,24 +24,24 @@ def _handle_no_match(partial_return, no_match, message):
     raise ValueError("Unknown no_match {0!r} (message {1!r})".format(
         no_match, message))
 
-name_re = re.compile('(\w+)$')
-full_name_re = re.compile('(\w+)\((.+)\)$')
-module_re = re.compile('(\w[.a-zA-Z_]*)$')
-function_re = re.compile('\s*<?function\s+\b(\w+)\b')
-partial_re = re.compile('\s*<?functools\.partial\s+object\b')
+name_re = re.compile(r'(\w+)$')
+full_name_re = re.compile(r'(\w+)\((.+)\)$')
+module_re = re.compile(r'(\w[.a-zA-Z_]*)$')
+function_re = re.compile(r'\s*<?function\s+\b(\w+)\b')
+partial_re = re.compile(r'\s*<?functools\.partial\s+object\b')
 
 def extract_function_name(repr_result, start_only=True, no_match=WARN_IF_NO_MATCH):
     if start_only:
         result = function_re.match(repr_result)
     else:
         result = function_re.search(repr_result)
+
     if result:
         return result.group(1)
-    else:
-        message = "Repr_result {0!r} did not match re {1!r}".format(
-            repr_result, function_re)
 
-        return _handle_no_match(None, no_match, message)
+    message = "Repr_result {0!r} did not match re {1!r}".format(
+        repr_result, function_re)
+    return _handle_no_match(None, no_match, message)
 
 
 def partial_extract_function_args(partial_function, poss_name, no_match=WARN_IF_NO_MATCH):
@@ -63,6 +65,10 @@ def partial_extract_function_args(partial_function, poss_name, no_match=WARN_IF_
 
 def repr_extract_function_name(function, no_match=WARN_IF_NO_MATCH, with_module=True, as_partial=True, OK_with_args=False):
     poss_name = None
+    if with_module and hasattr(function, '__qualname__'):
+        result = module_re.match(str(function.__qualname__))
+        if result:
+            return result.group(1)
     if hasattr(function, '__name__'):
         result = name_re.match(str(function.__name__))
         if result:
@@ -75,7 +81,7 @@ def repr_extract_function_name(function, no_match=WARN_IF_NO_MATCH, with_module=
                 else:
                     poss_name = result.group(1)
     if poss_name is None: # pragma: no cover
-        repr_result = repr(function)
+        repr_result = saferepr(function)
         result_partial = partial_re.match(repr_result)
         if result_partial:
             poss_name = repr_extract_function_name(function.func,
@@ -83,8 +89,7 @@ def repr_extract_function_name(function, no_match=WARN_IF_NO_MATCH, with_module=
                                                    with_module=with_module)
             if (poss_name is not None) and as_partial:
                 return partial_extract_function_args(function, poss_name=poss_name, no_match=no_match)
-            else:
-                return poss_name
+            return poss_name
         else:
             poss_name = extract_function_name(repr_result, start_only=True, no_match=no_match)
 
