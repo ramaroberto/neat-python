@@ -40,10 +40,7 @@ class DefaultStagnation(DefaultClassConfig):
         species_elitism parameter if they were removed, in which case the highest-fitness
         species are spared - returns a list with stagnant species marked for removal.
         """
-        species_data = [] # TODO: Move s.XXX, other than fitness, used by stagnation to a
-        # s.stagnation_namespace object, added when the species is created; existing
-        # uses should be caught by __[get|set]?__ (usual? property?), a DeprecationWarning given,
-        # and diverted to the namespace. Ditto for reproduction.
+        species_data = []
         for sid, s in iteritems(species_set.species):
             if s.stagnation_namespace.fitness_history:
                 prev_fitness = max(s.stagnation_namespace.fitness_history)

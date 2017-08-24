@@ -391,6 +391,10 @@ def test_get_Evolved_MPF_complex():
         raise Exception(
             "Should have had a RuntimeError/derived for get_aggregation_Evolved_MPF('maxabs_mean(0.5,0.5,0.5)')")
 
+    test_result = config.genome_config.get_aggregation_Evolved_MPF('max_median_min(0.5)')
+    assert config.genome_config.get_aggregation_Evolved_MPF(str(test_result)) is not None
+    assert config.genome_config.multiparameterset.get_func(str(test_result), 'aggregation') is not None
+
 if __name__ == '__main__':
     test_sum()
     test_product()

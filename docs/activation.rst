@@ -21,7 +21,7 @@ abs             multiparam_relu, multiparam_relu_softplus, or weighted_lu
 clamped      :ref:`clamped_tanh_step <clamped-tanh-step-label>`
 cube           :ref:`multiparam_pow <multiparam-pow-label>`
 gauss         :ref:`hat_gauss_rectangular <hat-gauss-rectangular-label>`
-hat             :ref:`hat_gauss_rectangular <hat-gauss--rectangular-label>`
+hat             :ref:`hat_gauss_rectangular <hat-gauss-rectangular-label>`
 identity       multiparam_relu, multiparam_relu_softplus, or weighted_lu
 inv             :ref:`multiparam_log_inv <multiparam-log-inv-label>`, if for a CPPN
 log             :ref:`scaled_expanded_log <scaled-expanded-log-label>`, if for a CPPN
@@ -144,6 +144,24 @@ multiparam_sigmoid
 .. figure:: activation-multiparam_sigmoid.png
     :scale: 100 %
     :alt: A version of :ref:`clamped_tanh_step <clamped-tanh-step-label>` rescaled to match :ref:`sigmoid <sigmoid-label>` instead of :ref:`tanh <tanh-label>`.
+
+multiparam_sigmoid_approx
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. figure:: activation-multiparam_sigmoid.png
+    :scale: 100 %
+    :alt: A version of multiparam_tanh_approx rescaled to match :ref:`sigmoid <sigmoid-label>` instead of :ref:`tanh <tanh-label>`, and constrained to 0-1
+
+multiparam_tanh_approx
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. figure: activation-multiparam_tanh_approx.png
+    :scale: 100 %
+    :alt: Trying out an approximation to tanh that may be more efficient
+
+.. figure:: activation-swap-multiparam_tanh_approx.png
+    :scale: 100 %
+    :alt: Trying out an approximation to tanh that may be more efficient
 
 multiparam_tanh_log1p
 ^^^^^^^^^^^^^^^^^^^^^
@@ -290,7 +308,7 @@ CPPN-intended activation functions (multi-parameter)
 .. _hat-gauss-rectangular-label:
 
 hat_gauss_rectangular
-^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
 .. figure:: activation-hat_gauss_rectangular.png
     :scale: 100 %

@@ -579,6 +579,97 @@ def test_wave():
     assert_almost_equal(activations.wave_activation(-1.0,0.0),-1*activations.wave_activation(1.0,0.0))
     assert_almost_equal(activations.wave_activation(-1.0,-0.5),-1*activations.wave_activation(1.0,-0.5))
 
+def test_multiparam_tanh_approx():
+    assert activations.multiparam_tanh_approx_activation(0.0,1.0,1.0) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,1.0,0.5) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,1.0,0.0) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,0.25,1.0) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,0.25,0.75) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,0.25,0.5) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,0.25,0.25) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,0.25,0.0) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,0.0,1.0) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,0.0,0.75) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,0.0,0.5) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,0.0,0.25) == 0.0
+    assert activations.multiparam_tanh_approx_activation(-1.0,0.0,0.0) == -2.5
+    assert activations.multiparam_tanh_approx_activation(-0.5,0.0,0.0) == -1.25
+    assert activations.multiparam_tanh_approx_activation(0.0,0.0,0.0) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.5,0.0,0.0) == 1.25
+    assert activations.multiparam_tanh_approx_activation(1.0,0.0,0.0) == 2.5
+    assert activations.multiparam_tanh_approx_activation(0.0,-0.5,1.0) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,-0.5,0.75) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,-0.5,0.5) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,-0.5,0.25) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,-0.5,0.0) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,-1.0,1.0) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,-1.0,0.5) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.0,-1.0,0.0) == 0.0
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,1.0,1.0),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,1.0,1.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-0.5,0.25,1.0),
+                        -1*activations.multiparam_tanh_approx_activation(0.5,0.25,1.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-0.5,0.0,1.0),
+                        -1*activations.multiparam_tanh_approx_activation(0.5,0.0,1.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,1.0,0.5),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,1.0,0.5))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-0.5,0.25,0.5),
+                        -1*activations.multiparam_tanh_approx_activation(0.5,0.25,0.5))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.25,1.0),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,0.25,1.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-0.5,-0.5,1.0),
+                        -1*activations.multiparam_tanh_approx_activation(0.5,-0.5,1.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.0,1.0),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,0.0,1.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-0.5,0.0,0.5),
+                        -1*activations.multiparam_tanh_approx_activation(0.5,0.0,0.5))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.25,0.75),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,0.25,0.75))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-0.5,1.0),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,-0.5,1.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.0,0.75),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,0.0,0.75))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-1.0,1.0),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,-1.0,1.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,1.0,0.0),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,1.0,0.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-0.5,0.25,0.0),
+                        -1*activations.multiparam_tanh_approx_activation(0.5,0.25,0.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.25,0.5),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,0.25,0.5))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-0.5,0.75),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,-0.5,0.75))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-0.5,-0.5,0.5),
+                        -1*activations.multiparam_tanh_approx_activation(0.5,-0.5,0.5))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.0,0.5),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,0.0,0.5))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.25,0.25),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,0.25,0.25))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-0.5,0.5),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,-0.5,0.5))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.0,0.25),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,0.0,0.25))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-1.0,0.5),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,-1.0,0.5))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.25,0.0),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,0.25,0.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-0.5,0.25),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,-0.5,0.25))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-0.5,-0.5,0.0),
+                        -1*activations.multiparam_tanh_approx_activation(0.5,-0.5,0.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-0.5,0.0),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,-0.5,0.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-1.0,0.0),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,-1.0,0.0))
+
+def test_multiparam_sigmoid_approx():
+    assert activations.multiparam_sigmoid_approx_activation(0.0,1.0) == 0.5
+    assert activations.multiparam_sigmoid_approx_activation(0.0,0.5) == 0.5
+    assert activations.multiparam_sigmoid_approx_activation(0.0,0.0) == 0.5
+    assert activations.multiparam_sigmoid_approx_activation(0.0,-0.5) == 0.5
+    assert activations.multiparam_sigmoid_approx_activation(0.0,-1.0) == 0.5
+
+
 def test_function_set():
     m = multiparameter.MultiParameterSet('activation')
     s = activations.ActivationFunctionSet(m)
@@ -615,6 +706,8 @@ def test_function_set():
     assert m.get_MPF('multiparam_tanh_log1p', 'activation') is not None
     assert m.get_MPF('multiparam_pow', 'activation') is not None
     assert m.get_MPF('wave', 'activation') is not None
+    assert m.get_MPF('multiparam_tanh_approx', 'activation') is not None
+    assert m.get_MPF('multiparam_sigmoid_approx', 'activation') is not None
 
     assert s.is_valid('sigmoid')
     assert s.is_valid('tanh')
@@ -649,6 +742,8 @@ def test_function_set():
     assert s.is_valid('multiparam_tanh_log1p')
     assert s.is_valid('multiparam_pow')
     assert s.is_valid('wave')
+    assert s.is_valid('multiparam_tanh_approx')
+    assert s.is_valid('multiparam_sigmoid_approx')
 
     assert not s.is_valid('foo')
 
@@ -750,6 +845,10 @@ def test_get_Evolved_MPF_complex():
     else:
         raise Exception("Should have had a RuntimeError/derived for get_activation_Evolved_MPF 'multiparam_relu(0.5,0.5,0.5)'")
 
+    test_result = config.genome_config.get_activation_Evolved_MPF('multiparam_relu(0.5)')
+    assert config.genome_config.get_activation_Evolved_MPF(str(test_result)) is not None
+    assert config.genome_config.multiparameterset.get_func(str(test_result), 'activation') is not None
+
 if __name__ == '__main__':
     test_sigmoid()
     test_tanh()
@@ -785,6 +884,8 @@ if __name__ == '__main__':
     test_multiparam_tanh_log1p()
     test_multiparam_pow()
     test_wave()
+    test_multiparam_tanh_approx()
+    test_multiparam_sigmoid_approx()
     test_function_set()
     test_get_MPF()
     test_get_Evolved_MPF_simple()

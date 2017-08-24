@@ -306,6 +306,19 @@ def wave_activation(z, a):
 
     return min(1.0,max(-1.0,to_return))
         
+def multiparam_tanh_approx_activation(z, a, b):
+    _check_value_range(b, 0.0, 1.0, 'multiparam_tanh_approx', 'b')
+
+    try:
+        to_return = (2.5*z)/(math.exp(a) + (b*abs(2.5*z)))
+    except ArithmeticError:
+        _check_value_range(a, -12.0, 12.0, 'multiparam_tanh_approx', 'a')
+        raise
+    else:
+        return to_return
+
+def multiparam_sigmoid_approx_activation(z, a):
+    return min(1.0,max(0.0,((1.0+multiparam_tanh_approx_activation(z, a, 1.0))/2.0)))
 
 class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""
@@ -386,6 +399,15 @@ class ActivationFunctionSet(object):
 ##                 a={'min_value':0.0, 'max_value':1.0})
         self.add('wave', wave_activation,
                  a={'min_value':-1.0, 'max_value': 1.0})
+        self.add('multiparam_tanh_approx', multiparam_tanh_approx_activation,
+                 a={'min_init_value':-1.0, 'max_init_value':1.0,
+                    'min_value':-12.0, 'max_value':12.0,
+                    'init_type':'gaussian'},
+                 b={'min_value':0.0, 'max_value':1.0})
+        self.add('multiparam_sigmoid_approx', multiparam_sigmoid_approx_activation,
+                 a={'min_init_value':-1.0, 'max_init_value':1.0,
+                    'min_value':-12.0, 'max_value':12.0,
+                    'init_type':'gaussian'})
 
 
     def add(self, name, function, **kwargs):
