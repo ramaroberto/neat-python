@@ -21,7 +21,7 @@ else:
 
 if not SKIP_FOR_PYPY:
     logger = multiprocessing.log_to_stderr()
-    logger.setlevel(multiprocessing.SUBWARNING)
+    logger.setLevel(multiprocessing.SUBWARNING)
 
 # 2-input XOR inputs and expected outputs.
 XOR_INPUTS = [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]
@@ -68,7 +68,7 @@ def run_primary(addr, authkey, generations):
         )
     de.start(reconnect=True)
     winner = p.run(de.evaluate, generations)
-    logger.setlevel(multiprocessing.SUBDEBUG)
+    logger.setLevel(multiprocessing.SUBDEBUG)
     print("===== stopping DistributedEvaluator =====")
     de.stop(wait=3, shutdown=False, force_secondary_shutdown=False)
 
@@ -132,7 +132,7 @@ def run_secondary(addr, authkey, num_workers=1):
         mode=MODE_SECONDARY,
         num_workers=num_workers,
         )
-    logger.setlevel(multiprocessing.SUBDEBUG)
+    logger.setLevel(multiprocessing.SUBDEBUG)
     try:
         de.start(secondary_wait=3, exit_on_stop=True, reconnect=True)
     except SystemExit:
@@ -176,6 +176,6 @@ def test_xor_example_distributed():
 
 if __name__ == '__main__':
     if not SKIP_FOR_PYPY:
-        logger.setlevel(multiprocessing.SUBDEBUG)
+        logger.setLevel(multiprocessing.SUBDEBUG)
         test_xor_example_distributed()
 
