@@ -269,8 +269,9 @@ class MultiParameterFunction(object):
                     for x in del_param_dicts[n]:
                         del new.evolved_param_dicts[n][x]
                 elif del_param_dicts[n] is None:
+                    param_type = new.evolved_param_dicts[n]['param_type']
                     del new.evolved_param_dicts[n]
-                    new.evolved_param_dicts[n] = {}
+                    new.evolved_param_dicts[n] = {'param_type':param_type}
                 elif isinstance(del_param_dicts[n], collections.Hashable):
                     del new.evolved_param_dicts[n][del_param_dicts[n]]
                 else: # pragma: no cover
@@ -278,14 +279,16 @@ class MultiParameterFunction(object):
                         "Deleting all evolved_param_dicts[{0!r}] due to unhashable {1!r}".format(
                             n, del_param_dicts[n]),
                         RuntimeWarning)
+                    param_type = new.evolved_param_dicts[n]['param_type']
                     del new.evolved_param_dicts[n]
-                    new.evolved_param_dicts[n] = {}
+                    new.evolved_param_dicts[n] = {'param_type':param_type}
                 n_done.add(n)
         if new_param_dicts is not None:
             for n in iterkeys(new_param_dicts):
                 if del_not_changed:
+                    param_type = new.evolved_param_dicts[n]['param_type']
                     del new.evolved_param_dicts[n]
-                    new.evolved_param_dicts[n] = {}
+                    new.evolved_param_dicts[n] = {'param_type':param_type}
                 for x, y in iteritems(new_param_dicts[n]):
                     new.evolved_param_dicts[n][x] = y
                 n_done.add(n)

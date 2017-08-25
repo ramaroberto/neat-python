@@ -63,7 +63,11 @@ def partial_extract_function_args(partial_function, poss_name, no_match=WARN_IF_
                                 partial_function, poss_name))
         
 
-def repr_extract_function_name(function, no_match=WARN_IF_NO_MATCH, with_module=True, as_partial=True, OK_with_args=False):
+def repr_extract_function_name(function,
+                               no_match=WARN_IF_NO_MATCH,
+                               with_module=True,
+                               as_partial=True,
+                               OK_with_args=False):
     poss_name = None
     if with_module and hasattr(function, '__qualname__'):
         result = module_re.match(str(function.__qualname__))
