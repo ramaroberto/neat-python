@@ -500,7 +500,8 @@ class DistributedEvaluator(object):
             return _EXCEPTION_TYPE_UNCERTAIN
         elif (('eoferror' in string) or ('typeerror' in string) or ('gaierror' in string)
               or ('pipeerror' in string) or ('authenticationerror' in string)
-              or ('refused' in string) or ('file descriptor' in string)):
+              or ('refused' in string) or ('file descriptor' in string)
+              or ('reset' in string)):
             return _EXCEPTION_TYPE_UNCERTAIN
         return _EXCEPTION_TYPE_BAD
 
