@@ -44,7 +44,8 @@ class DefaultGenomeConfig(object):
                         ConfigParameter('single_structural_mutation', bool, False),
                         ConfigParameter('structural_mutation_surer',
                                         str, 'default', default_ok=True),
-                        ConfigParameter('initial_connection', str, 'unconnected')]
+                        ConfigParameter('initial_connection', str, 'unconnected'),
+                        ConfigParameter('fitter_enabled_transfer', bool, False)]
 
         # Gather configuration data from the gene classes.
         self.node_gene_type = params['node_gene_type']
@@ -236,7 +237,8 @@ class DefaultGenome(object):
             else:
                 if config.num_hidden > 0:
                     print(
-                        "Warning: initial_connection = full with hidden nodes will not do direct input-output connections;",
+                        "Warning: initial_connection = full with hidden nodes"
+                        + "will not do direct input-output connections;",
                         "\tif this is desired, set initial_connection = full_nodirect;",
                         "\tif not, set initial_connection = full_direct",
                         sep='\n', file=sys.stderr);
@@ -249,7 +251,8 @@ class DefaultGenome(object):
             else:
                 if config.num_hidden > 0:
                     print(
-                        "Warning: initial_connection = partial with hidden nodes will not do direct input-output connections;",
+                        "Warning: initial_connection = partial with hidden nodes"
+                        + "will not do direct input-output connections;",
                         "\tif this is desired, set initial_connection = partial_nodirect {0};".format(
                             config.connection_fraction),
                         "\tif not, set initial_connection = partial_direct {0}".format(
@@ -259,9 +262,11 @@ class DefaultGenome(object):
 
     def configure_crossover(self, genome1, genome2, config):
         """ Configure a new genome by crossover from two parent genomes. """
-        assert isinstance(genome1.fitness, (int, float)), "Genome1.fitness ({0!r}) is type {1!s}, not int/float".format(
+        assert isinstance(genome1.fitness,
+                          (int, float)), "Genome1.fitness ({0!r}) is type {1!s}, not int/float".format(
             genome1.fitness, type(genome1.fitness))
-        assert isinstance(genome2.fitness, (int, float)), "Genome2.fitness ({0!r}) is type {1!s}, not int/float".format(
+        assert isinstance(genome2.fitness,
+                          (int, float)), "Genome2.fitness ({0!r}) is type {1!s}, not int/float".format(
             genome2.fitness, type(genome2.fitness))
         if genome1.fitness > genome2.fitness:
             parent1, parent2 = genome1, genome2
@@ -277,6 +282,8 @@ class DefaultGenome(object):
             else:
                 # Homologous gene: combine genes from both parents.
                 self.connections[key] = cg1.crossover(cg2)
+                if cg1.enabled and config.fitter_enabled_transfer: # TEST + DOCUMENT!
+                    self.connections[key].enabled = True
 
         self.maybe_recurrent = parent1.maybe_recurrent
 

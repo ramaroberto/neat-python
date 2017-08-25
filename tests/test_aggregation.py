@@ -338,6 +338,17 @@ def test_get_MPF():
     else:
         raise Exception("Should have had a LookupError/derived for get_aggregation_MPF 'foo'")
 
+    sum_product_mean_MPF = config.genome_config.get_aggregation_MPF('sum_product_mean')
+    new_sum_product_mean_MPF = sum_product_mean_MPF.copy_and_change(
+        del_not_changed=True, new_param_dicts={'use_median':{'rate_to_true_add':0.05}})
+    new2_sum_product_mean_MPF = sum_product_mean_MPF.copy_and_change(
+        del_param_dicts={'use_median':None},
+        new_param_dicts={'use_median':{'rate_to_true_add':0.05}})
+    assert new_sum_product_mean_MPF is not None
+    assert new2_sum_product_mean_MPF is not None
+    assert id(sum_product_mean_MPF) != id(new_sum_product_mean_MPF)
+    assert id(sum_product_mean_MPF) != id(new2_sum_product_mean_MPF)
+
 def test_get_Evolved_MPF_simple():
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, 'test_configuration')
@@ -391,8 +402,8 @@ def test_get_Evolved_MPF_complex():
         raise Exception(
             "Should have had a RuntimeError/derived for get_aggregation_Evolved_MPF('maxabs_mean(0.5,0.5,0.5)')")
 
-    test_result = config.genome_config.get_aggregation_Evolved_MPF('max_median_min(0.5)')
-    assert config.genome_config.get_aggregation_Evolved_MPF(str(test_result)) is not None
+    test_result = config.genome_config.get_aggregation_Evolved_MPF('product_mean(0.5,True)')
+    assert str(test_result) == str(config.genome_config.get_aggregation_Evolved_MPF(str(test_result)))
     assert config.genome_config.multiparameterset.get_func(str(test_result), 'aggregation') is not None
 
 if __name__ == '__main__':

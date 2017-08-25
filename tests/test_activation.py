@@ -846,7 +846,7 @@ def test_get_Evolved_MPF_complex():
         raise Exception("Should have had a RuntimeError/derived for get_activation_Evolved_MPF 'multiparam_relu(0.5,0.5,0.5)'")
 
     test_result = config.genome_config.get_activation_Evolved_MPF('multiparam_relu(0.5)')
-    assert config.genome_config.get_activation_Evolved_MPF(str(test_result)) is not None
+    assert str(test_result) == str(config.genome_config.get_activation_Evolved_MPF(str(test_result)))
     assert config.genome_config.multiparameterset.get_func(str(test_result), 'activation') is not None
 
 if __name__ == '__main__':

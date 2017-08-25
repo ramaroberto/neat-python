@@ -29,7 +29,7 @@ def _make_partial(user_func, name=None, **params):
     if hasattr(user_func, '__module__') and (user_func.__module__ is not None):
         setattr(partial, '__module__', user_func.__module__)
     else: # pragma: no cover
-        setattr(partial, '__module__', make_partial.__module__)
+        setattr(partial, '__module__', _make_partial.__module__)
     return partial
 
 class EvolvedMultiParameterFunction(object):
@@ -78,8 +78,7 @@ class EvolvedMultiParameterFunction(object):
     def get_values(self, n=None):
         if n is not None:
             return self.current_param_values[n]
-        else:
-            return self.current_param_values # may want to return a copy...
+        return self.current_param_values # may want to return a copy...
 
     def __str__(self):
         return self.instance_name
@@ -226,7 +225,10 @@ class MultiParameterFunction(object):
                                                               **param_dict2)
         elif param_dict['param_type'] == 'bool':
             if full:
-                self.evolved_param_dicts[n].setdefault('mutate_rate', 0.1)
+                max_rate_add = max(param_dict.get('rate_to_true_add',0.0),
+                                   param_dict.get('rate_to_false_add',0.0))
+                self.evolved_param_dicts[n].setdefault('mutate_rate',
+                                                       min(0.1,max(0.0,(1.0-max_rate_add))))
                 self.evolved_param_dicts[n].setdefault('default', 'random')
                 self.evolved_param_dicts[n].setdefault('rate_to_true_add', 0.0)
                 self.evolved_param_dicts[n].setdefault('rate_to_false_add', 0.0)

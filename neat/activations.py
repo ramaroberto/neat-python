@@ -9,7 +9,7 @@ import math
 import sys
 import warnings
 
-from neat.math_util import NORM_EPSILON, softmax
+from neat.math_util import NORM_EPSILON
 from neat.multiparameter import MultiParameterSet
 from neat.multiparameter import BadFunctionError as InvalidActivationFunction # pylint: disable=unused-import
 
