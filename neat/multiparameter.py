@@ -12,6 +12,7 @@ import types
 import warnings
 
 from math import sqrt
+from pprint import saferepr
 
 from neat.attributes import FloatAttribute, BoolAttribute
 from neat.math_util import NORM_EPSILON
@@ -380,90 +381,11 @@ class MultiParameterSet(object):
             return mpfunc_dict[name]
         raise UnknownFunctionError("Unknown {!s} MPF function {!r}".format(which_type,name))
 
-    def get_Evolved_MPF(self, # MORE THOROUGH TESTS NEEDED!
-                         name, # type: str
-                         which_type # type: str
-                        ):
-        # type: (...) -> EvolvedMultiParameterFunction
-        """Fetches a named EvolvedMultiParameterFunction instance."""
-
-        # TODO: Accept in keyword format also (possibly use dict.update?);
-        # probably package into function usable by get_func also
-        if name in self.multiparam_func_dict[which_type]:
-            mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]
-            return mpfunc_dict[name].init_instance()
-
-        if not name.endswith(')'):
-            raise UnknownFunctionError("Unknown {!s} MPF function {!r} - no end ')'".format(
-                which_type,name))
-
-        param_start = name.find('(')
-        if param_start < 0:
-            raise UnknownFunctionError("Unknown {!s} MPF function {!r} - no start '('".
-                                       format(which_type,name))
-
-        func_name = name[:param_start]
-        if func_name not in self.multiparam_func_dict[which_type]:
-            raise UnknownFunctionError("Unknown {0!s} MPF function {1!r} (from {2!r})".
-                                       format(which_type,func_name,name))
-        multiparam_func = self.multiparam_func_dict[which_type][func_name]
-
-        param_values = name[(param_start+1):(len(name)-1)].split(',')
-
-        if len(multiparam_func.evolved_param_names) == (len(param_values)-1):
-            if param_values[0] in ('x','z',multiparam_func.user_func.__code__.co_varnames[0]):
-                param_values=param_values[1:]
-
-        if len(multiparam_func.evolved_param_names) < len(param_values):
-            raise RuntimeError(
-                "Too many ({0:n}) param_values in name {1!r} - should be max {2:n}".format(
-                    len(param_values), name, len(multiparam_func.evolved_param_names)))
-        elif len(multiparam_func.evolved_param_names) > len(param_values):
-            warnings.warn(
-                "EMPF name {0!r}: Only {1:n} param_values, but function takes {2:n}".format(
-                    name, len(param_values), len(multiparam_func.evolved_param_names)))
-
-        init_params = dict(zip(multiparam_func.evolved_param_names, param_values))
-        params = {}
-        for name2 in multiparam_func.evolved_param_names:
-            value = init_params[name2]
-            if multiparam_func.evolved_param_dicts[name2]['param_type'] == 'float':
-                params[name2] = float(value)
-            elif multiparam_func.evolved_param_dicts[name2]['param_type'] == 'int':
-                params[name2] = int(value)
-            elif multiparam_func.evolved_param_dicts[name2]['param_type'] == 'bool':
-                if value.lower() in ('false','off','0'):
-                    params[name2] = False
-                elif value.lower() in ('true', 'on', '1'):
-                    params[name2] = True
-                else:
-                    params[name2] = bool(value)
-            else:
-                raise RuntimeError(
-                    "{0!s}: Uninterpretable EMPF {1!s} param_type {2!r} for {3!r}".format(
-                        name, name2,
-                        multiparam_func.evolved_param_dicts[name2]['param_type'],
-                        multiparam_func))
-
-        instance = multiparam_func.init_instance()
-
-        instance.set_values(**params)
-
-        return instance
-
-
-    def get_func(self, name, which_type):
-        """
-        Figures out what function, or function instance for multiparameter functions,
-        is needed, and returns it.
-        """
-        if isinstance(name, EvolvedMultiParameterFunction) or hasattr(name, 'get_func'):
-            return name.get_func()
-
-        if name in self.norm_func_dict[which_type]:
-            func_dict = self.norm_func_dict[which_type]
-            return func_dict[name]
-
+    def _get_func_inner(self,
+                       name, # type: str
+                       which_type, # type: str
+                       return_partial # type: bool
+                       ):
         if not name.endswith(')'):
             raise UnknownFunctionError("Unknown {!s} function {!r} - no end )".
                                        format(which_type,name))
@@ -496,27 +418,67 @@ class MultiParameterSet(object):
 
         init_params = dict(zip(multiparam_func.evolved_param_names, param_values))
         params = {}
-        for name2 in multiparam_func.evolved_param_names:
-            value = init_params[name2]
-            if multiparam_func.evolved_param_dicts[name2]['param_type'] == 'float':
-                params[name2] = float(value)
-            elif multiparam_func.evolved_param_dicts[name2]['param_type'] == 'int':
-                params[name2] = int(value)
-            elif multiparam_func.evolved_param_dicts[name2]['param_type'] == 'bool':
-                if value.lower() in ('false','off','0'):
-                    params[name2] = False
+        for n2 in multiparam_func.evolved_param_names:
+            value = init_params[n2]
+            if multiparam_func.evolved_param_dicts[n2]['param_type'] == 'float':
+                params[n2] = float(value)
+            elif multiparam_func.evolved_param_dicts[n2]['param_type'] == 'int': # pragma: no cover
+                params[n2] = int(value)
+            elif multiparam_func.evolved_param_dicts[n2]['param_type'] == 'bool':
+                if isinstance(value, bool):
+                    params[n2] = value
+                elif isinstance(value, int):
+                    params[n2] = bool(value)
+                elif value.lower() in ('false','off','0'):
+                    params[n2] = False
                 elif value.lower() in ('true', 'on', '1'):
-                    params[name2] = True
+                    params[n2] = True
                 else:
-                    params[name2] = bool(value)
+                    params[n2] = bool(value)
             else:
                 raise RuntimeError(
                     "{0!s}: Uninterpretable EMPF {1!s} param_type {2!r} for {3!r}".format(
-                        name, name2,
-                        multiparam_func.evolved_param_dicts[name2]['param_type'],
+                        name, n2,
+                        multiparam_func.evolved_param_dicts[n2]['param_type'],
                         multiparam_func))
 
-        return _make_partial(multiparam_func.user_func, name=name, **params)
+        if return_partial:
+            return _make_partial(multiparam_func.user_func, name=name, **params)
+
+        instance = multiparam_func.init_instance()
+
+        instance.set_values(**params)
+
+        return instance
+
+    def get_Evolved_MPF(self, # MORE THOROUGH TESTS NEEDED!
+                         name, # type: str
+                         which_type # type: str
+                        ):
+        # type: (...) -> EvolvedMultiParameterFunction
+        """Fetches a named EvolvedMultiParameterFunction instance."""
+
+        # TODO: Accept in keyword format also (possibly use dict.update?);
+        # probably package into function usable by get_func also
+        if name in self.multiparam_func_dict[which_type]:
+            mpfunc_dict = self.multiparam_func_dict[which_type] # type: Dict[str, MultiParameterFunction]
+            return mpfunc_dict[name].init_instance()
+
+        return self._get_func_inner(name, which_type, return_partial=False)
+
+    def get_func(self, name, which_type):
+        """
+        Figures out what function, or function instance for multiparameter functions,
+        is needed, and returns it.
+        """
+        if isinstance(name, EvolvedMultiParameterFunction) or hasattr(name, 'get_func'):
+            return name.get_func()
+
+        if name in self.norm_func_dict[which_type]:
+            func_dict = self.norm_func_dict[which_type]
+            return func_dict[name]
+
+        return self._get_func_inner(name, which_type, return_partial=True)
 
     def add_func(self, name, user_func, which_type, **kwargs):
         """Adds a new activation/aggregation function, potentially multiparameter."""
@@ -524,27 +486,27 @@ class MultiParameterSet(object):
                           (types.BuiltinFunctionType,
                            types.FunctionType,
                            types.LambdaType)):
-            raise InvalidFunctionError("A function object is required, not {0!r} ({1!s})".format(
-                user_func, name))
+            raise InvalidFunctionError("A function object is required, not {0!s} ({1!s})".format(
+                saferepr(user_func), name))
 
         if not hasattr(user_func, '__code__'):
             if kwargs:
                 if isinstance(user_func, types.BuiltinFunctionType):
                     raise InvalidFunctionError(
-                        "Cannot use built-in function {0!r} ({1!s}) ".format(user_func,name)
+                        "Cannot use built-in function {0!s} ({1!s}) ".format(saferepr(user_func),name)
                         + "as multiparam {0!s} function - needs wrapping".format(which_type))
                 else:
                     raise InvalidFunctionError(
                         "For a multiparam {0!s} function, need an object ".format(which_type)
-                        + "with a __code__ attribute, not {1!r} ({2!s})".format(
-                            user_func, name))
+                        + "with a __code__ attribute, not {1!s} ({2!s})".format(
+                            saferepr(user_func), name))
             nfunc_dict = self.norm_func_dict[which_type]
             nfunc_dict[name] = user_func
             return
 
         func_code = user_func.__code__
         if func_code.co_argcount != (len(kwargs)+1):
-            raise InvalidFunctionError("Function {0!r} ({1!s})".format(user_func,name) +
+            raise InvalidFunctionError("Function {0!s} ({1!s})".format(saferepr(user_func),name) +
                                        " requires {0!s} args".format(func_code.co_argcount) +
                                        " but was given {0!s} kwargs ({1!r})".format(len(kwargs),
                                                                                     kwargs))
@@ -554,15 +516,17 @@ class MultiParameterSet(object):
             return
 
         if ('(' in name) or (')' in name):
-            raise InvalidFunctionError("Invalid function name '{!s}' for {!r}".format(name,
-                                                                                      user_func)
-                                       + " - multiparam function cannot have '(' or ')'")
+            raise InvalidFunctionError(
+                "Invalid function name '{!s}' for {!s}".format(name,
+                                                               saferepr(user_func))
+                + " - multiparam function cannot have '(' or ')'")
 
         first_an = func_code.co_varnames[0]
         if first_an in kwargs:
-            raise InvalidFunctionError("First argument '{0!s}' of function {1!r}".format(first_an,
-                                                                                         user_func)
-                                       + " ({0!s}) may not be in kwargs {1!r}".format(name,kwargs))
+            raise InvalidFunctionError(
+                "First argument '{0!s}' of function {1!s}".format(first_an,
+                                                                  saferepr(user_func))
+                + " ({0!s}) may not be in kwargs {1!r}".format(name,kwargs))
 
         evolved_param_names = func_code.co_varnames[1:func_code.co_argcount]
         func_names_set = set(evolved_param_names)
@@ -570,15 +534,17 @@ class MultiParameterSet(object):
 
         missing1 = func_names_set - kwargs_names_set
         if missing1:
-            raise InvalidFunctionError("Function {0!r} ({1!s}) has arguments ".format(user_func,
-                                                                                       name)
-                                       + "{0!r} not in kwargs {1!r}".format(missing1,
-                                                                             kwargs_names_set))
+            raise InvalidFunctionError(
+                "Function {0!s} ({1!s}) has arguments ".format(saferepr(user_func),
+                                                               name)
+                + "{0!r} not in kwargs {1!r}".format(missing1,
+                                                     kwargs_names_set))
         missing2 = kwargs_names_set - func_names_set
         if missing2:
-            raise InvalidFunctionError("Function {0!r} ({1!s}) lacks arguments ".format(user_func,
-                                                                                         name)
-                                       + "{0!r} in kwargs {1!r}".format(missing2,kwargs))
+            raise InvalidFunctionError(
+                "Function {0!s} ({1!s}) lacks arguments ".format(saferepr(user_func),
+                                                                 name)
+                + "{0!r} in kwargs {1!r}".format(missing2,kwargs))
 
 ##print("Adding function {0!r} ({1!s}) with kwargs {2!r} ({3!s})".format(user_func,name,
 ##                                                                  kwargs,type(kwargs)),

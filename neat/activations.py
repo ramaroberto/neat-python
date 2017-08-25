@@ -9,6 +9,8 @@ import math
 import sys
 import warnings
 
+from pprint import saferepr
+
 from neat.math_util import NORM_EPSILON
 from neat.multiparameter import MultiParameterSet
 from neat.multiparameter import BadFunctionError as InvalidActivationFunction # pylint: disable=unused-import
@@ -417,8 +419,9 @@ class ActivationFunctionSet(object):
         return self.multiparameterset.get_func(name, 'activation')
 
     def __getitem__(self, index):
-        warnings.warn("Use get, not indexing ([{!r}]), for activation functions".format(index),
-                      DeprecationWarning)
+        warnings.warn(
+            "Use get, not indexing ([{!s}]), for activation functions".format(saferepr(index)),
+            DeprecationWarning)
         return self.get(index)
 
     def is_valid(self, name):
