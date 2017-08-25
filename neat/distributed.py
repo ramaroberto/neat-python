@@ -568,6 +568,9 @@ class DistributedEvaluator(object):
                     if tasks and self.reconnect:
                         self.exit_on_stop = False
                     elif not tasks:
+                        if self.reconnect:
+                            reconnect_max_time /= 5
+                            em_bad = True
                         self.reconnect = False
                     break
                 last_time_done = time.time()

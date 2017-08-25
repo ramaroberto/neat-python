@@ -3,6 +3,8 @@ python-targets:
   - 3
 doc-warnings: true
 max-line-length: 100
+pylint:
+  run: false
 pyroma:
   run: true
 ignore-patterns:
