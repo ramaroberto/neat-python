@@ -58,8 +58,8 @@ def relu_activation(z):
 def softplus_activation(z):
     try:
         to_return = 0.2 * math.log1p(math.exp(z*5.0))
-    except ArithmeticError:
-        if z > 0.0: # pragma: no cover
+    except ArithmeticError: # pragma: no cover
+        if z > 0.0:
             return z
         return 0.0
     else:
@@ -186,7 +186,7 @@ def multiparam_elu_activation(z, a, b):
 ##def multiparam_lu_partial_activation(z, a, b): # TEST NEEDED!
 ##    return multiparam_lu_activation(z, a, b, 0.0)
 
-def _check_value_range(a, min_val, max_val, caller, var_name): # TEST NEEDED!
+def _check_value_range(a, min_val, max_val, caller, var_name):
     if not min_val <= a <= max_val:
         raise ValueError(
             "{0} for {1}_activation must be between {2:n} and {3:n}, not {4!r}".format(

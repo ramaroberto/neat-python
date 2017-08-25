@@ -9,6 +9,7 @@ import sys
 import warnings
 
 from operator import mul
+from pprint import saferepr
 
 from neat.multiparameter import MultiParameterSet
 from neat.multiparameter import BadFunctionError as InvalidAggregationFunction # pylint: disable=unused-import
@@ -165,8 +166,9 @@ class AggregationFunctionSet(object):
         return self.multiparameterset.get_func(name, 'aggregation')
 
     def __getitem__(self, index):
-        warnings.warn("Use get, not indexing ([{!r}]), for aggregation functions".format(index),
-                      DeprecationWarning)
+        warnings.warn(
+            "Use get, not indexing ([{!s}]), for aggregation functions".format(saferepr(index)),
+            DeprecationWarning)
         return self.get(index)
 
     def is_valid(self, name):

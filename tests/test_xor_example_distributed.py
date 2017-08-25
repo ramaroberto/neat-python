@@ -1,4 +1,6 @@
-from __future__ import print_function
+from __future__ import print_function, division
+
+import logging
 import multiprocessing
 import os
 import random
@@ -12,10 +14,14 @@ from neat.distributed import MODE_PRIMARY, MODE_SECONDARY
 
 ON_PYPY = platform.python_implementation().upper().startswith("PYPY")
 
-if ON_PYPY and ((not 'TRY_PYPY' in os.environ) or (os.environ['TRY_PYPY'] != 1)):
+if ON_PYPY and (not 'TRY_PYPY' in os.environ):
     SKIP_FOR_PYPY = True
 else:
     SKIP_FOR_PYPY = False
+
+if not SKIP_FOR_PYPY:
+    logger = multiprocessing.log_to_stderr()
+    logger.setlevel(multiprocessing.SUBWARNING)
 
 # 2-input XOR inputs and expected outputs.
 XOR_INPUTS = [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]
@@ -45,10 +51,10 @@ def run_primary(addr, authkey, generations):
     p = neat.Population(config)
 
     # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(True))
+    p.add_reporter(neat.StdOutReporter(False))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    checkpointer = neat.Checkpointer(max(1,(int(generations/4)-1)), 10)
+    checkpointer = neat.Checkpointer(max(1,(int(round(((generations/4.0)-1.0),0)))), 10)
     p.add_reporter(checkpointer)
 
     # Run for the specified number of generations.
@@ -62,6 +68,7 @@ def run_primary(addr, authkey, generations):
         )
     de.start(reconnect=True)
     winner = p.run(de.evaluate, generations)
+    logger.setlevel(multiprocessing.SUBDEBUG)
     print("===== stopping DistributedEvaluator =====")
     de.stop(wait=3, shutdown=False, force_secondary_shutdown=False)
 
@@ -80,7 +87,7 @@ def run_primary(addr, authkey, generations):
         filename = 'neat-checkpoint-{0}'.format(checkpointer.last_generation_checkpoint)
         print("Restoring from {!s}".format(filename))
         p2 = neat.checkpoint.Checkpointer.restore_checkpoint(filename)
-        p2.add_reporter(neat.StdOutReporter(True))
+        p2.add_reporter(neat.StdOutReporter(False))
         stats2 = neat.StatisticsReporter()
         p2.add_reporter(stats2)
 
@@ -113,7 +120,7 @@ def run_secondary(addr, authkey, num_workers=1):
     p = neat.Population(config)
 
     # Add a stdout reporter to show progress in the terminal.
-    p.add_reporter(neat.StdOutReporter(True))
+    p.add_reporter(neat.StdOutReporter(False))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
 
@@ -125,6 +132,7 @@ def run_secondary(addr, authkey, num_workers=1):
         mode=MODE_SECONDARY,
         num_workers=num_workers,
         )
+    logger.setlevel(multiprocessing.SUBDEBUG)
     try:
         de.start(secondary_wait=3, exit_on_stop=True, reconnect=True)
     except SystemExit:
@@ -167,5 +175,7 @@ def test_xor_example_distributed():
 
 
 if __name__ == '__main__':
-    test_xor_example_distributed()
+    if not SKIP_FOR_PYPY:
+        logger.setlevel(multiprocessing.SUBDEBUG)
+        test_xor_example_distributed()
 

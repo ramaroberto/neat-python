@@ -59,8 +59,8 @@ def partial_extract_function_args(partial_function, poss_name, no_match=WARN_IF_
         return "functools.partial({0!s}, **{1!r})".format(poss_name,partial_kwargs)
 
     return _handle_no_match(poss_name, no_match,
-                            "Partial function {0!r} (func {1!r}) had no arguments?".format(
-                                partial_function, poss_name))
+                            "Partial function {0!s} (func {1!r}) had no arguments?".format(
+                                saferepr(partial_function), poss_name))
         
 
 def repr_extract_function_name(function,
@@ -77,7 +77,7 @@ def repr_extract_function_name(function,
         result = name_re.match(str(function.__name__))
         if result:
             poss_name = result.group(1)
-        elif not as_partial:
+        elif not as_partial: # pragma: no cover
             result = full_name_re.match(str(function.__name__))
             if result:
                 if OK_with_args:
