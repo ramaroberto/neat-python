@@ -502,7 +502,23 @@ class DistributedEvaluator(object):
 
     def _start_secondary(self):
         """Start as a secondary."""
-        self.em.start()
+        if self.reconnect:
+            timeout = max(5,self.worker_timeout) + time.time()
+            keep_trying = True
+            while keep_trying:
+                try:
+                    self.em.start()
+                except (EOFError, IOError, OSError, socket.gaierror, TypeError,
+                        managers.RemoteError, multiprocessing.ProcessError) as e:
+                    status = _check_exception(e)
+                    if ((_check_exception(e) == _EXCEPTION_TYPE_BAD) or
+                        (time.time() > timeout)):
+                        raise
+                    continue
+                else:
+                    keep_trying = False
+        else:
+            self.em.start()
         self._set_shared_instances()
 
     def _set_shared_instances(self):

@@ -28,7 +28,7 @@ name_re = re.compile(r'(\w+)$')
 full_name_re = re.compile(r'(\w+)\((.+)\)$')
 module_re = re.compile(r'(\w[.a-zA-Z_]*)$')
 function_re = re.compile(r'\s*<?function\s+\b(\w+)\b')
-partial_re = re.compile(r'\s*<?functools\.partial\b')
+partial_re = re.compile(r'\s*[<_]*functools\.partial\b')
 
 def extract_function_name(repr_result, start_only=True, no_match=WARN_IF_NO_MATCH):
     if start_only:
