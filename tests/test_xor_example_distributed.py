@@ -160,7 +160,7 @@ def test_xor_example_distributed():
         target=run_secondary,
         args=(addr, authkey, 1),
         )
-    swcp.daemon = True  # we cannot set this if using multiple worker processes
+    #swcp.daemon = True  # we cannot set this if using multiple worker processes, and currently getting errors even with swcp
     swcp.start()
     mp.join()
     if mp.exitcode != 0:

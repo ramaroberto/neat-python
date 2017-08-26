@@ -180,14 +180,14 @@ class _DecrefLogHandler(logging.Handler):
         logging.Handler.__init__(self, level=min(level,logging.DEBUG))
 
     def filter(self, record):
-        text = record.getMessage.lower()
-        if ('decref' in text) and ('failed' in text):
+        text = record.getMessage()
+        if ('decref' in text.lower()) and ('failed' in text.lower()):
             return True
         return False
 
     def emit(self, record):
-        text = record.getMessage.lower()
-        if ('decref' not in text) or ('failed' not in text):
+        text = record.getMessage()
+        if ('decref' not in text.lower()) or ('failed' not in text.lower()):
             warnings.warn(
                 "_DecrefLogHandler called with message {0!r} ({1!r})".format(
                     text, record),

@@ -259,7 +259,7 @@ def test_distributed_evaluation_multiprocessing(do_mwcp=True):
         target=run_secondary,
         args=(addr, authkey, 1),
         )
-    swcp.daemon = True  # we cannot set this on mwcp
+    #swcp.daemon = True  # we cannot set this on mwcp, and giving errors currently even on swcp
     if do_mwcp:
         mwcp.start()
     swcp.start()
@@ -327,7 +327,7 @@ def test_distributed_evaluation_threaded():
         target=run_secondary,
         args=(addr, authkey, 1),
         )
-    swcp.daemon = True  # we cannot set this on mwcp
+    #swcp.daemon = True  # we cannot set this on mwcp, and getting errors currently on swcp
     mwcp.start()
     swcp.start()
     mp.join()
