@@ -41,6 +41,7 @@ enabled_default         = True
 enabled_mutate_rate     = 0.01
 enabled_rate_to_false_add          = 0.0
 enabled_rate_to_true_add           = 0.0
+fitter_enabled_transfer = False
 
 # connectivity
 feed_forward            = True
@@ -49,6 +50,7 @@ initial_connection      = full
 # node add/remove rates
 node_add_prob           = 0.2
 node_delete_prob        = 0.2
+identical_mutations_keys = 0
 
 # network parameters
 num_hidden              = 0

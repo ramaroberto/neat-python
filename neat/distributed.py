@@ -141,7 +141,7 @@ def _determine_mode(addr, mode):
     elif type(addr) == type(b"binary_string"):
         host = addr
     else:
-        raise TypeError("'addr' needs to be a tuple or an bytestring!")
+        raise TypeError("'addr' needs to be a tuple or bytestring!")
     if mode == MODE_AUTO:
         if host_is_local(host):
             return MODE_PRIMARY

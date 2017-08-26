@@ -77,14 +77,14 @@ def repr_extract_function_name(function,
         result = name_re.match(str(function.__name__))
         if result:
             poss_name = result.group(1)
-        elif not as_partial: # pragma: no cover
+        elif not as_partial:
             result = full_name_re.match(str(function.__name__))
             if result:
                 if OK_with_args:
                     poss_name = str(function.__name__)
                 else:
                     poss_name = result.group(1)
-    if poss_name is None: # pragma: no cover
+    if poss_name is None:
         repr_result = saferepr(function)
         result_partial = partial_re.match(repr_result)
         if result_partial:

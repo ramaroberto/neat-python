@@ -5,7 +5,7 @@ import sys
 import warnings
 
 import neat
-from neat import activations, multiparameter
+from neat import activations, multiparameter, repr_util
 
 warnings.simplefilter('default')
 
@@ -847,7 +847,16 @@ def test_get_Evolved_MPF_complex():
 
     test_result = config.genome_config.get_activation_Evolved_MPF('multiparam_relu(0.5)')
     assert str(test_result) == str(config.genome_config.get_activation_Evolved_MPF(str(test_result)))
-    assert config.genome_config.multiparameterset.get_func(str(test_result), 'activation') is not None
+    partial_func = config.genome_config.multiparameterset.get_func(str(test_result), 'activation')
+    assert partial_func is not None
+    extracted = repr_util.repr_extract_function_name(partial_func)
+    assert '0.5' in extracted, "Wrong extracted {0!r} from partial_func {1!r}".format(extracted,
+                                                                                      partial_func)
+    assert 'multiparam_relu_activation' in extracted, "Wrong extracted {0!r} from partial_func {1!r}".format(extracted,
+                                                                                                             partial_func)
+    extracted2 = repr_util.repr_extract_function_name(partial_func, with_module=False, as_partial=False, OK_with_args=True)
+    assert extracted2 == 'multiparam_relu(z,0.5)', "Wrong extracted2 {0!r} from partial_func {1!r}".format(extracted2,
+                                                                                                         partial_func)
 
 if __name__ == '__main__':
     test_sigmoid()
