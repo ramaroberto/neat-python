@@ -59,6 +59,7 @@ a primary node or as a secondary node with MODE_AUTO.
 """
 from __future__ import print_function
 
+import logging
 import socket
 import sys
 import time
@@ -171,6 +172,29 @@ def chunked(data, chunksize):
         res.append(cur)
     return res
 
+class _DecrefLogHandler(logging.Handler):
+    """Class to catch 'decref failed' multiprocessing messages in secondaries and cause a shutdown"""
+
+    def __init__(self, to_notify, level=logging.DEBUG):
+        self.to_notify = to_notify
+        logging.Handler.__init__(level=min(level,logging.DEBUG))
+
+    def filter(self, record):
+        text = record.getMessage.lower()
+        if ('decref' in text) and ('failed' in text):
+            return True
+        return False
+
+    def emit(self, record):
+        text = record.getMessage.lower()
+        if ('decref' not in text) or ('failed' not in text):
+            warnings.warn(
+                "_DecrefLogHandler called with message {0!r} ({1!r})".format(
+                    text, record),
+                RuntimeWarning)
+            return
+        self.to_notify.logger_notified = True
+        
 
 class _ExtendedManager(object):
     """A class for managing the multiprocessing.managers.SyncManager"""
@@ -348,6 +372,7 @@ class DistributedEvaluator(object):
         self.reconnect = False
         self.reconnect_max_time = None
         self.n_tasks = None
+        self.logger_notified = False
 
     def __getstate__(self): # pragma: no cover
         """Required by the pickle protocol."""
@@ -397,10 +422,10 @@ class DistributedEvaluator(object):
         self.reconnect = reconnect
         if reconnect_max_time is None:
             if reconnect:
-                reconnect_max_time = max((5*60),(15*max(5,self.worker_timeout)))
+                reconnect_max_time = 6*max(60,self.worker_timeout)
             else:
-                reconnect_max_time = max(60,(5*max(1,self.worker_timeout)))
-        self.reconnect_max_time = max(0.3,reconnect_max_time)
+                reconnect_max_time = 2*max(60,self.worker_timeout)
+        self.reconnect_max_time = max(0.5,reconnect_max_time)
         if self.mode == MODE_PRIMARY:
             self._start_primary()
         elif self.mode == MODE_SECONDARY:
@@ -435,7 +460,7 @@ class DistributedEvaluator(object):
         if not self.started:
             raise RuntimeError("Not yet started!")
         if self.n_tasks is None: # pragma: no cover
-            self.n_tasks = max(1, wait, self.worker_timeout)*5
+            self.n_tasks = max(5, (wait*5), self.worker_timeout)
             warnings.warn("Self.n_tasks is None; estimating at {:n}".format(self.n_tasks))
         start_time = time.time()
         num_added = 0
@@ -452,7 +477,7 @@ class DistributedEvaluator(object):
             except (EOFError, IOError, OSError, socket.gaierror, TypeError, queue.Full,
                     managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
                 if ("timed" in repr(e).lower()) or ("timeout" in repr(e).lower()):
-                    if (time.time() - start_time) < max(1, wait, self.worker_timeout):
+                    if (time.time() - start_time) < max(1, wait, (self.worker_timeout/5)):
                         num_added += 1
                         continue
                     else:
@@ -511,11 +536,15 @@ class DistributedEvaluator(object):
             pool = multiprocessing.Pool(self.num_workers)
         else:
             pool = None
+        logger = multiprocessing.get_logger()
+        handler = _DecrefLogHandler(to_notify=self)
+        logger.addHandler(handler)
         should_reconnect = True
         if self.reconnect:
             em_bad = False
         else:
             em_bad = True
+        self.logger_notified = False
         while should_reconnect:
             last_time_done = time.time() # so that if loops below, have a chance to check _reset_em
             running = True
@@ -523,7 +552,7 @@ class DistributedEvaluator(object):
                 self._reset_em()
             except (EOFError, IOError, OSError, socket.gaierror, TypeError,
                     managers.RemoteError, multiprocessing.ProcessError) as e:
-                if (time.time() - last_time_done) >= reconnect_max_time:
+                if ((time.time() - last_time_done) >= reconnect_max_time) or self.logger_notified:
                     should_reconnect = False
                     em_bad = True
                     if self._check_exception(e) == _EXCEPTION_TYPE_BAD: # pragma: no cover
@@ -534,19 +563,21 @@ class DistributedEvaluator(object):
                     raise
                 else:
                     continue
-            last_time_done = time.time() # being successful at reconnecting can be used as a keepalive
+            last_time_done = time.time() # being successful at reconnecting - used as a keepalive
             while running:
                 try:
                     tasks = self.inqueue.get(block=True, timeout=0.2)
                 except queue.Empty:
                     continue
                 except (EOFError, TypeError, socket.gaierror,
-                        managers.RemoteError, multiprocessing.ProcessError, IOError, OSError) as e:
+                        managers.RemoteError, multiprocessing.ProcessError,
+                        IOError, OSError) as e:
                     if ('empty' in repr(e).lower()): # pragma: no cover
                         continue
                     curr_status = self._check_exception(e)
                     if curr_status in (_EXCEPTION_TYPE_OK, _EXCEPTION_TYPE_UNCERTAIN):
-                        if (time.time() - last_time_done) >= reconnect_max_time:
+                        if ((time.time() - last_time_done)
+                            >= reconnect_max_time) or self.logger_notified:
                             if em_bad:
                                 should_reconnect = False
                             break
@@ -554,7 +585,8 @@ class DistributedEvaluator(object):
                             continue
                         else:
                             break
-                    elif (time.time() - last_time_done) >= reconnect_max_time: # pragma: no cover
+                    elif ((time.time() - last_time_done)
+                          >= reconnect_max_time) or self.logger_notified: # pragma: no cover
                         self.exit_on_stop = True
                         self.exit_string = repr(e)
                         should_reconnect = False
@@ -569,7 +601,7 @@ class DistributedEvaluator(object):
                         self.exit_on_stop = False
                     elif not tasks:
                         if self.reconnect:
-                            reconnect_max_time /= 5
+                            reconnect_max_time /= 3
                             em_bad = True
                         self.reconnect = False
                     break
@@ -605,7 +637,8 @@ class DistributedEvaluator(object):
                         continue
                     curr_status = self._check_exception(e)
                     if curr_status in (_EXCEPTION_TYPE_OK, _EXCEPTION_TYPE_UNCERTAIN):
-                        if (time.time() - last_time_done) >= reconnect_max_time:
+                        if ((time.time() - last_time_done)
+                            >= reconnect_max_time) or self.logger_notified:
                             if em_bad:
                                 should_reconnect = False
                             break
@@ -613,7 +646,8 @@ class DistributedEvaluator(object):
                             continue
                         else:
                             break
-                    elif (time.time() - last_time_done) >= reconnect_max_time: # pragma: no cover
+                    elif ((time.time() - last_time_done)
+                          >= reconnect_max_time) or self.logger_notified: # pragma: no cover
                         self.exit_on_stop = True
                         self.exit_string = repr(e)
                         should_reconnect = False
@@ -622,10 +656,12 @@ class DistributedEvaluator(object):
                         raise
                 else:
                     last_time_done = time.time()
-            if ((time.time() - last_time_done) >= reconnect_max_time):
+            if ((time.time() - last_time_done)
+                >= reconnect_max_time) or self.logger_notified:
                 if em_bad:
                     should_reconnect = False
                 break
+        logger.removeHandler(handler)
         if pool is not None:
             pool.terminate()
 

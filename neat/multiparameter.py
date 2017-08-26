@@ -41,8 +41,8 @@ class EvolvedMultiParameterFunction(object):
     def __init__(self, name, multi_param_func):
         self.name = name
         assert isinstance(multi_param_func,
-                          MultiParameterFunction), "multi_param_func {0!s} type '{1!s}' ({2!r}) bad".format(
-            name, type(multi_param_func), multi_param_func)
+                          MultiParameterFunction), "MPF {0!s} type '{1!s}' ({2!s})".format(
+            name, type(multi_param_func), saferepr(multi_param_func))
         self.multi_param_func = multi_param_func
         self.user_func = multi_param_func.user_func
         self.evolved_param_names = multi_param_func.evolved_param_names
@@ -89,6 +89,7 @@ class EvolvedMultiParameterFunction(object):
             self.name, self.multi_param_func, self.current_param_values)
 
     def distance(self, other):
+        """Determine distance between two activation or aggregation functions."""
         if not isinstance(other, EvolvedMultiParameterFunction):
             return 1.0
 
@@ -493,7 +494,8 @@ class MultiParameterSet(object):
             if kwargs:
                 if isinstance(user_func, types.BuiltinFunctionType):
                     raise InvalidFunctionError(
-                        "Cannot use built-in function {0!s} ({1!s}) ".format(saferepr(user_func),name)
+                        "Cannot use built-in function {0!s} ({1!s}) ".format(
+                            saferepr(user_func),name)
                         + "as multiparam {0!s} function - needs wrapping".format(which_type))
                 else:
                     raise InvalidFunctionError(
