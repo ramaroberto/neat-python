@@ -20,8 +20,9 @@ else:
     SKIP_FOR_PYPY = False
 
 if not SKIP_FOR_PYPY:
-    logger = multiprocessing.log_to_stderr()
-    logger.setLevel(multiprocessing.SUBWARNING)
+    if ON_PYPY:
+        logger = multiprocessing.log_to_stderr()
+        logger.setLevel(multiprocessing.SUBWARNING)
 
 # 2-input XOR inputs and expected outputs.
 XOR_INPUTS = [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]
@@ -68,7 +69,8 @@ def run_primary(addr, authkey, generations):
         )
     de.start(reconnect=True)
     winner = p.run(de.evaluate, generations)
-    logger.setLevel(multiprocessing.SUBDEBUG)
+    if ON_PYPY:
+        logger.setLevel(multiprocessing.SUBDEBUG)
     print("===== stopping DistributedEvaluator =====")
     de.stop(wait=3, shutdown=False, force_secondary_shutdown=False)
 
@@ -94,7 +96,7 @@ def run_primary(addr, authkey, generations):
         winner2 = None
         time.sleep(3)
         de.start(reconnect=True)
-        winner2 = p2.run(de.evaluate, (100-checkpointer.last_generation_checkpoint))
+        winner2 = p2.run(de.evaluate, (generations-checkpointer.last_generation_checkpoint))
         print ("===== stopping DistributedEvaluator (forced) =====")
         de.stop(wait=3, shutdown=True, force_secondary_shutdown=True)
 
@@ -132,7 +134,8 @@ def run_secondary(addr, authkey, num_workers=1):
         mode=MODE_SECONDARY,
         num_workers=num_workers,
         )
-    logger.setLevel(multiprocessing.SUBDEBUG)
+    if ON_PYPY:
+        logger.setLevel(multiprocessing.SUBDEBUG)
     try:
         de.start(secondary_wait=3, exit_on_stop=True, reconnect=True)
     except SystemExit:
@@ -176,6 +179,7 @@ def test_xor_example_distributed():
 
 if __name__ == '__main__':
     if not SKIP_FOR_PYPY:
-        logger.setLevel(multiprocessing.SUBDEBUG)
+        if ON_PYPY:
+            logger.setLevel(multiprocessing.SUBDEBUG)
         test_xor_example_distributed()
 

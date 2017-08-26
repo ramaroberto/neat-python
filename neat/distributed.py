@@ -187,7 +187,7 @@ class _DecrefLogHandler(logging.Handler):
 
     def emit(self, record):
         text = record.getMessage()
-        if ('decref' not in text.lower()) or ('failed' not in text.lower()):
+        if ('decref' not in text.lower()) or ('failed' not in text.lower()): # pragma: no cover
             warnings.warn(
                 "_DecrefLogHandler called with message {0!r} ({1!r})".format(
                     text, record),
@@ -380,7 +380,7 @@ class DistributedEvaluator(object):
         # called.
         return True  # return some nonzero value
 
-    def __setstate__(self, state):
+    def __setstate__(self, state): # pragma: no cover
         """Called when instances of this class are unpickled."""
         self._set_shared_instances()
 
@@ -530,21 +530,21 @@ class DistributedEvaluator(object):
             return _EXCEPTION_TYPE_UNCERTAIN
         return _EXCEPTION_TYPE_BAD
 
-    def _secondary_loop(self, reconnect_max_time=(5*60)):
+    def _secondary_loop(self, reconnect_max_time):
         """The worker loop for the secondary nodes."""
         if self.num_workers > 1:
             pool = multiprocessing.Pool(self.num_workers)
         else:
             pool = None
-        logger = multiprocessing.get_logger()
+        self.logger_notified = False
         handler = _DecrefLogHandler(to_notify=self)
+        logger = multiprocessing.get_logger()
         logger.addHandler(handler)
         should_reconnect = True
         if self.reconnect:
             em_bad = False
         else:
             em_bad = True
-        self.logger_notified = False
         while should_reconnect:
             last_time_done = time.time() # so that if loops below, have a chance to check _reset_em
             running = True
@@ -661,6 +661,7 @@ class DistributedEvaluator(object):
                 if em_bad:
                     should_reconnect = False
                 break
+        logger.addHandler(logging.NullHandler())
         logger.removeHandler(handler)
         if pool is not None:
             pool.terminate()

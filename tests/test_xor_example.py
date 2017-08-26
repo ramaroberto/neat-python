@@ -149,7 +149,7 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
 
         winner2 = None
         try:
-            winner2 = p2.run(eval_genomes, (100-checkpointer.last_generation_checkpoint))
+            winner2 = p2.run(eval_genomes, (101-checkpointer.last_generation_checkpoint))
         except neat.CompleteExtinctionException:
             pass
 
