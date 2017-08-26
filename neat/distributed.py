@@ -177,7 +177,7 @@ class _DecrefLogHandler(logging.Handler):
 
     def __init__(self, to_notify, level=logging.DEBUG):
         self.to_notify = to_notify
-        logging.Handler.__init__(level=min(level,logging.DEBUG))
+        logging.Handler.__init__(self, level=min(level,logging.DEBUG))
 
     def filter(self, record):
         text = record.getMessage.lower()

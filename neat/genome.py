@@ -45,7 +45,8 @@ class DefaultGenomeConfig(object):
                         ConfigParameter('structural_mutation_surer',
                                         str, 'default', default_ok=True),
                         ConfigParameter('initial_connection', str, 'unconnected'),
-                        ConfigParameter('fitter_enabled_transfer', bool, False)]
+                        ConfigParameter('fitter_enabled_transfer', bool, False),
+                        ConfigParameter('identical_mutations_keys', int, 0)]
 
         # Gather configuration data from the gene classes.
         self.node_gene_type = params['node_gene_type']
@@ -61,6 +62,17 @@ class DefaultGenomeConfig(object):
         # pins have keys 0,1,...
         self.input_keys = [-i - 1 for i in range(self.num_inputs)]
         self.output_keys = [i for i in range(self.num_outputs)]
+
+        if self.identical_mutations_keys:
+            if self.identical_mutations_keys < (self.num_outputs+self.num_hidden):
+                raise ValueError(
+                    "identical_mutations_keys {0:n} is too low for outputs+hidden {1:n}".format(
+                        self.identical_mutations_keys, (self.num_outputs+self.num_hidden)))
+            self.conn_to_node_dict = {}
+            self.node_to_conn_dict = {}
+        else:
+            self.conn_to_node_dict = None
+            self.node_to_conn_dict = None
 
         self.connection_fraction = None
 
@@ -124,13 +136,39 @@ class DefaultGenomeConfig(object):
         write_pretty_params(f, self, [p for p in self._params
                                       if 'initial_connection' not in p.name])
 
-    def get_new_node_key(self, node_dict):
+    def remove_from_node_conn_dict(self, node_id):
+        if (self.node_to_conn_dict is not None) and (node_id in self.node_to_conn_dict):
+            conn = self.node_to_conn_dict[node_id]
+            del self.node_to_conn_dict[node_id]
+            del self.conn_to_node_dict[conn]
+
+    def get_new_node_key(self, node_dict, conn=None):
         if self.node_indexer is None:
             self.node_indexer = count(max(list(iterkeys(node_dict))) + 1)
 
-        new_id = next(self.node_indexer)
+        if self.identical_mutations_keys and (conn is not None):
+            if self.conn_to_node_dict is None:
+                assert self.identical_mutations_keys > (self.num_outputs+self.num_hidden)
+                self.conn_to_node_dict = {}
+                self.node_to_conn_dict = {}
 
-        assert new_id not in node_dict
+            if conn in self.conn_to_node_dict:
+                new_id = self.conn_to_node_dict[conn]
+            else:
+                new_id = next(self.node_indexer)
+                self.conn_to_node_dict[conn] = new_id
+                self.node_to_conn_dict[new_id] = conn
+                assert new_id not in node_dict
+                while len(self.node_to_conn_dict) > self.identical_mutations_keys:
+                    oldest = min(iterkeys(self.node_to_conn_dict))
+                    if (oldest not in node_dict) or (len(self.node_to_conn_dict)
+                                                     > (2*self.identical_mutations_keys)):
+                        self.remove_from_node_conn_dict(oldest)
+                    else:
+                        break
+        else:
+            new_id = next(self.node_indexer)
+            assert new_id not in node_dict
 
         return new_id
 
@@ -317,7 +355,7 @@ class DefaultGenome(object):
                 self.mutate_add_connection(config)
             elif r < ((config.node_add_prob + config.node_delete_prob +
                        config.conn_add_prob + config.conn_delete_prob)/div):
-                self.mutate_delete_connection()
+                self.mutate_delete_connection(config)
         else:
             if random() < config.node_add_prob:
                 self.mutate_add_node(config)
@@ -329,7 +367,7 @@ class DefaultGenome(object):
                 self.mutate_add_connection(config)
 
             if random() < config.conn_delete_prob:
-                self.mutate_delete_connection()
+                self.mutate_delete_connection(config)
 
         # Mutate connection genes.
         for cg in self.connections.values():
@@ -347,7 +385,7 @@ class DefaultGenome(object):
 
         # Choose a random connection to split
         conn_to_split = choice(list(self.connections.values()))
-        new_node_id = config.get_new_node_key(self.nodes)
+        new_node_id = config.get_new_node_key(node_dict=self.nodes, conn=conn_to_split)
         ng = self.create_node(config, new_node_id)
         self.nodes[new_node_id] = ng
 
@@ -410,6 +448,9 @@ class DefaultGenome(object):
         cg = self.create_connection(config, in_node, out_node)
         self.connections[cg.key] = cg
 
+        config.remove_from_node_conn_dict(in_node)
+        config.remove_from_node_conn_dict(out_node)
+
     def mutate_delete_node(self, config):
         # Do nothing if there are no non-output nodes.
         available_nodes = [k for k in iterkeys(self.nodes) if k not in config.output_keys]
@@ -422,6 +463,10 @@ class DefaultGenome(object):
         for k in iterkeys(self.connections):
             if del_key in k:
                 connections_to_delete.add(k)
+                if k[0]==del_key:
+                    config.remove_from_node_conn_dict(k[1])
+                else:
+                    config.remove_from_node_conn_dict(k[0])
 
         for key in connections_to_delete:
             del self.connections[key]
@@ -430,9 +475,12 @@ class DefaultGenome(object):
 
         return del_key
 
-    def mutate_delete_connection(self):
+    def mutate_delete_connection(self, config=None):
         if self.connections:
             key = choice(list(self.connections.keys()))
+            if config is not None:
+                config.remove_from_node_conn_dict(key[0])
+                config.remove_from_node_conn_dict(key[1])
             del self.connections[key]
 
     def distance(self, other, config):
