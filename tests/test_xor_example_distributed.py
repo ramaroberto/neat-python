@@ -69,8 +69,6 @@ def run_primary(addr, authkey, generations):
         )
     de.start(reconnect=True)
     winner = p.run(de.evaluate, generations)
-    if ON_PYPY:
-        logger.setLevel(multiprocessing.SUBDEBUG)
     print("===== stopping DistributedEvaluator =====")
     de.stop(wait=3, shutdown=False, force_secondary_shutdown=False)
 
@@ -95,6 +93,8 @@ def run_primary(addr, authkey, generations):
 
         winner2 = None
         time.sleep(3)
+        if ON_PYPY:
+            logger.setLevel(multiprocessing.SUBDEBUG)
         de.start(reconnect=True)
         winner2 = p2.run(de.evaluate, (generations-checkpointer.last_generation_checkpoint))
         print ("===== stopping DistributedEvaluator (forced) =====")

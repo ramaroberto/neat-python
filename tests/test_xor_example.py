@@ -76,7 +76,7 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
     if compatibility_adjust:
         config_path = os.path.join(local_dir, 'test_configuration_adjust_number')
     else:
-        config_path = os.path.join(local_dir, 'test_configuration')
+        config_path = os.path.join(local_dir, 'test_configuration_further_options')
 
     # Load configuration.
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
@@ -162,12 +162,12 @@ def test_xor_example(uniform_weights=False, activation_default=None, activation_
 
 if __name__ == '__main__':
     if not MULTIPARAM_ONLY:
-        #test_xor_example_uniform_weights()
+        test_xor_example_uniform_weights()
         test_xor_example_uniform_weights_adjust()
-    #test_xor_example_multiparam_relu()
-    #test_xor_example_multiparam_sigmoid_or_relu()
+    test_xor_example_multiparam_relu()
+    test_xor_example_multiparam_sigmoid_or_relu()
     test_xor_example_multiparam_sigmoid_or_relu_adjust()
-    #test_xor_example_multiparam_aggregation()
+    test_xor_example_multiparam_aggregation()
     test_xor_example_multiparam_aggregation_adjust()
-    #if not MULTIPARAM_ONLY:
-        #test_xor_example()
+    if not MULTIPARAM_ONLY:
+        test_xor_example()
