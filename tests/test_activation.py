@@ -669,6 +669,61 @@ def test_multiparam_sigmoid_approx():
     assert activations.multiparam_sigmoid_approx_activation(0.0,-0.5) == 0.5
     assert activations.multiparam_sigmoid_approx_activation(0.0,-1.0) == 0.5
 
+def test_multiparam_gauss():
+    assert activations.multiparam_gauss_activation(0.0,4.0,2.0) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,4.0,1.5) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,4.0,1.0) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,4.0,0.5) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,4.0,0.0) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,3.0,2.0) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,3.0,1.0) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,3.0,0.0) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,2.0,2.0) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,2.0,1.5) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,2.0,1.0) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,2.0,0.5) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,2.0,0.0) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,1.0,2.0) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,1.0,1.0) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,1.0,0.0) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,0.0,2.0) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,0.0,1.5) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,0.0,1.0) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,0.0,0.5) == 1.0
+    assert activations.multiparam_gauss_activation(0.0,0.0,0.0) == 1.0
+    assert_almost_equal(activations.multiparam_gauss_activation(-0.5,0.0,2.0),
+                        activations.multiparam_gauss_activation(0.5,0.0,2.0))
+    assert_almost_equal(activations.multiparam_gauss_activation(-1.0,0.0,1.5),
+                        activations.multiparam_gauss_activation(1.0,0.0,1.5))
+    assert_almost_equal(activations.multiparam_gauss_activation(-1.0,0.0,1.0),
+                        activations.multiparam_gauss_activation(1.0,0.0,1.0))
+    assert_almost_equal(activations.multiparam_gauss_activation(-0.5,0.0,1.0),
+                        activations.multiparam_gauss_activation(0.5,0.0,1.0))
+    assert_almost_equal(activations.multiparam_gauss_activation(-1.0,0.0,0.5),
+                        activations.multiparam_gauss_activation(1.0,0.0,0.5))
+    assert_almost_equal(activations.multiparam_gauss_activation(-1.0,0.0,0.0),
+                        activations.multiparam_gauss_activation(1.0,0.0,0.0))
+    assert_almost_equal(activations.multiparam_gauss_activation(-0.5,2.0,1.0),
+                        activations.multiparam_gauss_activation(0.5,2.0,1.0))
+    assert_almost_equal(activations.multiparam_gauss_activation(-0.5,0.0,0.0),
+                        activations.multiparam_gauss_activation(0.5,0.0,0.0))
+    assert_almost_equal(activations.multiparam_gauss_activation(-0.5,4.0,2.0),
+                        activations.multiparam_gauss_activation(0.5,4.0,2.0))
+    assert_almost_equal(activations.multiparam_gauss_activation(-0.5,2.0,0.0),
+                        activations.multiparam_gauss_activation(0.5,2.0,0.0))
+    assert_almost_equal(activations.multiparam_gauss_activation(-0.5,4.0,1.0),
+                        activations.multiparam_gauss_activation(0.5,4.0,1.0))
+    assert_almost_equal(activations.multiparam_gauss_activation(-0.5,4.0,0.0),
+                        activations.multiparam_gauss_activation(0.5,4.0,0.0))
+    assert_almost_equal(activations.multiparam_gauss_activation(1.0,4.0,1.5),
+                        activations.multiparam_gauss_activation(-1.0,2.0,1.5))
+    assert_almost_equal(activations.multiparam_gauss_activation(-1.0,4.0,1.0),
+                        activations.multiparam_gauss_activation(1.0,1.0,1.0))
+    assert_almost_equal(activations.multiparam_gauss_activation(-1.0,4.0,0.5),
+                        activations.multiparam_gauss_activation(0.5,2.0,2.0))
+    assert_almost_equal(activations.multiparam_gauss_activation(-1.0,4.0,0.0),
+                        activations.multiparam_gauss_activation(1.0,1.0,0.0))
+
 
 def test_function_set():
     m = multiparameter.MultiParameterSet('activation')
@@ -708,6 +763,7 @@ def test_function_set():
     assert m.get_MPF('wave', 'activation') is not None
     assert m.get_MPF('multiparam_tanh_approx', 'activation') is not None
     assert m.get_MPF('multiparam_sigmoid_approx', 'activation') is not None
+    assert m.get_MPF('multiparam_gauss', 'activation') is not None
 
     assert s.is_valid('sigmoid')
     assert s.is_valid('tanh')
@@ -744,6 +800,7 @@ def test_function_set():
     assert s.is_valid('wave')
     assert s.is_valid('multiparam_tanh_approx')
     assert s.is_valid('multiparam_sigmoid_approx')
+    assert s.is_valid('multiparam_gauss')
 
     assert not s.is_valid('foo')
 
@@ -896,6 +953,7 @@ if __name__ == '__main__':
     test_wave()
     test_multiparam_tanh_approx()
     test_multiparam_sigmoid_approx()
+    test_multiparam_gauss()
     test_function_set()
     test_get_MPF()
     test_get_Evolved_MPF_simple()

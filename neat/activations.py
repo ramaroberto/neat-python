@@ -322,6 +322,31 @@ def multiparam_tanh_approx_activation(z, a, b):
 def multiparam_sigmoid_approx_activation(z, a):
     return min(1.0,max(0.0,((1.0+multiparam_tanh_approx_activation(z, a, 1.0))/2.0)))
 
+ABS_GAUSS_EPSILON = math.exp(-5.0 * NORM_EPSILON)
+
+def multiparam_gauss_activation(z, a, b):
+    _check_value_range(a, 0.0, 4.0, 'multiparam_gauss', 'a')
+    _check_value_range(b, 0.0, 2.0, 'multiparam_gauss', 'b')
+
+    mult = 1.0
+    if a < 1.0:
+        a = math.exp(a-1.0)
+        test_value = math.exp(-5.0 * NORM_EPSILON**a)
+        if test_value < ABS_GAUSS_EPSILON:
+            mult = ABS_GAUSS_EPSILON/test_value
+
+    if b < 0.5:
+        b = 0.5*math.exp(b-0.5)
+
+    try:
+        to_return = min(1.0,(mult*math.exp(-5.0 * b * abs(z)**a)))
+    except ArithmeticError:
+        if abs(z) > 0.0:
+            return 0.0
+        return 1.0
+    else:
+        return to_return
+
 class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""
     def __init__(self, multiparameterset=None):
@@ -410,6 +435,9 @@ class ActivationFunctionSet(object):
                  a={'min_init_value':-1.0, 'max_init_value':1.0,
                     'min_value':-12.0, 'max_value':12.0,
                     'init_type':'gaussian'})
+        self.add('multiparam_gauss', multiparam_gauss_activation,
+                 a={'min_value':0.0, 'max_value':4.0},
+                 b={'min_value':0.0, 'max_value':2.0})
 
 
     def add(self, name, function, **kwargs):

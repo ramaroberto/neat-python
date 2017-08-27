@@ -20,7 +20,7 @@ Old            New
 abs             multiparam_relu, multiparam_relu_softplus, or weighted_lu
 clamped      :ref:`clamped_tanh_step <clamped-tanh-step-label>`
 cube           :ref:`multiparam_pow <multiparam-pow-label>`
-gauss         :ref:`hat_gauss_rectangular <hat-gauss-rectangular-label>`
+gauss         hat_gauss_rectangular or multiparam_gauss
 hat             :ref:`hat_gauss_rectangular <hat-gauss-rectangular-label>`
 identity       multiparam_relu, multiparam_relu_softplus, or weighted_lu
 inv             :ref:`multiparam_log_inv <multiparam-log-inv-label>`, if for a CPPN
@@ -313,6 +313,21 @@ hat_gauss_rectangular
 .. figure:: activation-hat_gauss_rectangular.png
     :scale: 100 %
     :alt: Weighted mean of hat, gauss, and rectangular functions.
+
+.. figure:: activation-swap-hat_gauss_rectangular.png
+    :scale: 100 %
+    :alt: Weighted mean of hat, gauss, and rectangular functions
+
+multiparam_gauss
+^^^^^^^^^^^^^^^^^^^^
+
+.. figure:: activation-multiparam_gauss.png
+    :scale: 100 %
+    :alt: Gauss with variations on exponent, effective SD
+
+.. figure:: activation-swap-multiparam_gauss.png
+    :scale: 100 %
+    :alt: Gauss with variations on exponent, effective SD
 
 .. _multiparam-log-inv-label:
 
