@@ -72,6 +72,10 @@ def run_primary(addr, authkey, generations):
     de.start(reconnect=True)
     winner = p.run(de.evaluate, generations)
     print("===== stopping DistributedEvaluator =====")
+    if ON_PYPY:
+        logger.setLevel(multiprocessing.SUBDEBUG)
+    else:
+        logger.setLevel(logging.DEBUG)
     de.stop(wait=3, shutdown=False, force_secondary_shutdown=False)
 
     if winner:
@@ -95,10 +99,7 @@ def run_primary(addr, authkey, generations):
 
         winner2 = None
         time.sleep(3)
-        if ON_PYPY:
-            logger.setLevel(multiprocessing.SUBDEBUG)
-        else:
-            logger.setLevel(logging.DEBUG)
+        logger.setLevel(multiprocessing.SUBDEBUG)
         de.start(reconnect=True)
         winner2 = p2.run(de.evaluate, (generations-checkpointer.last_generation_checkpoint))
         print ("===== stopping DistributedEvaluator (forced) =====")
@@ -180,7 +181,7 @@ def test_xor_example_distributed():
         logger.setLevel(multiprocessing.SUBDEBUG) # doubt will do much, but just in case
     swcp.join(timeout=5*60)
     if swcp.is_alive():
-        raise Exception("Secondary process (pid {!r}) still alive".format(swcp.pid), file=sys.stderr)
+        raise Exception("Secondary process (pid {!r}) still alive".format(swcp.pid))
     if swcp.exitcode != 0:
         raise Exception("Singleworker-secondary-process exited with status {s}!".format(s=swcp.exitcode))
 

@@ -20,7 +20,7 @@ conn_delete_prob        = 0.2
 node_add_prob           = 0.25
 node_delete_prob        = 0.2
 activation_default      = clamped_tanh_step
-activation_options      = clamped_tanh_step multiparam_relu_softplus multiparam_sigmoid multiparam_log_inv hat_gauss multiparam_pow wave exp
+activation_options      = clamped_tanh_step multiparam_relu_softplus multiparam_sigmoid multiparam_sigmoid_approx multiparam_log_inv hat_gauss_rectangular multiparam_pow wave exp
 activation_mutate_rate  = 0.05
 aggregation_default     = sum_product
 aggregation_options     = sum_product maxabs_tmean max_median_min
@@ -52,6 +52,7 @@ weight_mutate_power     = 0.5
 enabled_default         = True
 enabled_mutate_rate     = 0.05
 enabled_rate_to_true_add = 0.05
+fitter_enabled_transfer = True
 
 [DefaultSpeciesSet]
 compatibility_threshold = 3.6
@@ -59,8 +60,10 @@ compatibility_threshold = 3.6
 [DefaultStagnation]
 species_fitness_func = max
 max_stagnation       = 20
+species_elitism = 2
 
 [DefaultReproduction]
 elitism            = 0
 survival_threshold = 0.2
 fitness_min_divisor = 0.0
+double_mutate_clones = True
