@@ -20,9 +20,11 @@ else:
     SKIP_FOR_PYPY = False
 
 if not SKIP_FOR_PYPY:
+    logger = multiprocessing.log_to_stderr()
     if ON_PYPY:
-        logger = multiprocessing.log_to_stderr()
         logger.setLevel(multiprocessing.SUBWARNING)
+    else:
+        logger.setLevel(logging.WARNING)
 
 # 2-input XOR inputs and expected outputs.
 XOR_INPUTS = [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)]
@@ -95,6 +97,8 @@ def run_primary(addr, authkey, generations):
         time.sleep(3)
         if ON_PYPY:
             logger.setLevel(multiprocessing.SUBDEBUG)
+        else:
+            logger.setLevel(logging.DEBUG)
         de.start(reconnect=True)
         winner2 = p2.run(de.evaluate, (generations-checkpointer.last_generation_checkpoint))
         print ("===== stopping DistributedEvaluator (forced) =====")
@@ -136,6 +140,8 @@ def run_secondary(addr, authkey, num_workers=1):
         )
     if ON_PYPY:
         logger.setLevel(multiprocessing.SUBDEBUG)
+    else:
+        logger.setLevel(logging.DEBUG)
     try:
         de.start(secondary_wait=3, exit_on_stop=True, reconnect=True)
     except SystemExit:
@@ -171,7 +177,10 @@ def test_xor_example_distributed():
     time.sleep(3)
     if swcp.is_alive():
         print("Secondary process (pid {!r}) still alive".format(swcp.pid), file=sys.stderr)
-    swcp.join()
+        logger.setLevel(multiprocessing.SUBDEBUG) # doubt will do much, but just in case
+    swcp.join(timeout=5*60)
+    if swcp.is_alive():
+        raise Exception("Secondary process (pid {!r}) still alive".format(swcp.pid), file=sys.stderr)
     if swcp.exitcode != 0:
         raise Exception("Singleworker-secondary-process exited with status {s}!".format(s=swcp.exitcode))
 
@@ -181,5 +190,10 @@ if __name__ == '__main__':
     if not SKIP_FOR_PYPY:
         if ON_PYPY:
             logger.setLevel(multiprocessing.SUBDEBUG)
+        else:
+            logger.setLevel(logging.DEBUG)
         test_xor_example_distributed()
+    else:
+        print("Not running on pypy without TRY_PYPY in environment",
+              file=sys.stderr)
 

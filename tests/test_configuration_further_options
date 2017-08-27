@@ -79,7 +79,7 @@ weight_replace_rate     = 0.1
 
 # structural mutation
 single_structural_mutation         = False
-structural_mutation_surer          = default
+structural_mutation_surer          = True
 
 [DefaultSpeciesSet]
 compatibility_threshold        = 3.0

@@ -5,10 +5,12 @@ import math
 import sys
 import warnings
 
+# Namespace is used for species so reproduction,
+# stagnation won't trample over each other's attribute names
 from argparse import Namespace
 from itertools import count
 
-from neat.math_util import mean, stdev, tmean
+from neat.math_util import mean, stdev, tmean, NORM_EPSILON
 from neat.six_util import iteritems, iterkeys, itervalues
 from neat.config import ConfigParameter, DefaultClassConfig
 
@@ -96,12 +98,17 @@ class Species(object):
         warnings.warn("Use species.stagnation_namespace for last_improved",
                       DeprecationWarning, stacklevel=2)
         self.stagnation_namespace.last_improved = value
+
     last_improved = property(getLastImproved,
                              setLastImproved)
 
     @property
     def fitness_history(self): # pragma: no cover
-        """Sole method available for this one, given is a list..."""
+        """
+        Partial (due to being a list) backwards compatibility
+        wrapper for species.fitness_history; use
+        species.stagnation_namespace.last_improved instead
+        """
         warnings.warn("Use species.stagnation_namespace for fitness_history",
                       stacklevel=2)
         return self.stagnation_namespace.fitness_history
@@ -148,6 +155,12 @@ class DefaultSpeciesSet(DefaultClassConfig):
         self.species = {}
         self.genome_to_species = {}
         self.orig_compatibility_threshold = config.compatibility_threshold
+
+        if config.desired_species_num_max < config.desired_species_num_min:
+            raise ValueError(
+                "Desired_species_num_max {0:n} but num_min {1:n}".format(
+                    config.desired_species_num_max, config.desired_species_num_min))
+
         if ((config.compatibility_threshold_adjust.lower() != 'fixed') or
             (reproduction is not None)):
             self.min_pop_seen = 10**sys.float_info.dig
@@ -161,7 +174,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
                 (self.threshold_adjust_dict['genome_config'] is not None)):
                 if self.threshold_adjust_dict['genome_config'] is None: # pragma: no cover
                     raise RuntimeError(
-                        "Need genome_config instance for species info (threshold_adjust {0!s})".format(
+                        "Need genome_config for species info (threshold_adjust {0!s})".format(
                             self.compatibility_threshold_adjust))
                 self.threshold_adjust_dict.update(
                     self.threshold_adjust_dict['genome_config'].get_compatibility_info())
@@ -181,49 +194,78 @@ class DefaultSpeciesSet(DefaultClassConfig):
                                   [ConfigParameter('compatibility_threshold', float),
                                    ConfigParameter('compatibility_threshold_adjust',
                                                    str, 'fixed'),
-                                   ConfigParameter('desired_species_num',
-                                                   float, 0.0, default_ok=True)])
+                                   ConfigParameter('desired_species_num_max',
+                                                   int, 0, default_ok=True),
+                                   ConfigParameter('desired_species_num_min',
+                                                   int, 0, default_ok=True)])
 
     def find_desired_num_species(self, pop_size_high, pop_size_low): # DOCUMENT!
-        if self.species_set_config.desired_species_num >= 2: # NEED TEST!
-            max_num_usable = pop_size_high/self.threshold_adjust_dict['min_size']
-            if max_num_usable < 2:
-                raise ValueError(
-                    "Pop_size {0:n} is too low for effective min species size {1:n}".format(
-                        pop_size_high, self.threshold_adjust_dict['min_size']))
-##            max_num_usable = max(max_num_usable,2)
-            if self.species_set_config.desired_species_num > max_num_usable: # NEED TEST!
-                warnings.warn(
-                    "Desired_species_num {0:n} is too high for pop_size {1:n};".format(
-                        self.species_set_config.desired_species_num,pop_size_high)
-                    + " adjusting to max {0:n}".format(max_num_usable))
-                self.species_set_config.desired_species_num = max_num_usable
-                sys.stderr.flush()
-            to_return = self.species_set_config.desired_species_num
-            # the below with floor and ceil results in:
-            # A. If input is an integer, _high is +1 and _low is -1
-            # B. If input is not an integer, _high is ceil and _low is floor
-            to_return_high = min(math.ceil(max_num_usable),
-                                 math.floor(max(math.sqrt(pop_size_high),to_return)+1.0))
-            to_return_low = max(2, math.ceil(min(math.sqrt(pop_size_low),to_return)-1.0))
-            return (to_return_high,to_return_low)
-        elif self.species_set_config.desired_species_num != 0:
-            warnings.warn(
-                "Desired_species_num of {0:n} not valid; treating as 0 (autoconfigure)".format(
-                    self.species_set_config.desired_species_num))
-            self.species_set_config.desired_species_num = 0
+        config = self.species_set_config
+        max_num_usable = math.ceil(pop_size_high/self.threshold_adjust_dict['min_size'])
+        if max_num_usable < 2:
+            raise ValueError(
+                "Pop_size {0:n} is too low for effective min species size {1:n}".format(
+                    pop_size_high, self.threshold_adjust_dict['min_size']))
 
-        poss_num_high = math.floor((pop_size_high/
-                                    self.threshold_adjust_dict['min_OK_size'])+1.0)
-        if poss_num_high < 2: # NEED TEST!
+        poss_num_high = min(max_num_usable, # just in case
+                            math.ceil(pop_size_high/
+                                      self.threshold_adjust_dict['min_OK_size']))
+
+        if config.desired_species_num_min > 2: # NEED TEST!
+            max_use = max((poss_num_high-1),2)
+            if config.desired_species_num_min > max_use: # NEED TEST!
+                warnings.warn(
+                    "Desired_species_num_min {0:n} is too high for pop_size {1:n};".format(
+                        config.desired_species_num_min,pop_size_high)
+                    + " adjusting to max {0:n}".format(max_use))
+                config.desired_species_num_min = max_use
+        elif ((config.desired_species_num_min != 0)
+              and (config.desired_species_num_min != 2)): # NEED TEST!
+            warnings.warn(
+                "Desired_species_num_min of {0:n} not valid; treating as 0 (autoconfigure)".format(
+                    config.desired_species_num_min))
+            config.desired_species_num_min = 0
+
+        if config.desired_species_num_max > 2:
+            if config.desired_species_num_max > max_num_usable: # NEED TEST!
+                warnings.warn(
+                    "Desired_species_num_max {0:n} is too high for pop_size {1:n};".format(
+                        config.desired_species_num_max,pop_size_high)
+                    + " adjusting to max {0:n}".format(max_num_usable))
+                config.desired_species_num_max = max_num_usable
+        elif config.desired_species_num_max != 0: # NEED TEST!
+            warnings.warn(
+                "Desired_species_num_max of {0:n} not valid; treating as 0 (autoconfigure)".format(
+                    config.desired_species_num_max))
+            config.desired_species_num_max = 0
+
+
+        if config.desired_species_num_min:
+            to_return_low = config.desired_species_num_min
+        else:
+            to_return_low = max(2,math.floor(pop_size_low/
+                                             self.threshold_adjust_dict['min_good_size']))
+
+        if config.desired_species_num_max > to_return_low:
+            to_return_high = config.desired_species_num_max
+        elif config.desired_species_num_max: # NEED TEST!
+            warnings.warn(
+                    "Desired_species_num_max {0:n} is too low for min (autoconfigure?);".format(
+                    config.desired_species_num_max)
+                    + " adjusting to min+1 {0:n}".format(to_return_low+1))
+            config.desired_species_num_max = to_return_low+1
+            to_return_high = to_return_low+1
+        elif poss_num_high < 2:
             raise ValueError(
                 "Pop_size {0:n} is too low to determine desired num species;".format(pop_size_high)
-                + " need minimum of {0:n} given min_good_size {1:n}".format(
+                + " need minimum of {0:n} given min_OK_size {1:n}".format(
                     (2*self.threshold_adjust_dict['min_OK_size']),
                     self.threshold_adjust_dict['min_OK_size']))
-        poss_num_low = max(2,math.ceil((pop_size_low/
-                                        self.threshold_adjust_dict['min_good_size'])-1.0))
-        return (poss_num_high,poss_num_low)
+        else:
+            to_return_high = min(max_num_usable,max(poss_num_high,(to_return_low+1)))
+
+        return (to_return_high,to_return_low)
+
 
     def adjust_compatibility_threshold(self, increase, curr_tmean, max_rep_dist): # DOCUMENT!
         old_threshold = self.species_set_config.compatibility_threshold
@@ -252,7 +294,9 @@ class DefaultSpeciesSet(DefaultClassConfig):
                                     max(self.orig_compatibility_threshold,
                                         min(div_threshold,sub_threshold)))
 
-            new_threshold = max(new_threshold,min(max_rep_dist,old_threshold))
+            new_threshold = max(new_threshold,NORM_EPSILON,min(max_rep_dist,old_threshold))
+            if new_threshold >= old_threshold: # pragma: no cover
+                return
             which = 'decreased'
         self.species_set_config.compatibility_threshold = new_threshold
         self.reporters.info(
@@ -364,8 +408,9 @@ class DefaultSpeciesSet(DefaultClassConfig):
         if self.species_set_config.compatibility_threshold_adjust.lower() == 'number':
             if generation < 1:
                 self.reporters.info(
-                    "Min_size is {0:n}, min_good_size is {1:n}".format(
+                    "Min_size is {0:n}, min_OK_size is {1:n}, min_good_size is {2:n}".format(
                         self.threshold_adjust_dict['min_size'],
+                        self.threshold_adjust_dict['min_OK_size'],
                         self.threshold_adjust_dict['min_good_size']))
             self.min_pop_seen = min(self.min_pop_seen,len(population))
             self.max_pop_seen = max(self.max_pop_seen,len(population))

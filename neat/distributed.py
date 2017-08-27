@@ -95,7 +95,7 @@ MODE_SECONDARY = MODE_SLAVE = 2  # enforce secondary mode
 # what a return from _check_exception means
 _EXCEPTION_TYPE_OK = 1 # queue empty and similar; try again
 _EXCEPTION_TYPE_UNCERTAIN = 0 # disconnected but may be able to reconnect
-_EXCEPTION_TYPE_BAD = -1 # either raise it again or immediately return and exit with non-zero status code
+_EXCEPTION_TYPE_BAD = -1 # raise it again or immediately return & exit with non-zero status code
 
 class ModeError(RuntimeError):
     """
@@ -173,7 +173,10 @@ def chunked(data, chunksize):
     return res
 
 class _DecrefLogHandler(logging.Handler):
-    """Class to catch 'decref failed' multiprocessing messages in secondaries and cause a shutdown"""
+    """
+    Class to catch 'decref failed' multiprocessing messages
+    in secondaries and cause a shutdown
+    """
 
     def __init__(self, to_notify, level=logging.DEBUG):
         self.to_notify = to_notify
@@ -194,7 +197,7 @@ class _DecrefLogHandler(logging.Handler):
                 RuntimeWarning)
             return
         self.to_notify.logger_notified = True
-        
+
 
 class _ExtendedManager(object):
     """A class for managing the multiprocessing.managers.SyncManager"""
@@ -494,6 +497,19 @@ class DistributedEvaluator(object):
             self.em.stop()
         self.started = False
 
+    @staticmethod
+    def _check_exception(e):
+        string = repr(e).lower()
+        if ('timed' in string) or ('timeout' in string):
+            return _EXCEPTION_TYPE_OK
+        elif isinstance(e, (EOFError, TypeError, socket.gaierror)):
+            return _EXCEPTION_TYPE_UNCERTAIN
+        elif (('eoferror' in string) or ('typeerror' in string) or ('gaierror' in string)
+              or ('pipeerror' in string) or ('authenticationerror' in string)
+              or ('refused' in string) or ('file descriptor' in string)
+              or ('reset' in string)):
+            return _EXCEPTION_TYPE_UNCERTAIN
+        return _EXCEPTION_TYPE_BAD
 
     def _start_primary(self):
         """Start as the primary"""
@@ -510,8 +526,7 @@ class DistributedEvaluator(object):
                     self.em.start()
                 except (EOFError, IOError, OSError, socket.gaierror, TypeError,
                         managers.RemoteError, multiprocessing.ProcessError) as e:
-                    status = _check_exception(e)
-                    if ((_check_exception(e) == _EXCEPTION_TYPE_BAD) or
+                    if ((self._check_exception(e) == _EXCEPTION_TYPE_BAD) or
                         (time.time() > timeout)):
                         raise
                     continue
@@ -532,19 +547,27 @@ class DistributedEvaluator(object):
         self.em = _ExtendedManager(self.addr, self.authkey, mode=self.mode, start=True)
         self._set_shared_instances()
 
-    @staticmethod
-    def _check_exception(e):
-        string = repr(e).lower()
-        if ('timed' in string) or ('timeout' in string):
-            return _EXCEPTION_TYPE_OK
-        elif isinstance(e, (EOFError, TypeError, socket.gaierror)):
-            return _EXCEPTION_TYPE_UNCERTAIN
-        elif (('eoferror' in string) or ('typeerror' in string) or ('gaierror' in string)
-              or ('pipeerror' in string) or ('authenticationerror' in string)
-              or ('refused' in string) or ('file descriptor' in string)
-              or ('reset' in string)):
-            return _EXCEPTION_TYPE_UNCERTAIN
-        return _EXCEPTION_TYPE_BAD
+    def _get_fitness(self, tasks, pool=None):
+        if pool is None:
+            res = []
+            for genome_id, genome, config in tasks:
+                fitness = self.eval_function(genome, config)
+                res.append((genome_id, fitness))
+            return res
+
+        genome_ids = []
+        jobs = []
+        for genome_id, genome, config in tasks:
+            genome_ids.append(genome_id)
+            jobs.append(
+                pool.apply_async(
+                    self.eval_function, (genome, config)
+                    )
+                )
+        results = [
+            job.get(timeout=self.worker_timeout) for job in jobs
+            ]
+        return zip(genome_ids, results)
 
     def _secondary_loop(self, reconnect_max_time):
         """The worker loop for the secondary nodes."""
@@ -557,10 +580,7 @@ class DistributedEvaluator(object):
         logger = multiprocessing.get_logger()
         logger.addHandler(handler)
         should_reconnect = True
-        if self.reconnect:
-            em_bad = False
-        else:
-            em_bad = True
+        em_bad = self.reconnect
         while should_reconnect:
             last_time_done = time.time() # so that if loops below, have a chance to check _reset_em
             running = True
@@ -622,25 +642,9 @@ class DistributedEvaluator(object):
                         self.reconnect = False
                     break
                 last_time_done = time.time()
-                if pool is None:
-                    res = []
-                    for genome_id, genome, config in tasks:
-                        fitness = self.eval_function(genome, config)
-                        res.append((genome_id, fitness))
-                else:
-                    genome_ids = []
-                    jobs = []
-                    for genome_id, genome, config in tasks:
-                        genome_ids.append(genome_id)
-                        jobs.append(
-                            pool.apply_async(
-                                self.eval_function, (genome, config)
-                                )
-                            )
-                    results = [
-                        job.get(timeout=self.worker_timeout) for job in jobs
-                        ]
-                    res = zip(genome_ids, results)
+
+                res = self._get_fitness(tasks, pool)
+
                 last_time_done = time.time()
                 try:
                     self.outqueue.put(res)

@@ -99,6 +99,10 @@ class ConfigParameter(object):
 
 
 def write_pretty_params(f, config, params):
+    """
+    Writes out current config parameters to file object f in a
+    format suitable for to be read back in as a configuration file.
+    """
     param_names = [p.name for p in params]
     longest_name_len = max(len(name) for name in param_names)
     param_names.sort()

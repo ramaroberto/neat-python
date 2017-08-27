@@ -61,13 +61,18 @@ def partial_extract_function_args(partial_function, poss_name, no_match=WARN_IF_
     return _handle_no_match(poss_name, no_match,
                             "Partial function {0!s} (func {1!r}) had no arguments?".format(
                                 saferepr(partial_function), poss_name))
-        
+
 
 def repr_extract_function_name(function,
                                no_match=WARN_IF_NO_MATCH,
                                with_module=True,
                                as_partial=True,
                                OK_with_args=False):
+    """
+    Attempts to extract the name of a function,
+    possibly with module, as a functools.partial function,
+    and/or with arguments.
+    """
     poss_name = None
     if with_module and hasattr(function, '__qualname__'):
         result = module_re.match(str(function.__qualname__))

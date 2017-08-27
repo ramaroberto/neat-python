@@ -184,7 +184,8 @@ class FuncAttribute(BaseAttribute):
     Handle attributes that may be simple strings
     or may be functions needing multiparameter handling.
     """
-    _config_items_init = copy.deepcopy(StringAttribute._config_items_init)
+    _config_items_init = copy.deepcopy(
+        StringAttribute._config_items_init) # pylint: disable=protected-access
 
 ##    def copy(self):
 ##        return copy.deepcopy(self)

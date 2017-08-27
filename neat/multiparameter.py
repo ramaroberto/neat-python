@@ -57,7 +57,7 @@ class EvolvedMultiParameterFunction(object):
         return self.name + '(' + ','.join([self.user_func.__code__.co_varnames[0]]
                                           + [str(self.current_param_values[n])
                                              for n in self.evolved_param_names]) + ')'
-    
+
     def init_value(self, ignored_config=None):
         for n, m in iteritems(self.evolved_param_attributes):
             self.current_param_values[n] = m.init_value(self.multi_param_func)
@@ -73,13 +73,15 @@ class EvolvedMultiParameterFunction(object):
                 self.current_param_values[n] = val
             else:
                 raise LookupError(
-                    "Parameter name {0!r} (val {1!r}) not among known ({2!s}) for {3!s}".format(
-                        n, val, self.evolved_param_names, self.name))
+                    "Parameter name {0!s} (val {1!s}) not among known ({2!s}) for {3!s}".format(
+                        saferepr(n), saferepr(val), self.evolved_param_names, self.name))
 
-    def get_values(self, n=None):
+    def get_values(self, n=None, do_copy=True):
         if n is not None:
             return self.current_param_values[n]
-        return self.current_param_values # may want to return a copy...
+        if do_copy:
+            return copy.deepcopy(self.current_param_values)
+        return self.current_param_values
 
     def __str__(self):
         return self.instance_name
@@ -117,8 +119,8 @@ class EvolvedMultiParameterFunction(object):
                 if self.current_param_values[n] != other.current_param_values[n]:
                     return 1.0
             else:
-                raise ValueError("Unknown what to do with param_type {0!r} for {1!s}".format(
-                    param_dict['param_type'], self.name))
+                raise ValueError("Unknown what to do with param_type {0!s} for {1!s}".format(
+                    saferepr(param_dict['param_type']), self.name))
         return max_diff
 
     def copy(self):
@@ -167,7 +169,7 @@ class MultiParameterFunction(object):
         self.evolved_param_dicts[n].setdefault('param_type', 'float')
         param_dict = self.evolved_param_dicts[n]
         tmp_name = "{0}_{1}".format(self.name,n)
-        
+
         if param_dict['param_type'] in ('float','int'):
             if full:
                 self.evolved_param_dicts[n].setdefault('init_type','uniform')
@@ -180,7 +182,7 @@ class MultiParameterFunction(object):
                                                        param_dict['max_init_value'])
                 self.evolved_param_dicts[n].setdefault('min_value',
                                                        param_dict['min_init_value'])
-                
+
                 middle = (param_dict['max_init_value'] +
                           param_dict['min_init_value'])/2.0
                 self.evolved_param_dicts[n].setdefault('init_mean', middle)
@@ -256,7 +258,7 @@ class MultiParameterFunction(object):
     def copy_and_change(self,
                         del_not_changed=False,
                         del_param_dicts=None,
-                        new_param_dicts=None): # TEST NEEDED!
+                        new_param_dicts=None):
         """
         Makes a copy of the MultiParameterFunction instance, does deletions and
         substitutions, initializes any remaining defaults, and returns the new instance.
