@@ -33,9 +33,9 @@ file_object_re = re.compile(r'\b(?:_?io|file)\b')
 string_like_re = re.compile(r'\b(str|unicode|bytes|bytarray)\b')
 
 def check_if_file_object(possible_file_object):
-    if file_object_re.search(type(possible_file_object)):
+    if file_object_re.search(str(type(possible_file_object))):
         return True
-    elif string_like_re.search(type(possible_file_object)):
+    elif string_like_re.search(str(type(possible_file_object))):
         return False
     elif file_object_re.search(repr(possible_file_object)): # pragma: no cover
         return True
