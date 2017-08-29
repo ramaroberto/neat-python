@@ -148,14 +148,14 @@ multiparam_sigmoid
 multiparam_sigmoid_approx
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. figure:: activation-multiparam_sigmoid.png
+.. figure:: activation-multiparam_sigmoid_approx.png
     :scale: 100 %
     :alt: A version of multiparam_tanh_approx rescaled to match :ref:`sigmoid <sigmoid-label>` instead of :ref:`tanh <tanh-label>`, and constrained to 0-1
 
 multiparam_tanh_approx
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. figure: activation-multiparam_tanh_approx.png
+.. figure:: activation-multiparam_tanh_approx.png
     :scale: 100 %
     :alt: Trying out an approximation to tanh that may be more efficient
 
@@ -316,7 +316,7 @@ hat_gauss_rectangular
 
 .. figure:: activation-swap-hat_gauss_rectangular.png
     :scale: 100 %
-    :alt: Weighted mean of hat, gauss, and rectangular functions
+    :alt: Weighted mean of hat, multiparam_gauss, and rectangular functions
 
 multiparam_gauss
 ^^^^^^^^^^^^^^^^^^^^

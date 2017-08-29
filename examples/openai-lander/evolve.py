@@ -180,7 +180,7 @@ class PooledErrorCompute(object):
         print("final fitness compute time {0:n}\n".format(time.time() - t0))
 
 
-def run():
+def run(control_random=False,filename_ext="svg"):
     """Main loop."""
     # Load the config file, which is assumed to live in
     # the same directory as this script.
@@ -199,20 +199,23 @@ def run():
 
     # Run until the winner from a generation is able to solve the environment
     # or the user interrupts the process.
-    ec = PooledErrorCompute()
+    ec = PooledErrorCompute(control_random=control_random)
     while 1:
         try:
             ignored_gen_best = pop.run(ec.evaluate_genomes, 5)
 
             #print(gen_best)
 
-            visualize.plot_stats(stats, ylog=False, view=False, filename="fitness.svg")
+            visualize.plot_stats(stats,
+                                 ylog=False,
+                                 view=False,
+                                 filename="fitness.{0!s}".format(filename_ext))
 
             plt.plot(ec.episode_score, 'g-', label='score')
             plt.plot(ec.episode_length, 'b-', label='length')
             plt.grid()
             plt.legend(loc='best')
-            plt.savefig("scores.svg")
+            plt.savefig("scores.{0!s}".format(filename_ext))
             plt.close()
 
             mfs = sum(stats.get_fitness_mean()[-5:]) / 5.0

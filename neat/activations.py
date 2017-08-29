@@ -227,22 +227,44 @@ def multiparam_sigmoid_activation(z, a):
     """Conversion of clamped_tanh_step_activation to a 0-1 output range"""
     return max(0.0,min(1.0,((clamped_tanh_step_activation(z, a)+1.0)/2.0)))
 
+ABS_GAUSS_EPSILON = math.exp(-5.0 * NORM_EPSILON)
+
+def multiparam_gauss_activation(z, a, b):
+    _check_value_range(a, 0.0, 4.0, 'multiparam_gauss', 'a')
+    _check_value_range(b, 0.0, 2.0, 'multiparam_gauss', 'b')
+
+    mult = 1.0
+    if a < 1.0:
+        a = math.exp(a-1.0)
+        test_value = math.exp(-5.0 * NORM_EPSILON**a)
+        if test_value < ABS_GAUSS_EPSILON:
+            mult = ABS_GAUSS_EPSILON/test_value
+
+    if b < 0.5:
+        b = 0.5*math.exp(b-0.5)
+
+    try:
+        to_return = min(1.0,(mult*math.exp(-5.0 * b * abs(z)**a)))
+    except ArithmeticError:
+        if abs(z) > 0.0:
+            return 0.0
+        return 1.0
+    else:
+        return to_return
+
 def hat_gauss_rectangular_activation(z, a, b):
     _check_value_range(a, 0.0, 1.0, 'hat_gauss_rectangular', 'a')
     _check_value_range(b, 0.0, 1.0, 'hat_gauss_rectangular', 'b')
 
-    gauss_init = 1.0-((a+b)/2.0)
-    total_weight = a+b+gauss_init
-    hat_weight = a/total_weight
-    gauss_weight = gauss_init/total_weight
-    rectangular_weight = b/total_weight
+    rectangular_weight = (1.0-b)*a
+    hat_weight = (1.0-b)*(1.0-a)
 
     to_return = 0.0
 
     if hat_weight > 0.0:
         to_return += hat_weight*hat_activation(z)
-    if gauss_weight > 0.0:
-        to_return += gauss_weight*gauss_activation(z)
+    if b > 0.0:
+        to_return += b*multiparam_gauss_activation(z, (a*4.0), 1.0)
     if rectangular_weight > 0.0:
         to_return += rectangular_weight*rectangular_activation(z)
 
@@ -321,31 +343,6 @@ def multiparam_tanh_approx_activation(z, a, b):
 
 def multiparam_sigmoid_approx_activation(z, a):
     return min(1.0,max(0.0,((1.0+multiparam_tanh_approx_activation(z, a, 1.0))/2.0)))
-
-ABS_GAUSS_EPSILON = math.exp(-5.0 * NORM_EPSILON)
-
-def multiparam_gauss_activation(z, a, b):
-    _check_value_range(a, 0.0, 4.0, 'multiparam_gauss', 'a')
-    _check_value_range(b, 0.0, 2.0, 'multiparam_gauss', 'b')
-
-    mult = 1.0
-    if a < 1.0:
-        a = math.exp(a-1.0)
-        test_value = math.exp(-5.0 * NORM_EPSILON**a)
-        if test_value < ABS_GAUSS_EPSILON:
-            mult = ABS_GAUSS_EPSILON/test_value
-
-    if b < 0.5:
-        b = 0.5*math.exp(b-0.5)
-
-    try:
-        to_return = min(1.0,(mult*math.exp(-5.0 * b * abs(z)**a)))
-    except ArithmeticError:
-        if abs(z) > 0.0:
-            return 0.0
-        return 1.0
-    else:
-        return to_return
 
 class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""

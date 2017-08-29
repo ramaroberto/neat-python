@@ -1375,6 +1375,17 @@ Handles genomes (individuals in the population).
       .. versionchanged:: 0.92
         Moved from DefaultGenome so no longer only single-genome-instance unique.
 
+    .. index:: compatibility_disjoint_coefficient
+    .. index:: compatibility_weight_coefficient
+
+    .. py:method:: get_compatibility_info()
+
+      A method to retrieve the current :ref:`compatibility_disjoint_coefficient <compatibility-disjoint-coefficient-label>` and
+      :ref:`compatibility_weight_coefficient <compatibility-weight-coefficient-label>` settings. More information may be added.
+
+      :return: A dictionary of, currently, ``disjoint_coefficient`` vs the compatibility_disjoint_coefficient and ``weight_coefficient`` vs the compatibility_weight_coefficient
+      :rtype: dict(str, float)
+
     .. index:: structural_mutation_surer
     .. index:: single_structural_mutation
 
@@ -2106,6 +2117,10 @@ nn.feed_forward
       :return: The values for the :term:`output nodes <output node>`.
       :rtype: list(float)
       :raises RuntimeError: If the number of inputs is not the same as the number of input nodes.
+
+    .. py:method:: reset()
+
+      Dummy method to match interface :py:meth:`reset <nn.recurrent.RecurrentNetwork.reset()>` method for :py:class:`nn.recurrent.RecurrentNetwork`.
 
     .. py:staticmethod:: create(genome, config)
 
@@ -2857,11 +2872,26 @@ statistics
       :return: List of mean genome fitnesses for each generation.
       :rtype: list(:pytypes:`float <typesnumeric>`)
 
+    .. py:method:: get_fitness_tmean(trim=0.25)
+
+      Gets the per-generation trimmed mean fitness. A wrapper for :py:meth:`get_fitness_stat` with the function being
+      :py:func:`tmean <math_util.tmean()>`. Not currently used internally.
+
+      .. versionadded:: 0.92-multiparam_funcs
+
+      :param float trim: Trim proportion (from each end) and/or determinant of weighting with `median2`; see :py:func:`tmean <math_util.tmean()>` for more information.
+      :return: List of trimmed mean genome fitnesses for each generation.
+      :rtype: list(pytypes:`float <typesnumeric>`)
+
     .. py:method:: get_fitness_median()
 
-      Gets the per-generation median fitness. A wrapper for :py:meth:`get_fitness_stat` with the function being `median2`. Not currently used internally.
+      Gets the per-generation median fitness. A wrapper for :py:meth:`get_fitness_stat` with the function being
+      :py:func:`median2 <math_util.median2()>`. Not currently used internally.
 
       .. versionadded:: 0.92
+
+      :return: List of median genome fitnesses for each generation.
+      :rtype: list(pytypes:`float <typesnumeric>`)
 
     .. py:method:: get_fitness_stdev()
 

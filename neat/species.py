@@ -27,7 +27,7 @@ class Species(object):
         self.stagnation_namespace.last_improved = generation
         self.stagnation_namespace.fitness_history = []
 
-    def getAdjustedFitness(self): # pragma: no cover
+    def _getAdjustedFitness(self): # pragma: no cover
         """
         Backwards compatibility wrapper for species.adjusted_fitness;
         use species.reproduction_namespace.adjusted_fitness instead.
@@ -36,7 +36,7 @@ class Species(object):
                       DeprecationWarning, stacklevel=2)
         return self.reproduction_namespace.adjusted_fitness
 
-    def setAdjustedFitness(self,value): # pragma: no cover
+    def _setAdjustedFitness(self,value): # pragma: no cover
         if not isinstance(value, float):
             raise TypeError(
                 "Adjusted_fitness ({0!r}) should be a float, not {1!s}".format(
@@ -45,16 +45,16 @@ class Species(object):
                       DeprecationWarning, stacklevel=2)
         self.reproduction_namespace.adjusted_fitness = value
 
-    def delAdjustedFitness(self): # pragma: no cover
+    def _delAdjustedFitness(self): # pragma: no cover
         warnings.warn("Use species.reproduction_namespace for adjusted_fitness",
                       DeprecationWarning, stacklevel=2)
         self.reproduction_namespace.adjusted_fitness = None
     
-    adjusted_fitness = property(getAdjustedFitness,
-                                setAdjustedFitness,
-                                delAdjustedFitness)
+    adjusted_fitness = property(_getAdjustedFitness,
+                                _setAdjustedFitness,
+                                _delAdjustedFitness)
 
-    def getFitness(self): # pragma: no cover
+    def _getFitness(self): # pragma: no cover
         """
         Backwards compatibility wrapper for species.fitness;
         use species.stagnation_namespace.fitness instead.
@@ -63,7 +63,7 @@ class Species(object):
                       DeprecationWarning, stacklevel=2)
         return self.stagnation_namespace.fitness
 
-    def setFitness(self,value): # pragma: no cover
+    def _setFitness(self,value): # pragma: no cover
         if not isinstance(value, float):
             raise TypeError(
                 "Fitness ({0!r}) should be a float, not {1!s}".format(
@@ -72,16 +72,16 @@ class Species(object):
                       DeprecationWarning, stacklevel=2)
         self.stagnation_namespace.fitness = value
 
-    def delFitness(self): # pragma: no cover
+    def _delFitness(self): # pragma: no cover
         warnings.warn("Use species.stagnation_namespace for fitness",
                       DeprecationWarning, stacklevel=2)
         self.stagnation_namespace.fitness = None
 
-    fitness = property(getFitness,
-                       setFitness,
-                       delFitness)
+    fitness = property(_getFitness,
+                       _setFitness,
+                       _delFitness)
 
-    def getLastImproved(self): # pragma: no cover
+    def _getLastImproved(self): # pragma: no cover
         """
         Backwards compatibility wrapper for species.last_improved;
         use species.stagnation_namespace.last_improved instead.
@@ -90,7 +90,7 @@ class Species(object):
                       DeprecationWarning, stacklevel=2)
         return self.stagnation_namespace.last_improved
 
-    def setLastImproved(self, value): # pragma: no cover
+    def _setLastImproved(self, value): # pragma: no cover
         if not isinstance(value, int):
             raise TypeError(
                 "Last_improved ({0!r}) should be an int, not {1!s}".format(
@@ -99,11 +99,10 @@ class Species(object):
                       DeprecationWarning, stacklevel=2)
         self.stagnation_namespace.last_improved = value
 
-    last_improved = property(getLastImproved,
-                             setLastImproved)
+    last_improved = property(_getLastImproved,
+                             _setLastImproved)
 
-    @property
-    def fitness_history(self): # pragma: no cover
+    def _getFitnessHistory(self): # pragma: no cover
         """
         Partial (due to being a list) backwards compatibility
         wrapper for species.fitness_history; use
@@ -112,6 +111,8 @@ class Species(object):
         warnings.warn("Use species.stagnation_namespace for fitness_history",
                       stacklevel=2)
         return self.stagnation_namespace.fitness_history
+
+    fitness_history = property(_getFitnessHistory)
 
     def update(self, representative, members):
         self.representative = representative
@@ -199,7 +200,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
                                    ConfigParameter('desired_species_num_min',
                                                    int, 0, default_ok=True)])
 
-    def find_desired_num_species(self, pop_size_high, pop_size_low): # DOCUMENT!
+    def _find_desired_num_species(self, pop_size_high, pop_size_low): # DOCUMENT!
         config = self.species_set_config
         max_num_usable = math.ceil(pop_size_high/self.threshold_adjust_dict['min_size'])
         if max_num_usable < 2:
@@ -267,7 +268,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
         return (to_return_high,to_return_low)
 
 
-    def adjust_compatibility_threshold(self, increase, curr_tmean, max_rep_dist): # DOCUMENT!
+    def _adjust_compatibility_threshold(self, increase, curr_tmean, max_rep_dist): # DOCUMENT!
         old_threshold = self.species_set_config.compatibility_threshold
         if increase:
             mult_threshold = 1.05*old_threshold
@@ -414,15 +415,15 @@ class DefaultSpeciesSet(DefaultClassConfig):
                         self.threshold_adjust_dict['min_good_size']))
             self.min_pop_seen = min(self.min_pop_seen,len(population))
             self.max_pop_seen = max(self.max_pop_seen,len(population))
-            desired_num_species_high, desired_num_species_low = self.find_desired_num_species(
+            desired_num_species_high, desired_num_species_low = self._find_desired_num_species(
                 self.max_pop_seen, self.min_pop_seen)
             if len(self.species) < desired_num_species_low:
                 self.reporters.info(
                     "Species num {0:n} below desired minimum {1:n}".format(
                         len(self.species), desired_num_species_low))
-                self.adjust_compatibility_threshold(increase=False,
-                                                    curr_tmean=gdtmean,
-                                                    max_rep_dist=max_rep_dist)
+                self._adjust_compatibility_threshold(increase=False,
+                                                     curr_tmean=gdtmean,
+                                                     max_rep_dist=max_rep_dist)
             elif len(self.species) > desired_num_species_high:
                 self.reporters.info(
                     "Species num {0:n} above desired maximum {1:n}".format(
@@ -433,14 +434,14 @@ class DefaultSpeciesSet(DefaultClassConfig):
                         self.orig_compatibility_threshold)
                     or (self.species_set_config.compatibility_threshold <=
                         max_rep_dist)):
-                    self.adjust_compatibility_threshold(increase=True,
-                                                        curr_tmean=gdtmean,
-                                                        max_rep_dist=max_rep_dist)
+                    self._adjust_compatibility_threshold(increase=True,
+                                                         curr_tmean=gdtmean,
+                                                         max_rep_dist=max_rep_dist)
             elif ((self.species_set_config.compatibility_threshold <= max_rep_dist)
                   and (len(self.species) > desired_num_species_low)):
-                self.adjust_compatibility_threshold(increase=True,
-                                                    curr_tmean=gdtmean,
-                                                    max_rep_dist=max_rep_dist)
+                self._adjust_compatibility_threshold(increase=True,
+                                                     curr_tmean=gdtmean,
+                                                     max_rep_dist=max_rep_dist)
         elif self.species_set_config.compatibility_threshold_adjust.lower() != 'fixed':
             raise ValueError(
                 "Unknown compatibility_threshold_adjust {!r}".format(

@@ -382,34 +382,57 @@ def test_multiparam_sigmoid():
     assert activations.multiparam_sigmoid_activation(1.0,-1.0) == 1.0
 
 def test_hat_gauss_rectangular():
-    assert activations.hat_gauss_rectangular_activation(-1.0,1.0,1.0) == 0.0
-    assert activations.hat_gauss_rectangular_activation(-0.5,1.0,1.0) == 0.5
     assert activations.hat_gauss_rectangular_activation(0.0,1.0,1.0) == 1.0
-    assert activations.hat_gauss_rectangular_activation(0.5,1.0,1.0) == 0.5
-    assert activations.hat_gauss_rectangular_activation(1.0,1.0,1.0) == 0.0
     assert activations.hat_gauss_rectangular_activation(0.0,1.0,0.75) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.0,1.0,0.5) == 1.0
     assert activations.hat_gauss_rectangular_activation(0.0,1.0,0.25) == 1.0
+    assert activations.hat_gauss_rectangular_activation(-1.0,1.0,0.0) == 0.0
+    assert activations.hat_gauss_rectangular_activation(-0.5,1.0,0.0) == 0.5
     assert activations.hat_gauss_rectangular_activation(0.0,1.0,0.0) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.5,1.0,0.0) == 0.5
+    assert activations.hat_gauss_rectangular_activation(1.0,1.0,0.0) == 0.0
     assert activations.hat_gauss_rectangular_activation(0.0,0.75,1.0) == 1.0
     assert activations.hat_gauss_rectangular_activation(0.0,0.75,0.5) == 1.0
+    assert activations.hat_gauss_rectangular_activation(-1.0,0.75,0.0) == 0.0
     assert activations.hat_gauss_rectangular_activation(0.0,0.75,0.0) == 1.0
+    assert activations.hat_gauss_rectangular_activation(1.0,0.75,0.0) == 0.0
     assert activations.hat_gauss_rectangular_activation(0.0,0.5,1.0) == 1.0
     assert activations.hat_gauss_rectangular_activation(0.0,0.5,0.75) == 1.0
     assert activations.hat_gauss_rectangular_activation(0.0,0.5,0.5) == 1.0
     assert activations.hat_gauss_rectangular_activation(0.0,0.5,0.25) == 1.0
+    assert activations.hat_gauss_rectangular_activation(-1.0,0.5,0.0) == 0.0
+    assert activations.hat_gauss_rectangular_activation(-0.5,0.5,0.0) == 0.5
     assert activations.hat_gauss_rectangular_activation(0.0,0.5,0.0) == 1.0
+    assert activations.hat_gauss_rectangular_activation(0.5,0.5,0.0) == 0.5
+    assert activations.hat_gauss_rectangular_activation(1.0,0.5,0.0) == 0.0
     assert activations.hat_gauss_rectangular_activation(0.0,0.25,1.0) == 1.0
     assert activations.hat_gauss_rectangular_activation(0.0,0.25,0.5) == 1.0
+    assert activations.hat_gauss_rectangular_activation(-1.0,0.25,0.0) == 0.0
     assert activations.hat_gauss_rectangular_activation(0.0,0.25,0.0) == 1.0
+    assert activations.hat_gauss_rectangular_activation(1.0,0.25,0.0) == 0.0
     assert activations.hat_gauss_rectangular_activation(0.0,0.0,1.0) == 1.0
     assert activations.hat_gauss_rectangular_activation(0.0,0.0,0.75) == 1.0
     assert activations.hat_gauss_rectangular_activation(0.0,0.0,0.5) == 1.0
     assert activations.hat_gauss_rectangular_activation(0.0,0.0,0.25) == 1.0
+    assert activations.hat_gauss_rectangular_activation(-1.0,0.0,0.0) == 0.0
+    assert activations.hat_gauss_rectangular_activation(-0.5,0.0,0.0) == 0.5
     assert activations.hat_gauss_rectangular_activation(0.0,0.0,0.0) == 1.0
-    assert_almost_equal(activations.hat_gauss_rectangular_activation(-1.0,0.0,0.0),
-                        activations.hat_gauss_rectangular_activation(1.0,0.0,0.0))
-    assert_almost_equal(activations.hat_gauss_rectangular_activation(-0.5,0.0,0.0),
-                        activations.hat_gauss_rectangular_activation(0.5,0.0,0.0))
+    assert activations.hat_gauss_rectangular_activation(0.5,0.0,0.0) == 0.5
+    assert activations.hat_gauss_rectangular_activation(1.0,0.0,0.0) == 0.0
+    for z in [0.25, 0.5, 0.75, 1.0]:
+        for a in [0.0, 0.5, 1.0]:
+            for b in [0.0, 0.25, 0.5, 0.75, 1.0]:
+                assert_almost_equal(activations.hat_gauss_rectangular_activation(z,a,b),
+                                    activations.hat_gauss_rectangular_activation(-z,a,b))
+    assert_almost_equal(activations.hat_gauss_rectangular_activation(-1.0,1.0,0.25),
+                        activations.hat_gauss_rectangular_activation(1.0,0.5,0.25))
+    assert_almost_equal(activations.hat_gauss_rectangular_activation(-1.0,1.0,0.5),
+                        activations.hat_gauss_rectangular_activation(1.0,0.25,0.5))
+    assert_almost_equal(activations.hat_gauss_rectangular_activation(-1.0,1.0,0.75),
+                        activations.hat_gauss_rectangular_activation(1.0,0.5,0.75))
+    assert_almost_equal(activations.hat_gauss_rectangular_activation(-1.0,1.0,1.0),
+                        activations.hat_gauss_rectangular_activation(1.0,0.25,1.0))
+
 
 def test_scaled_expanded_log():
     assert activations.scaled_expanded_log_activation(-1.0,2.0) == -1.0

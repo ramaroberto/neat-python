@@ -3,6 +3,7 @@ from __future__ import division, print_function
 
 
 from itertools import count
+from pprint import saferepr
 from random import choice, random, shuffle
 
 import sys
@@ -64,10 +65,12 @@ class DefaultGenomeConfig(object):
         self.output_keys = [i for i in range(self.num_outputs)]
 
         if self.identical_mutations_keys:
-            if self.identical_mutations_keys < (self.num_outputs+self.num_hidden):
+            if self.identical_mutations_keys < (max(self.num_outputs,self.num_inputs)
+                                                -self.num_hidden):
                 raise ValueError(
-                    "identical_mutations_keys {0:n} is too low for outputs+hidden {1:n}".format(
-                        self.identical_mutations_keys, (self.num_outputs+self.num_hidden)))
+                    "identical_mutations_keys {0:n} is too low - min {1:n}".format(
+                        self.identical_mutations_keys,
+                        (max(self.num_outputs,self.num_inputs)-self.num_hidden)))
             self.conn_to_node_dict = {}
             self.node_to_conn_dict = {}
         else:
@@ -136,13 +139,13 @@ class DefaultGenomeConfig(object):
         write_pretty_params(f, self, [p for p in self._params
                                       if 'initial_connection' not in p.name])
 
-    def remove_from_node_conn_dict(self, node_id):
+    def remove_from_node_conn_dict(self, node_id): # DOCUMENT!
         if (self.node_to_conn_dict is not None) and (node_id in self.node_to_conn_dict):
             conn = self.node_to_conn_dict[node_id]
             del self.node_to_conn_dict[node_id]
             del self.conn_to_node_dict[conn]
 
-    def get_new_node_key(self, node_dict, conn=None):
+    def get_new_node_key(self, node_dict, conn=None): # UPDATE DOCUMENTATION
         if self.node_indexer is None:
             self.node_indexer = count(max(list(iterkeys(node_dict))) + 1)
 
@@ -160,6 +163,7 @@ class DefaultGenomeConfig(object):
                 self.node_to_conn_dict[new_id] = conn
                 assert new_id not in node_dict
                 while len(self.node_to_conn_dict) > self.identical_mutations_keys:
+                    # if using randomized IDs, use OrderedDict for node_to_conn_dict
                     oldest = min(iterkeys(self.node_to_conn_dict))
                     if (oldest not in node_dict) or (len(self.node_to_conn_dict)
                                                      > (2*self.identical_mutations_keys)):
@@ -172,7 +176,7 @@ class DefaultGenomeConfig(object):
 
         return new_id
 
-    def get_compatibility_info(self): # DOCUMENT!
+    def get_compatibility_info(self):
         to_return_dict = {}
         to_return_dict['disjoint_coefficient'] = self.compatibility_disjoint_coefficient
         to_return_dict['weight_coefficient'] = self.compatibility_weight_coefficient
@@ -291,9 +295,10 @@ class DefaultGenome(object):
                     print(
                         "Warning: initial_connection = partial with hidden nodes"
                         + "will not do direct input-output connections;",
-                        "\tif this is desired, set initial_connection = partial_nodirect {0};".format(
+                        "\tif this is desired, set initial_connection ="
+                        + "partial_nodirect {0:n};".format(
                             config.connection_fraction),
-                        "\tif not, set initial_connection = partial_direct {0}".format(
+                        "\tif not, set initial_connection = partial_direct {0:n}".format(
                             config.connection_fraction),
                         sep='\n', file=sys.stderr);
                 self.connect_partial_nodirect(config)
@@ -301,11 +306,13 @@ class DefaultGenome(object):
     def configure_crossover(self, genome1, genome2, config):
         """ Configure a new genome by crossover from two parent genomes. """
         assert isinstance(genome1.fitness,
-                          (int, float)), "Genome1.fitness ({0!r}) is type {1!s}, not int/float".format(
-            genome1.fitness, type(genome1.fitness))
+                          (int,
+                           float)), "Genome1.fitness ({0!s}): type {1!s}, not int/float".format(
+            saferepr(genome1.fitness), type(genome1.fitness))
         assert isinstance(genome2.fitness,
-                          (int, float)), "Genome2.fitness ({0!r}) is type {1!s}, not int/float".format(
-            genome2.fitness, type(genome2.fitness))
+                          (int,
+                           float)), "Genome2.fitness ({0!s}): type {1!s}, not int/float".format(
+            saferepr(genome2.fitness), type(genome2.fitness))
         if genome1.fitness > genome2.fitness:
             parent1, parent2 = genome1, genome2
         else:
@@ -425,7 +432,6 @@ class DefaultGenome(object):
         # Don't duplicate connections.
         key = (in_node, out_node)
         if key in self.connections:
-            # TODO: Should this be using mutation to/from rates? Hairy to configure...
             if config.check_structural_mutation_surer():
                 self.connections[key].enabled = True
             return
