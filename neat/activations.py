@@ -18,7 +18,7 @@ from neat.multiparameter import BadFunctionError as InvalidActivationFunction # 
 def sigmoid_activation(z):
     try:
         to_return = 1.0 / (1.0 + math.exp(-5.0*z))
-    except ArithmeticError:
+    except ArithmeticError: # pragma: no cover
         if z > 0.0:
             return 1.0
         return 0.0
@@ -29,7 +29,7 @@ def sigmoid_activation(z):
 def tanh_activation(z):
     try:
         to_return = math.tanh(z*2.5)
-    except ArithmeticError:
+    except ArithmeticError: # pragma: no cover
         if z > 0.0:
             return 1.0
         return -1.0
@@ -245,7 +245,7 @@ def multiparam_gauss_activation(z, a, b):
 
     try:
         to_return = min(1.0,(mult*math.exp(-5.0 * b * abs(z)**a)))
-    except ArithmeticError:
+    except ArithmeticError: # pragma: no cover
         if abs(z) > 0.0:
             return 0.0
         return 1.0
@@ -335,7 +335,7 @@ def multiparam_tanh_approx_activation(z, a, b):
 
     try:
         to_return = (2.5*z)/(math.exp(a) + (b*abs(2.5*z)))
-    except ArithmeticError:
+    except ArithmeticError: # pragma: no cover
         _check_value_range(a, -12.0, 12.0, 'multiparam_tanh_approx', 'a')
         raise
     else:

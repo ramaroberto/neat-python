@@ -467,11 +467,11 @@ class DistributedEvaluator(object):
             warnings.warn("Self.n_tasks is None; estimating at {:n}".format(self.n_tasks))
         start_time = time.time()
         num_added = 0
-        while (num_added < self.n_tasks) and ((time.time() - start_time) <
-                                              max(1,
-                                                  self.reconnect_max_time,
-                                                  wait,
-                                                  self.worker_timeout)):
+        poss_time_wait = max(1,
+                            (self.reconnect_max_time+60),
+                             wait,
+                             self.worker_timeout)
+        while (num_added < (self.n_tasks+1)) and ((time.time() - start_time) < poss_time_wait):
             try:
                 if force_secondary_shutdown:
                     self.inqueue.put(0, block=True, timeout=0.2)
@@ -480,7 +480,7 @@ class DistributedEvaluator(object):
             except (EOFError, IOError, OSError, socket.gaierror, TypeError, queue.Full,
                     managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
                 if ("timed" in repr(e).lower()) or ("timeout" in repr(e).lower()):
-                    if (time.time() - start_time) < max(1, wait, (self.worker_timeout/5)):
+                    if (time.time() - start_time) < (poss_time_wait/self.n_tasks):
                         num_added += 1
                         continue
                     else:

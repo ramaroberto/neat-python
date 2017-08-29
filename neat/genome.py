@@ -7,6 +7,7 @@ from pprint import saferepr
 from random import choice, random, shuffle
 
 import sys
+import warnings
 
 from neat.activations import ActivationFunctionSet
 from neat.aggregations import AggregationFunctionSet
@@ -65,12 +66,12 @@ class DefaultGenomeConfig(object):
         self.output_keys = [i for i in range(self.num_outputs)]
 
         if self.identical_mutations_keys:
-            if self.identical_mutations_keys < (max(self.num_outputs,self.num_inputs)
-                                                -self.num_hidden):
-                raise ValueError(
-                    "identical_mutations_keys {0:n} is too low - min {1:n}".format(
-                        self.identical_mutations_keys,
-                        (max(self.num_outputs,self.num_inputs)-self.num_hidden)))
+            desired_min = max(5,(max(self.num_outputs,self.num_inputs)-self.num_hidden))
+            if self.identical_mutations_keys < desired_min:
+                warnings.warn(
+                    "identical_mutations_keys {0:n} too low - raising to {1:n}".format(
+                        self.identical_mutations_keys, desired_min))
+                self.identical_mutations_keys = desired_min
             self.conn_to_node_dict = {}
             self.node_to_conn_dict = {}
         else:
@@ -151,7 +152,12 @@ class DefaultGenomeConfig(object):
 
         if self.identical_mutations_keys and (conn is not None):
             if self.conn_to_node_dict is None:
-                assert self.identical_mutations_keys > (self.num_outputs+self.num_hidden)
+                desired_min = max(5,(max(self.num_outputs,self.num_inputs)-self.num_hidden))
+                if self.identical_mutations_keys < desired_min:
+                    warnings.warn(
+                        "identical_mutations_keys {0:n} too low - raising to {1:n}".format(
+                                    self.identical_mutations_keys, desired_min))
+                    self.identical_mutations_keys = desired_min
                 self.conn_to_node_dict = {}
                 self.node_to_conn_dict = {}
 

@@ -10,6 +10,7 @@ try:
 except ImportError:
     from ConfigParser import Error, SafeConfigParser as ConfigParser
 
+from neat.repr_util import check_if_file_object
 from neat.six_util import iterkeys
 
 class ConfigParameter(object):
@@ -188,15 +189,22 @@ class Config(object):
         self.species_set_type = species_set_type
         self.stagnation_type = stagnation_type
 
-        if not os.path.isfile(filename):
-            raise Exception('No such config file: ' + os.path.abspath(filename))
-
         parameters = ConfigParser()
-        with open(filename) as f:
+
+        if check_if_file_object(filename):
             if hasattr(parameters, 'read_file'):
-                parameters.read_file(f)
+                parameters.read_file(filename)
             else:
-                parameters.readfp(f)
+                parameters.readfp(filename)
+        else:
+            if not os.path.isfile(filename):
+                raise Exception('No such config file: ' + os.path.abspath(filename))
+
+            with open(filename) as f:
+                if hasattr(parameters, 'read_file'):
+                    parameters.read_file(f)
+                else:
+                    parameters.readfp(f)
 
         # NEAT configuration
         if not parameters.has_section('NEAT'):
@@ -249,20 +257,26 @@ class Config(object):
         self.reproduction_config = reproduction_type.parse_config(reproduction_dict)
 
     def save(self, filename):
-        with open(filename, 'w') as f:
-            f.write('# The `NEAT` section specifies parameters particular to the NEAT algorithm\n')
-            f.write('# or the experiment itself.  This is the only required section.\n')
-            f.write('[NEAT]\n')
-            write_pretty_params(f, self, self.__params)
+        if check_if_file_object(filename):
+            self._save(filename)
+        else:
+            with open(filename, 'w') as f:
+                self._save(f)
 
-            f.write('\n[{0}]\n'.format(self.genome_type.__name__))
-            self.genome_type.write_config(f, self.genome_config)
-
-            f.write('\n[{0}]\n'.format(self.species_set_type.__name__))
-            self.species_set_type.write_config(f, self.species_set_config)
-
-            f.write('\n[{0}]\n'.format(self.stagnation_type.__name__))
-            self.stagnation_type.write_config(f, self.stagnation_config)
-
-            f.write('\n[{0}]\n'.format(self.reproduction_type.__name__))
-            self.reproduction_type.write_config(f, self.reproduction_config)
+    def _save(self, f):
+        f.write('# The `NEAT` section specifies parameters particular to the NEAT algorithm\n')
+        f.write('# or the experiment itself.  This is the only required section.\n')
+        f.write('[NEAT]\n')
+        write_pretty_params(f, self, self.__params)
+        
+        f.write('\n[{0}]\n'.format(self.genome_type.__name__))
+        self.genome_type.write_config(f, self.genome_config)
+        
+        f.write('\n[{0}]\n'.format(self.species_set_type.__name__))
+        self.species_set_type.write_config(f, self.species_set_config)
+        
+        f.write('\n[{0}]\n'.format(self.stagnation_type.__name__))
+        self.stagnation_type.write_config(f, self.stagnation_config)
+        
+        f.write('\n[{0}]\n'.format(self.reproduction_type.__name__))
+        self.reproduction_type.write_config(f, self.reproduction_config)

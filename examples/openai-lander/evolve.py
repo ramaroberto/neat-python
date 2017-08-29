@@ -31,12 +31,25 @@ print("observation space: {0!r}".format(orig_env.observation_space))
 
 env = gym.wrappers.Monitor(orig_env, 'results', force=True)
 
-
 class LanderGenome(neat.DefaultGenome):
-    """A DefaultGenome with the addition of a `discount` evolved parameter."""
+    discount_use_reward = False
+    simulator_instance = None
+    """
+    A DefaultGenome with the addition of a `discount` evolved parameter
+    and optional total reward tracking.
+    """
     def __init__(self, key):
         super(LanderGenome, self).__init__(key)
         self.discount = None
+        self.reward = None
+
+    @classmethod
+    def set_discount_use_reward(cls, set_to):
+        cls.discount_use_reward = set_to
+
+    @classmethod
+    def set_simulator_instance(cls, set_to):
+        cls.simulator_instance = set_to
 
     def configure_new(self, config):
         super(LanderGenome, self).configure_new(config)
@@ -44,16 +57,33 @@ class LanderGenome(neat.DefaultGenome):
 
     def configure_crossover(self, genome1, genome2, config):
         super(LanderGenome, self).configure_crossover(genome1, genome2, config)
-        if genome1.fitness > genome2.fitness:
+        if self.discount_use_reward:
+            if genome1.reward is None:
+                net1 = neat.nn.FeedForwardNetwork.create(genome1, config)
+                ignored_sc, reward, ignored_st = self.simulator_instance.simulate_genome(net=net1)
+                genome1.reward = reward
+            if genome2.reward is None:
+                net2 = neat.nn.FeedForwardNetwork.create(genome2, config)
+                ignored_sc, reward, ignored_st = self.simulator_instance.simulate_genome(net=net2)
+                genome2.reward = reward 
+        if self.discount_use_reward and (genome1.reward
+                                         is not None) and (genome2.reward
+                                                           is not None):
+            if genome1.reward > genome2.reward:
+                self.discount = genome1.discount
+            elif (genome1.reward < genome2.reward) or (random.random() < 0.5):
+                self.discount = genome2.discount
+            else:
+                self.discount = genome1.discount
+        elif random.random() < 0.5:
             self.discount = genome1.discount
-        elif genome1.fitness < genome2.fitness:
-            self.discount = genome2.discount
         else:
-            self.discount = random.choice((genome1.discount, genome2.discount))
+            self.discount = genome2.discount
+
 
     def mutate(self, config):
         super(LanderGenome, self).mutate(config)
-        self.discount += random.gauss(0.0, 0.05)
+        self.discount += random.gauss(0.0, 0.025) # lowering SD - happens always
         self.discount = max(0.01, min(0.99, self.discount))
 
     def distance(self, other, config):
@@ -62,7 +92,11 @@ class LanderGenome(neat.DefaultGenome):
         return dist + disc_diff
 
     def __str__(self):
-        return "Reward discount: {0:n}\n{1!s}".format(self.discount,
+        if self.reward is not None:
+            return "Reward, discount: {0:n}; {1:n}\n{2!s}".format(self.reward,self.discount,
+                                                  super(LanderGenome,self).__str__())
+        else:
+            return "Reward, discount: ?; {0:n}\n{1!s}".format(self.discount,
                                                   super(LanderGenome,self).__str__())
 
 
@@ -83,18 +117,75 @@ def compute_fitness(genome, net, episodes, min_reward, max_reward):
             output = net.activate(observation)
             reward_error.append(float((output[action] - dr) ** 2))
 
-    return reward_error
+    return -1*np.sum(reward_error) / len(episodes)
 
+class DoSimulation(object):
+    def __init__(self, step_epsilon=True): # TODO: Make parallel via shared memory?
+        self.curr_test_episodes = []
+        self.num_simulations = 0
+        self.total_simulation_length = 0
+        self.step_epsilon = step_epsilon
+        self.min_reward = -200 # will be updated
+        self.max_reward = 200 # ditto
+
+    def unload_test_episodes(self):
+        to_return = self.curr_test_episodes[:] # better way to do this?
+        self.curr_test_episodes = []
+        return to_return
+
+    def simulate_genome(self, net, use_seed=None):
+        if use_seed is not None:
+            env.seed(seed=use_seed)
+        observation = env.reset()
+        self.num_simulations += 1
+        step = 0
+        num_rand = 0
+        data = []
+        for_genome_reward = []
+        while 1:
+            step += 1
+            do_rand = False
+            if step < 200:
+                if self.step_epsilon:
+                    do_rand = bool(random.random() < 0.2)
+                else:
+                    do_rand = bool(random.random() < ((200-step)/500))
+            if do_rand:
+                action = env.action_space.sample()
+            else:
+                output = net.activate(observation)
+                action = np.argmax(output)
+                
+            observation, reward, done, ignored_info = env.step(action)
+            data.append(np.hstack((observation, action, reward)))
+            if not do_rand:
+                for_genome_reward.append(reward)
+            else:
+                num_rand += 1
+
+            if done:
+                break
+
+        self.total_simulation_length += step
+
+        reward = None
+        if num_rand < step:
+            reward = sum(for_genome_reward)*(step/(step-num_rand))
+            reward = min(self.max_reward,max(self.min_reward,reward))
+        data = np.array(data)
+        score = np.sum(data[:,-1])
+        self.curr_test_episodes.append((score, data))
+        return (score, reward, step)
 
 class PooledErrorCompute(object):
-    def __init__(self, control_random=False):
+    def __init__(self, simulator, control_seed=False):
         if NUM_CORES < 2:
             self.pool = None
         else:
             self.pool = multiprocessing.Pool(NUM_CORES)
         self.test_episodes = []
         self.generation = 0
-        self.control_random = control_random
+        self.control_seed = control_seed
 
         self.min_reward = -200
         self.max_reward = 200
@@ -102,36 +193,27 @@ class PooledErrorCompute(object):
         self.episode_score = []
         self.episode_length = []
 
+        self.simulator = simulator
+        simulator.min_reward = self.min_reward
+        simulator.max_reward = self.max_reward
+
     def simulate(self, nets):
         scores = []
-        use_seed = env.seed()
-        for ignored_genome, net in nets:
-            if self.control_random:
-                env.seed(seed=use_seed)
-            observation = env.reset()
-            step = 0
-            data = []
-            while 1:
-                step += 1
-                if step < 200 and random.random() < ((200-step)/500):
-                    action = env.action_space.sample()
-                else:
-                    output = net.activate(observation)
-                    action = np.argmax(output)
+        if self.control_seed:
+            use_seed = env.seed()
+        else:
+            use_seed = None
+        for genome, net in nets:
+            score, reward, step = self.simulator.simulate_genome(net=net,
+                                                                 use_seed=use_seed)
 
-                observation, reward, done, ignored_info = env.step(action)
-                data.append(np.hstack((observation, action, reward)))
-
-                if done:
-                    break
-
-            data = np.array(data)
-            score = np.sum(data[:,-1])
+            if reward is not None:
+                genome.reward = reward
             self.episode_score.append(score)
             scores.append(score)
             self.episode_length.append(step)
 
-            self.test_episodes.append((score, data))
+            self.test_episodes += self.simulator.unload_test_episodes()
 
         print("Score range [{:.3f}, {:.3f}]".format(min(scores), max(scores)))
 
@@ -146,9 +228,13 @@ class PooledErrorCompute(object):
         print("network creation time {0:n}".format(time.time() - t0))
         t0 = time.time()
 
+        last_num_test_episodes = len(self.test_episodes)
+        self.test_episodes += self.simulator.unload_test_episodes()
+
         # Periodically generate a new set of episodes for comparison.
         if (self.generation % 10) == 1:
-            self.test_episodes = self.test_episodes[-300:]
+            num_episodes_keep = 300 + len(self.test_episodes) - last_num_test_episodes
+            self.test_episodes = self.test_episodes[-1*num_episodes_keep:]
             self.simulate(nets)
             print("simulation run time {0:n}".format(time.time() - t0))
             t0 = time.time()
@@ -160,12 +246,11 @@ class PooledErrorCompute(object):
         print("Evaluating {0:n} test episodes".format(len(self.test_episodes)))
         if self.pool is None:
             for genome, net in nets:
-                reward_error = compute_fitness(genome,
-                                               net,
-                                               self.test_episodes,
-                                               self.min_reward,
-                                               self.max_reward)
-                genome.fitness = -np.sum(reward_error) / len(self.test_episodes)
+                genome.fitness = compute_fitness(genome,
+                                                 net,
+                                                 self.test_episodes,
+                                                 self.min_reward,
+                                                 self.max_reward)
         else:
             jobs = []
             for genome, net in nets:
@@ -174,13 +259,12 @@ class PooledErrorCompute(object):
                      self.test_episodes, self.min_reward, self.max_reward)))
 
             for job, (ignored_genome_id, genome) in zip(jobs, genomes):
-                reward_error = job.get(timeout=None)
-                genome.fitness = -np.sum(reward_error) / len(self.test_episodes)
+                genome.fitness = job.get(timeout=None)
 
         print("final fitness compute time {0:n}\n".format(time.time() - t0))
 
 
-def run(control_random=False,filename_ext="svg"):
+def run(control_seed=False,filename_ext="svg",step_epsilon=True,discount_use_reward=False):
     """Main loop."""
     # Load the config file, which is assumed to live in
     # the same directory as this script.
@@ -189,6 +273,12 @@ def run(control_random=False,filename_ext="svg"):
     config = neat.Config(LanderGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
+
+    simulator = DoSimulation(step_epsilon=step_epsilon)
+
+    LanderGenome.set_discount_use_reward(discount_use_reward)
+    LanderGenome.set_simulator_instance(simulator)
+    
 
     pop = neat.Population(config)
     stats = neat.StatisticsReporter()
@@ -199,9 +289,10 @@ def run(control_random=False,filename_ext="svg"):
 
     # Run until the winner from a generation is able to solve the environment
     # or the user interrupts the process.
-    ec = PooledErrorCompute(control_random=control_random)
+    ec = PooledErrorCompute(simulator=simulator, control_seed=control_seed)
     while 1:
         try:
+            # TODO: Why 5, not 10, since only does simulation every 10?
             ignored_gen_best = pop.run(ec.evaluate_genomes, 5)
 
             #print(gen_best)
@@ -220,6 +311,9 @@ def run(control_random=False,filename_ext="svg"):
 
             mfs = sum(stats.get_fitness_mean()[-5:]) / 5.0
             print("Average mean fitness over last 5 generations: {0:n}".format(mfs))
+
+            mfs = sum(stats.get_fitness_tmean()[-5:]) / 5.0
+            print("Average tmean(trim=0.25) fitness over last 5 generations: {0:n}".format(mfs))
 
             mfs = sum(stats.get_fitness_stat(min)[-5:]) / 5.0
             print("Average min fitness over last 5 generations: {0:n}".format(mfs))
@@ -240,7 +334,7 @@ def run(control_random=False,filename_ext="svg"):
                     step += 1
                     # Use the total reward estimates from all three networks to
                     # determine the best action given the current state.
-                    # TODO: Use softmax on outputs and add up to determine action
+                    # TODO: Option to use softmax on outputs and add up to determine action
                     votes = np.zeros((4,))
                     for n in best_networks:
                         output = n.activate(observation)
@@ -264,7 +358,9 @@ def run(control_random=False,filename_ext="svg"):
                     break
 
             if solved:
-                print("Solved.")
+                print("Solved; total length {0:n}, num simulations {1:n}".format(
+                    simulator.total_simulation_length,
+                    simulator.num_simulations))
 
                 # Save the winners.
                 for n, g in enumerate(best_genomes):
