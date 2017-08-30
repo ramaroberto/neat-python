@@ -172,6 +172,19 @@ def chunked(data, chunksize):
         res.append(cur)
     return res
 
+def _check_exception(e):
+    string = repr(e).lower()
+    if ('timed' in string) or ('timeout' in string):
+        return _EXCEPTION_TYPE_OK
+    elif isinstance(e, (EOFError, TypeError, socket.gaierror)):
+        return _EXCEPTION_TYPE_UNCERTAIN
+    elif (('eoferror' in string) or ('typeerror' in string) or ('gaierror' in string)
+          or ('pipeerror' in string) or ('authenticationerror' in string)
+          or ('refused' in string) or ('file descriptor' in string)
+          or ('reset' in string)):
+        return _EXCEPTION_TYPE_UNCERTAIN
+    return _EXCEPTION_TYPE_BAD
+
 class _DecrefLogHandler(logging.Handler):
     """
     Class to catch 'decref failed' multiprocessing messages
@@ -197,6 +210,10 @@ class _DecrefLogHandler(logging.Handler):
                 RuntimeWarning)
             return
         self.to_notify.logger_notified = True
+        if 'refused' in text.lower():
+            self.to_notify.logger_saw_refused = True
+        elif 'reset' in text.lower():
+            self.to_notify.logger_saw_reset = True
 
 
 class _ExtendedManager(object):
@@ -497,20 +514,6 @@ class DistributedEvaluator(object):
             self.em.stop()
         self.started = False
 
-    @staticmethod
-    def _check_exception(e):
-        string = repr(e).lower()
-        if ('timed' in string) or ('timeout' in string):
-            return _EXCEPTION_TYPE_OK
-        elif isinstance(e, (EOFError, TypeError, socket.gaierror)):
-            return _EXCEPTION_TYPE_UNCERTAIN
-        elif (('eoferror' in string) or ('typeerror' in string) or ('gaierror' in string)
-              or ('pipeerror' in string) or ('authenticationerror' in string)
-              or ('refused' in string) or ('file descriptor' in string)
-              or ('reset' in string)):
-            return _EXCEPTION_TYPE_UNCERTAIN
-        return _EXCEPTION_TYPE_BAD
-
     def _start_primary(self):
         """Start as the primary"""
         self.em.start()
@@ -526,7 +529,7 @@ class DistributedEvaluator(object):
                     self.em.start()
                 except (EOFError, IOError, OSError, socket.gaierror, TypeError,
                         managers.RemoteError, multiprocessing.ProcessError) as e:
-                    if ((self._check_exception(e) == _EXCEPTION_TYPE_BAD) or
+                    if ((_check_exception(e) == _EXCEPTION_TYPE_BAD) or
                         (time.time() > timeout)):
                         raise
                     continue
@@ -581,7 +584,9 @@ class DistributedEvaluator(object):
         logger.addHandler(handler)
         should_reconnect = True
         em_bad = self.reconnect
+        last_time_done = time.time()
         while should_reconnect:
+            prev_last_time_done = last_time_done
             last_time_done = time.time() # so that if loops below, have a chance to check _reset_em
             running = True
             try:
@@ -591,11 +596,12 @@ class DistributedEvaluator(object):
                 if ((time.time() - last_time_done) >= reconnect_max_time) or self.logger_notified:
                     should_reconnect = False
                     em_bad = True
-                    if self._check_exception(e) == _EXCEPTION_TYPE_BAD: # pragma: no cover
+                    last_time_done = prev_last_time_done
+                    if _check_exception(e) == _EXCEPTION_TYPE_BAD: # pragma: no cover
                         self.exit_on_stop = True
                         self.exit_string = repr(e)
                     break
-                elif self._check_exception(e) == _EXCEPTION_TYPE_BAD: # pragma: no cover
+                elif _check_exception(e) == _EXCEPTION_TYPE_BAD: # pragma: no cover
                     raise
                 else:
                     continue
@@ -610,8 +616,8 @@ class DistributedEvaluator(object):
                         IOError, OSError) as e:
                     if ('empty' in repr(e).lower()): # pragma: no cover
                         continue
-                    curr_status = self._check_exception(e)
-                    if curr_status in (_EXCEPTION_TYPE_OK, _EXCEPTION_TYPE_UNCERTAIN):
+                    curr_status = _check_exception(e)
+                    if curr_status != _EXCEPTION_TYPE_BAD:
                         if ((time.time() - last_time_done)
                             >= reconnect_max_time) or self.logger_notified:
                             if em_bad:
@@ -645,6 +651,7 @@ class DistributedEvaluator(object):
 
                 res = self._get_fitness(tasks, pool)
 
+                prev_last_time_done = last_time_done
                 last_time_done = time.time()
                 try:
                     self.outqueue.put(res)
@@ -655,16 +662,18 @@ class DistributedEvaluator(object):
                         IOError, OSError) as e:
                     if ('full' in repr(e).lower()): # pragma: no cover
                         continue
-                    curr_status = self._check_exception(e)
-                    if curr_status in (_EXCEPTION_TYPE_OK, _EXCEPTION_TYPE_UNCERTAIN):
+                    curr_status = _check_exception(e)
+                    if curr_status != _EXCEPTION_TYPE_BAD:
                         if ((time.time() - last_time_done)
                             >= reconnect_max_time) or self.logger_notified:
                             if em_bad:
                                 should_reconnect = False
+                            last_time_done = prev_last_time_done
                             break
                         elif curr_status == _EXCEPTION_TYPE_OK:
                             continue
                         else:
+                            last_time_done = prev_last_time_done
                             break
                     elif ((time.time() - last_time_done)
                           >= reconnect_max_time) or self.logger_notified: # pragma: no cover
@@ -681,6 +690,10 @@ class DistributedEvaluator(object):
                 if em_bad:
                     should_reconnect = False
                 break
+        if ((time.time() - last_time_done)
+            >= reconnect_max_time) and (self.logger_saw_refused
+                                        or self.logger_saw_reset):
+            self.reconnect = False
         logger.addHandler(logging.NullHandler())
         logger.removeHandler(handler)
         if pool is not None:
