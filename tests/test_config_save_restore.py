@@ -1,7 +1,10 @@
-import neat
+from __future__ import print_function
+import io
 import os
+import sys
 import unittest
 
+import neat
 
 class ConfigTests(unittest.TestCase):
     def test_config_save_restore(self):
@@ -106,3 +109,53 @@ class ConfigTests(unittest.TestCase):
             pass
         else:
             raise Exception("Did not get RuntimeError on attempt to save bad partial configuration")
+
+    def test_config_save_restore_io(self):
+        """Check if it is possible to restore config2 saved into stringio/bytesio"""
+
+        config_filename_initial = 'test_configuration2'
+
+        # Get config path
+        local_dir = os.path.dirname(__file__)
+        config_path_initial = os.path.join(local_dir, config_filename_initial)
+
+        # Load initial configuration from file
+        config_initial = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                                     neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                                     config_path_initial)
+
+        config1 = config_initial.genome_config
+        names1 = [p.name for p in config1._params]
+        for n in names1:
+            assert hasattr(config1, n)
+
+        if sys.version_info[0] > 2:
+            io_object = io.StringIO(newline=None)
+        else:
+            io_object = io.BytesIO()
+        
+        # Save configuration
+        config_initial.save(io_object)
+        io_object.seek(0) # DOCUMENT NEED!
+
+        # Obtain configuration from temporary filehandle
+        try:
+            config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                                 neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                                 io_object)
+        except RuntimeError:
+            print("io_object not accepted: {0!r}".format(io_object.getvalue()),file=sys.stderr)
+            sys.stderr.flush()
+            raise
+
+        config2 = config.genome_config
+        names2 = [p.name for p in config2._params]
+        for n in names2:
+            assert hasattr(config2, n)
+
+        self.assertEqual(names1, names2)
+
+        for n in names1:
+            v1 = getattr(config1, n)
+            v2 = getattr(config2, n)
+            self.assertEqual(v1, v2)

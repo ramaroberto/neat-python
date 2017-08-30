@@ -20,6 +20,8 @@ import numpy as np
 import neat
 import visualize
 
+from neat.math_util import softmax
+
 NUM_CORES = os.cpu_count()
 if NUM_CORES is None:
     NUM_CORES = 4
@@ -229,6 +231,7 @@ class PooledErrorCompute(object):
         t0 = time.time()
 
         last_num_test_episodes = len(self.test_episodes)
+        # below would be from getting rewards for crossover
         self.test_episodes += self.simulator.unload_test_episodes()
 
         # Periodically generate a new set of episodes for comparison.
@@ -264,15 +267,26 @@ class PooledErrorCompute(object):
         print("final fitness compute time {0:n}\n".format(time.time() - t0))
 
 
-def run(control_seed=False,filename_ext="svg",step_epsilon=True,discount_use_reward=False):
+def run(config_name='config',
+        config_file_object=None,
+        control_seed=False,
+        graphics_ext="svg",
+        step_epsilon=True,
+        discount_use_reward=False,
+        use_softmax=False):
     """Main loop."""
-    # Load the config file, which is assumed to live in
-    # the same directory as this script.
-    local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'config')
-    config = neat.Config(LanderGenome, neat.DefaultReproduction,
-                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                         config_path)
+    if config_file_object is None:
+        # Load the config file, which is assumed to live in
+        # the same directory as this script.
+        local_dir = os.path.dirname(__file__)
+        config_path = os.path.join(local_dir, config_name)
+        config = neat.Config(LanderGenome, neat.DefaultReproduction,
+                             neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                             config_path)
+    else:
+        config = neat.Config(LanderGenome, neat.DefaultReproduction,
+                             neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                             config_file_object)
 
     simulator = DoSimulation(step_epsilon=step_epsilon)
 
@@ -292,31 +306,30 @@ def run(control_seed=False,filename_ext="svg",step_epsilon=True,discount_use_rew
     ec = PooledErrorCompute(simulator=simulator, control_seed=control_seed)
     while 1:
         try:
-            # TODO: Why 5, not 10, since only does simulation every 10?
-            ignored_gen_best = pop.run(ec.evaluate_genomes, 5)
+            ignored_gen_best = pop.run(ec.evaluate_genomes, 10) # was 5
 
             #print(gen_best)
 
             visualize.plot_stats(stats,
                                  ylog=False,
                                  view=False,
-                                 filename="fitness.{0!s}".format(filename_ext))
+                                 filename="fitness.{0!s}".format(graphics_ext))
 
             plt.plot(ec.episode_score, 'g-', label='score')
             plt.plot(ec.episode_length, 'b-', label='length')
             plt.grid()
             plt.legend(loc='best')
-            plt.savefig("scores.{0!s}".format(filename_ext))
+            plt.savefig("scores.{0!s}".format(graphics_ext))
             plt.close()
 
-            mfs = sum(stats.get_fitness_mean()[-5:]) / 5.0
-            print("Average mean fitness over last 5 generations: {0:n}".format(mfs))
+            mfs = sum(stats.get_fitness_mean()[-10:]) / 10.0
+            print("Mean of mean fitnesses over last 10 generations: {0:n}".format(mfs))
 
-            mfs = sum(stats.get_fitness_tmean()[-5:]) / 5.0
-            print("Average tmean(trim=0.25) fitness over last 5 generations: {0:n}".format(mfs))
+            mfs = sum(stats.get_fitness_tmean()[-10:]) / 10.0
+            print("Mean of tmean(trim=0.25) fitnesses over last 10 generations: {0:n}".format(mfs))
 
-            mfs = sum(stats.get_fitness_stat(min)[-5:]) / 5.0
-            print("Average min fitness over last 5 generations: {0:n}".format(mfs))
+            mfs = sum(stats.get_fitness_stat(min)[-10:]) / 10.0
+            print("Mean of min fitnesses over last 10 generations: {0:n}".format(mfs))
 
             # Use the best genomes seen so far as an ensemble-ish control system.
             best_genomes = stats.best_unique_genomes(3)
@@ -334,11 +347,15 @@ def run(control_seed=False,filename_ext="svg",step_epsilon=True,discount_use_rew
                     step += 1
                     # Use the total reward estimates from all three networks to
                     # determine the best action given the current state.
-                    # TODO: Option to use softmax on outputs and add up to determine action
                     votes = np.zeros((4,))
                     for n in best_networks:
                         output = n.activate(observation)
-                        votes[np.argmax(output)] += 1
+                        if use_softmax:
+                            softmax_output = softmax(output)
+                            for action, tmp_output in enumerate(softmax_output):
+                                votes[action] += tmp_output
+                        else:
+                            votes[np.argmax(output)] += 1
 
                     best_action = np.argmax(votes)
                     observation, reward, done, ignored_info = env.step(best_action)
@@ -358,7 +375,7 @@ def run(control_seed=False,filename_ext="svg",step_epsilon=True,discount_use_rew
                     break
 
             if solved:
-                print("Solved; total length {0:n}, num simulations {1:n}".format(
+                print("Solved; total simulation length {0:n}, num simulations {1:n}".format(
                     simulator.total_simulation_length,
                     simulator.num_simulations))
 

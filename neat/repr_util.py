@@ -29,16 +29,16 @@ full_name_re = re.compile(r'(\w+)\((.+)\)$')
 module_re = re.compile(r'(\w[.a-zA-Z_]*)$')
 function_re = re.compile(r'\s*<?function\s+\b(\w+)\b')
 partial_re = re.compile(r'\s*[<_]*functools\.partial\b')
-file_object_re = re.compile(r'\b(?:_?io|file)\b')
-string_like_re = re.compile(r'\b(str|unicode|bytes|bytarray)\b')
+file_object_re = re.compile(r'\b(?:_?io|(?:temp)?file)\b')
+string_like_re = re.compile(r'\b(str|unicode|bytes|bytearray)\b')
 
 def check_if_file_object(possible_file_object):
     if file_object_re.search(str(type(possible_file_object))):
         return True
     elif string_like_re.search(str(type(possible_file_object))):
         return False
-    elif file_object_re.search(repr(possible_file_object)): # pragma: no cover
-        return True
+    elif file_object_re.search(repr(possible_file_object)):
+        return True # pragma: no cover
     return False
 
 def extract_function_name(repr_result, start_only=True, no_match=WARN_IF_NO_MATCH):

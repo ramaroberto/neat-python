@@ -122,7 +122,7 @@ def write_pretty_params(f, config, params):
         for name in param_names_not_defaulted:
             p = params[name]
             f.write('{} = {}\n'.format(p.name.ljust(longest_name_len),
-                                       p.format(getattr(config, p.name))))
+                                        p.format(getattr(config, p.name))))
 
     if param_names_default_ok:
         f.write('\n# Used expected default:\n')

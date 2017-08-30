@@ -91,6 +91,33 @@ def softmax(values):
     inv_s = 1.0 / s
     return [ev * inv_s for ev in e_values]
 
+def random_proportional_selection(freqs, max_freq=None):
+    """Roulette selection - see http://jbn.github.io/fast_proportional_selection/ for analysis"""
+    n = len(freqs)
+
+    if n == 1:
+        return 0
+    elif n == 2:
+        chance_first = float(freqs[0])/sum(freqs)
+        if random.random() < chance_first:
+            return 0
+        return 1
+
+    if max_freq is None:
+        max_freq = max(freqs)
+
+    if max_freq == 1:
+        min_freq = min(freqs)
+        if min_freq == 1:
+            return random.choice(range(n))
+
+    max_freq = float(max_freq)
+
+    while True:
+        i = int(n * random.random())
+        if random.random() < (freqs[i] / max_freq):
+            return i
+
 
 # Lookup table for commonly used {value} -> value functions.
 stat_functions = {'min': min, 'max': max, 'mean': mean, 'median': median,
