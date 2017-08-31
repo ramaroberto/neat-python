@@ -37,13 +37,13 @@ def test_basic():
     result = r.activate([0.2])
 
     assert r.values[-1] == 0.2
-    assert_almost_equal(r.values[0], 0.731, 0.001)
+    assert_almost_equal(r.values[0], 0.72711, 0.001)
     assert result[0] == r.values[0]
 
     result = r.activate([0.4])
 
     assert r.values[-1] == 0.4
-    assert_almost_equal(r.values[0], 0.881, 0.001)
+    assert_almost_equal(r.values[0], 0.8765, 0.001)
     assert result[0] == r.values[0]
 
 
