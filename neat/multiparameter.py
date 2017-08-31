@@ -15,7 +15,7 @@ from math import sqrt
 from pprint import saferepr
 
 from neat.attributes import FloatAttribute, BoolAttribute
-from neat.math_util import NORM_EPSILON
+from neat.math_util import NORM_EPSILON, tmean
 from neat.repr_util import repr_extract_function_name
 from neat.six_util import iteritems, iterkeys
 
@@ -100,7 +100,7 @@ class EvolvedMultiParameterFunction(object):
         if self.instance_name == other.instance_name:
             return 0.0
 
-        max_diff = 0.0
+        diffs = []
         for n in self.evolved_param_names:
             param_dict = self.evolved_param_dicts[n]
             if param_dict['param_type'] in ('float', 'int'):
@@ -114,14 +114,18 @@ class EvolvedMultiParameterFunction(object):
                         raise RuntimeError(
                             "This_diff {0:n} over 1.0 (diff {1:n}, div_by {2:n})".format(
                                 this_diff, diff, div_by))
-                    max_diff = max(max_diff, this_diff)
+                    diffs.append(this_diff)
+                else:
+                    diffs.append(0.0)
             elif param_dict['param_type'] == 'bool':
                 if self.current_param_values[n] != other.current_param_values[n]:
-                    return 1.0
+                    diffs.append(1.0)
+                else:
+                    diffs.append(0.0)
             else:
                 raise ValueError("Unknown what to do with param_type {0!s} for {1!s}".format(
                     saferepr(param_dict['param_type']), self.name))
-        return max_diff
+        return tmean(diffs)
 
     def copy(self):
         return copy.copy(self)

@@ -45,6 +45,13 @@ clamped
    :scale: 100 %
    :alt: clamped linear function
 
+cube
+^^^^
+
+.. figure:: activation-cube.png
+   :scale: 100 %
+   :alt: cubic function
+
 log1p
 ^^^^^^
 
@@ -113,6 +120,15 @@ multiparam_elu
 .. figure:: activation-swap-multiparam_elu.png
     :scale: 100 %
     :alt: Variable-scaling version of the exponential linear function (ELU)
+
+.. _multiparam-pow-label:
+
+multiparam_pow
+^^^^^^^^^^^^^^^^^^^^
+
+.. figure:: activation-multiparam_pow.png
+    :scale: 100 %
+    :alt: Above a=1, pow(z, a); below 1, pow(z, pow(2,(a-1.0))
 
 .. _multiparam-relu-description-label:
 
@@ -201,13 +217,6 @@ abs
 .. figure:: activation-abs.png
    :scale: 100 %
    :alt: absolute value function
-
-cube
-^^^^
-
-.. figure:: activation-cube.png
-   :scale: 100 %
-   :alt: cubic function
 
 exp
 ^^^
@@ -337,15 +346,6 @@ multiparam_log_inv
 .. figure:: activation-multiparam_log_inv.png
     :scale: 100 %
     :alt: Above 0.0, equivalent to scaled_expanded_log with a+1.0; below, weighted mean with inv of -1*x.
-
-.. _multiparam-pow-label:
-
-multiparam_pow
-^^^^^^^^^^^^^^^^^^^^
-
-.. figure:: activation-multiparam_pow.png
-    :scale: 100 %
-    :alt: Above a=1, pow(z, a); below 1, pow(z, pow(2,(a-1.0))
 
 .. _scaled-expanded-log-label:
 

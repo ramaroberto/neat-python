@@ -7,7 +7,8 @@ import neat
 warnings.simplefilter('default')
 
 # TODO: These tests are just smoke tests to make sure nothing has become badly broken.  Expand
-# to include more detailed tests of actual functionality.
+# to include more detailed tests of actual functionality,
+# particularly for test_random_proportional_selection.
 
 class NotAlmostEqualException(Exception):
     pass
@@ -37,6 +38,15 @@ def test_softmax():
     #softmax_result = list(neat.math_util.softmax([1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 3.0]))
     #print("Softmax for [1, 2, 3, 4, 1, 2, 3] is {!r}".format(softmax_result))
 
+def test_random_proportional_selection():
+    """Test the neat.math_utils.random_proportional_selection function."""
+
+    assert neat.math_util.random_proportional_selection([1.0]) == 0
+    assert neat.math_util.random_proportional_selection([0.0,1.0]) == 1
+    assert neat.math_util.random_proportional_selection([0.0,0.0,2.0]) == 2
+    assert neat.math_util.random_proportional_selection([0.0,0.0001,0.0]) == 1
+    assert 0 < neat.math_util.random_proportional_selection([0.0,1.0,1.0]) <= 2
 
 if __name__ == '__main__':
     test_softmax()
+    test_random_proportional_selection()

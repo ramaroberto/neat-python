@@ -17,7 +17,7 @@ from neat.multiparameter import BadFunctionError as InvalidActivationFunction # 
 
 def sigmoid_activation(z):
     try:
-        to_return = 1.0 / (1.0 + math.exp(-5.0*z))
+        to_return = 1.0 / (1.0 + math.exp(-4.9*z))
     except ArithmeticError: # pragma: no cover
         if z > 0.0:
             return 1.0
@@ -28,7 +28,7 @@ def sigmoid_activation(z):
 
 def tanh_activation(z):
     try:
-        to_return = math.tanh(z*2.5)
+        to_return = math.tanh(z*2.45)
     except ArithmeticError: # pragma: no cover
         if z > 0.0:
             return 1.0
@@ -45,8 +45,10 @@ def sin_activation(z):
 def gauss_activation(z):
     try:
         to_return = math.exp(-5.0 * z**2)
-    except ArithmeticError:
-        return 0.0
+    except ArithmeticError: # pragma: no cover
+        if abs(z) > NORM_EPSILON:
+            return 0.0
+        return 1.0
     else:
         return to_return
 
@@ -59,9 +61,11 @@ def softplus_activation(z):
     try:
         to_return = 0.2 * math.log1p(math.exp(z*5.0))
     except ArithmeticError: # pragma: no cover
-        if z > 0.0:
+        if z > NORM_EPSILON:
             return z
-        return 0.0
+        elif z < -1*NORM_EPSILON:
+            return 0.0
+        return (NORM_EPSILON/2.0)
     else:
         return to_return
 
@@ -189,8 +193,8 @@ def multiparam_elu_activation(z, a, b):
 def _check_value_range(a, min_val, max_val, caller, var_name):
     if not min_val <= a <= max_val:
         raise ValueError(
-            "{0} for {1}_activation must be between {2:n} and {3:n}, not {4!r}".format(
-                var_name, caller, min_val, max_val, a))
+            "{0} for {1}_activation must be between {2:n} and {3:n}, not {4!s}".format(
+                var_name, caller, min_val, max_val, saferepr(a)))
 
 def weighted_lu_activation(z, a, b):
     _check_value_range(a, 0.0, 1.0, 'weighted_lu', 'a')
@@ -246,7 +250,7 @@ def multiparam_gauss_activation(z, a, b):
     try:
         to_return = min(1.0,(mult*math.exp(-5.0 * b * abs(z)**a)))
     except ArithmeticError: # pragma: no cover
-        if abs(z) > 0.0:
+        if abs(z) > NORM_EPSILON:
             return 0.0
         return 1.0
     else:
@@ -277,7 +281,8 @@ def scaled_expanded_log_activation(z, a): # mostly intended for CPPNs
     return math.copysign(math.pow(2.0,(1.0-a)),z)*math.log(abs(z*math.pow(2.0,abs(a))),2)
 
 def multiparam_log_inv_activation(z, a): # mostly intended for CPPNs
-    assert a >= -1.0, "'a' for multiparam_log_inv must be -1.0 or above, not {!r}".format(a)
+    assert a >= -1.0, "'a' for multiparam_log_inv must be -1.0 or above, not {!s}".format(
+        saferepr(a))
     if a >= 0:
         return scaled_expanded_log_activation(z,(a+1.0))
     return ((abs(a)*inv_activation(-1*z))
@@ -334,7 +339,7 @@ def multiparam_tanh_approx_activation(z, a, b):
     _check_value_range(b, 0.0, 1.0, 'multiparam_tanh_approx', 'b')
 
     try:
-        to_return = (2.5*z)/(math.exp(a) + (b*abs(2.5*z)))
+        to_return = (2.5*z)/(math.exp(a) + (b*abs(2.45*z)))
     except ArithmeticError: # pragma: no cover
         _check_value_range(a, -12.0, 12.0, 'multiparam_tanh_approx', 'a')
         raise
@@ -342,7 +347,7 @@ def multiparam_tanh_approx_activation(z, a, b):
         return to_return
 
 def multiparam_sigmoid_approx_activation(z, a):
-    return min(1.0,max(0.0,((1.0+multiparam_tanh_approx_activation(z, a, 1.0))/2.0)))
+    return min(1.0,max(0.0,((1.0+multiparam_tanh_approx_activation((2.0*z), a, 1.0))/2.0)))
 
 class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""

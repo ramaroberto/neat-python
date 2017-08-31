@@ -176,6 +176,8 @@ def _check_exception(e):
     string = repr(e).lower()
     if ('timed' in string) or ('timeout' in string):
         return _EXCEPTION_TYPE_OK
+    elif isinstance(e, (queue.Full, queue.Empty)):
+        return _EXCEPTION_TYPE_OK
     elif isinstance(e, (EOFError, TypeError, socket.gaierror)):
         return _EXCEPTION_TYPE_UNCERTAIN
     elif (('eoferror' in string) or ('typeerror' in string) or ('gaierror' in string)
@@ -393,6 +395,8 @@ class DistributedEvaluator(object):
         self.reconnect_max_time = None
         self.n_tasks = None
         self.logger_notified = False
+        self.logger_saw_refused = False
+        self.logger_saw_reset = False
 
     def __getstate__(self): # pragma: no cover
         """Required by the pickle protocol."""
@@ -480,14 +484,14 @@ class DistributedEvaluator(object):
         if not self.started:
             raise RuntimeError("Not yet started!")
         if self.n_tasks is None: # pragma: no cover
-            self.n_tasks = max(5, (wait*5), self.worker_timeout)
+            self.n_tasks = max(5, (wait*5), self.num_workers)
             warnings.warn("Self.n_tasks is None; estimating at {:n}".format(self.n_tasks))
         start_time = time.time()
         num_added = 0
         poss_time_wait = max(1,
                             (self.reconnect_max_time+60),
                              wait,
-                             self.worker_timeout)
+                             (self.worker_timeout*self.n_tasks))
         while (num_added < (self.n_tasks+1)) and ((time.time() - start_time) < poss_time_wait):
             try:
                 if force_secondary_shutdown:
@@ -496,12 +500,10 @@ class DistributedEvaluator(object):
                     self.inqueue.put(1, block=True, timeout=0.2)
             except (EOFError, IOError, OSError, socket.gaierror, TypeError, queue.Full,
                     managers.RemoteError, multiprocessing.ProcessError) as e: # pragma: no cover
-                if ("timed" in repr(e).lower()) or ("timeout" in repr(e).lower()):
-                    if (time.time() - start_time) < (poss_time_wait/self.n_tasks):
-                        num_added += 1
-                        continue
-                    else:
-                        break
+                status = _check_exception(e)
+                if status == _EXCEPTION_TYPE_OK:
+                    num_added += 1
+                    continue
                 else:
                     break
             else:
@@ -579,6 +581,8 @@ class DistributedEvaluator(object):
         else:
             pool = None
         self.logger_notified = False
+        self.logger_saw_refused = False
+        self.logger_saw_reset = False
         handler = _DecrefLogHandler(to_notify=self)
         logger = multiprocessing.get_logger()
         logger.addHandler(handler)
@@ -693,6 +697,8 @@ class DistributedEvaluator(object):
         if ((time.time() - last_time_done)
             >= reconnect_max_time) and (self.logger_saw_refused
                                         or self.logger_saw_reset):
+            self.reconnect = False
+        elif em_bad and self.logger_notified:
             self.reconnect = False
         logger.addHandler(logging.NullHandler())
         logger.removeHandler(handler)
