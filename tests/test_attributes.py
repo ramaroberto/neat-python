@@ -147,13 +147,13 @@ def test_multiparam_repro(config_file='test_configuration6'):
 
     ignored_net = neat.nn.FeedForwardNetwork.create(g2, config)
 
-    a1 = g1.nodes[0].activation.get_values('a')
-    a2 = g2.nodes[0].activation.get_values('a')
+    a1 = g1.nodes[0].activation.get_values('tilt')
+    a2 = g2.nodes[0].activation.get_values('tilt')
 
-    assert a1 == a2, "Clone has 'a' {0:n} but original has 'a' {1:n}".format(
+    assert a1 == a2, "Clone has 'tilt' {0:n} but original has 'tilt' {1:n}".format(
         a1, a2)
 
-    assert a1_dict['a'] == a2_dict['a'], "Clone has {0!r} but original has {1!r}".format(
+    assert a1_dict['tilt'] == a2_dict['tilt'], "Clone has {0!r} but original has {1!r}".format(
         a1_dict, a2_dict)
 
     print("g1: {!r} at {!s}".format(g1.nodes[0].activation,id(g1.nodes[0].activation)))
@@ -161,7 +161,7 @@ def test_multiparam_repro(config_file='test_configuration6'):
 
     count = 0
 
-    while a1 == g1.nodes[0].activation.get_values('a'):
+    while a1 == g1.nodes[0].activation.get_values('tilt'):
         if count > MAX_MUTATE:
             raise RuntimeError("Tried mutating {0:n} times without success".format(count))
         g1.nodes[0].mutate(config.genome_config)
@@ -170,8 +170,8 @@ def test_multiparam_repro(config_file='test_configuration6'):
 ##    print("g1: {!r} at {!s}".format(g1.nodes[0].activation,id(g1.nodes[0].activation)))
 ##    print("g2: {!r} at {!s}".format(g2.nodes[0].activation,id(g2.nodes[0].activation)))
 
-    assert a2 == g2.nodes[0].activation.get_values('a'), "Clone 'a' changed from {0:n} to {1:n} (original {2:n})".format(
-        a2, g2.nodes[0].activation.get_values('a'), g1.nodes[0].activation.get_values('a'))
+    assert a2 == g2.nodes[0].activation.get_values('tilt'), "Clone 'tilt' changed from {0:n} to {1:n} (original {2:n})".format(
+        a2, g2.nodes[0].activation.get_values('tilt'), g1.nodes[0].activation.get_values('tilt'))
 
 
 if __name__ == '__main__':

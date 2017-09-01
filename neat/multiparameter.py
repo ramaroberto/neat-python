@@ -164,11 +164,89 @@ class MultiParameterFunction(object):
         for n in evolved_param_names:
             self.init_defaults(n, full=full_init_defaults)
 
+    def _init_from_mean_stdev(self, n, tmp_name):
+        param_dict = self.evolved_param_dicts[n]
+
+        if ('max_init_value' in param_dict) or ('min_init_value' in param_dict):
+            warnings.warn(
+                "{0}: Have init_mean/stdev - ignoring max/min_init_value".format(
+                    tmp_name))
+        if param_dict['init_type'].lower() in 'uniform':
+            plus_minus = param_dict['init_stdev']*2.0
+        elif param_dict['init_type'].lower() in ('gaussian','normal'):
+            plus_minus = (param_dict['init_stdev']*sqrt(12.0))/2.0
+        else:
+            raise ValueError(
+                "{0}: Unknown init_type {1}".format(
+                    tmp_name, saferepr(param_dict['init_type'])))
+        
+        self.evolved_param_dicts[n]['max_init_value'] = (param_dict['init_mean']
+                                                         + plus_minus)
+        self.evolved_param_dicts[n]['min_init_value'] = (param_dict['init_mean']
+                                                         - plus_minus)
+        self.evolved_param_dicts[n].setdefault('max_value',
+                                               param_dict['max_init_value'])
+        self.evolved_param_dicts[n].setdefault('min_value',
+                                               param_dict['min_init_value'])
+        if param_dict['max_value'] < param_dict['max_init_value']:
+            raise ValueError(
+                "{0}: max_value {1:n} too low for init_mean, init_stdev".format(
+                    tmp_name, param_dict['max_value']))
+        if param_dict['min_value'] > param_dict['min_init_value']:
+            raise ValueError(
+                "{0}: min_value {1:n} too high for init_mean, init_stdev".format(
+                    tmp_name, param_dict['min_value']))
+
+    def _init_from_min_max(self, n, tmp_name):
+        param_dict = self.evolved_param_dicts[n]
+
+        self.evolved_param_dicts[n].setdefault('max_init_value',
+                                               param_dict['max_value'])
+        self.evolved_param_dicts[n].setdefault('min_init_value',
+                                               param_dict['min_value'])
+        self.evolved_param_dicts[n].setdefault('max_value',
+                                               param_dict['max_init_value'])
+        self.evolved_param_dicts[n].setdefault('min_value',
+                                               param_dict['min_init_value'])
+                    
+        middle = (param_dict['max_init_value'] +
+                  param_dict['min_init_value'])/2.0
+        if ('init_mean' in param_dict) and (middle != param_dict['init_mean']):
+            if (abs(middle-param_dict['init_mean']) < NORM_EPSILON):
+                warnings.warn("{0}: Using calculated value for init_mean".format(
+                    tmp_name))
+                self.evolved_param_dicts[n]['init_mean'] = middle
+            else:
+                raise ValueError(
+                    "{0}: Contradictory max/min values and init_mean {1:n}".format(
+                        tmp_name,middle))
+        else:
+            self.evolved_param_dicts[n].setdefault('init_mean', middle)
+        for_stdev = abs(param_dict['max_init_value']-param_dict['min_init_value'])/4.0
+        # actual standard deviation of uniform distribution is width/sqrt(12) -
+        # use of 1/4 range in the uniform distribution FloatAttribute setup
+        # (and thus the above) is to make it easier to figure out how to
+        # get a given initialization range that is not the same as the
+        # overall min/max range.
+        if param_dict['init_type'].lower() in ('gaussian', 'normal'):
+            for_stdev = (4.0*for_stdev)/sqrt(12.0)
+        if ('init_stdev' in param_dict) and (for_stdev != param_dict['init_stdev']):
+            if (abs(for_stdev-param_dict['init_stdev']) < NORM_EPSILON):
+                warnings.warn("{0}: Using calculated value for init_stdev".format(
+                    tmp_name))
+                self.evolved_param_dicts[n]['init_stdev'] = for_stdev
+            else:
+                raise ValueError(
+                    "{0}: Contradictory max/min values and init_stdev {1:n}".format(
+                        tmp_name,for_stdev))
+        else:
+            self.evolved_param_dicts[n].setdefault('init_stdev', for_stdev)
+
     def init_defaults(self, n, full=True):
         """
-        Initializes (or re-initializes after user settings changes, provided the user deletes
-        any old settings not altered) defaults for one parameter's attribute settings
-        for a multiparameter function.
+        Initializes defaults for one parameter's attribute settings for a multiparameter
+        function. Can also re-initialize after user settings changes, provided the user
+        previously deletes any old settings that should be initialized.
         """
         self.evolved_param_dicts[n].setdefault('param_type', 'float')
         param_dict = self.evolved_param_dicts[n]
@@ -178,38 +256,24 @@ class MultiParameterFunction(object):
             if full:
                 self.evolved_param_dicts[n].setdefault('init_type','uniform')
 
-                self.evolved_param_dicts[n].setdefault('max_init_value',
-                                                       param_dict['max_value'])
-                self.evolved_param_dicts[n].setdefault('min_init_value',
-                                                       param_dict['min_value'])
-                self.evolved_param_dicts[n].setdefault('max_value',
-                                                       param_dict['max_init_value'])
-                self.evolved_param_dicts[n].setdefault('min_value',
-                                                       param_dict['min_init_value'])
+                if ('init_mean' in param_dict) and ('init_stdev' in param_dict):
+                    self._init_from_mean_stdev(n, tmp_name)
 
-                middle = (param_dict['max_init_value'] +
-                          param_dict['min_init_value'])/2.0
-                self.evolved_param_dicts[n].setdefault('init_mean', middle)
+                elif ((('max_init_value' in param_dict) or ('max_value' in param_dict)) and
+                      (('min_init_value' in param_dict) or ('min_value' in param_dict))):
+                    self._init_from_min_max(n, tmp_name)
+
+                else:
+                    raise ValueError(
+                        "{0}: Parameter {1} has neither max/min nor init_mean+init_stdev".format(
+                            self.name,n))
+
                 # below here is mainly intended for users wanting to use built-in
                 # multiparameter functions without too much initialization worries
                 self.evolved_param_dicts[n].setdefault('replace_rate', 0.1)
                 mutate_rate = min((1.0-param_dict['replace_rate']),
                                   (param_dict['replace_rate']*5.0))
                 self.evolved_param_dicts[n].setdefault('mutate_rate', mutate_rate)
-                for_stdev = min(abs(param_dict['max_init_value'] -
-                                    param_dict['init_mean']),
-                                abs(param_dict['min_init_value'] -
-                                    param_dict['init_mean']))/2.0
-                if param_dict['init_type'] == 'uniform':
-                    self.evolved_param_dicts[n].setdefault('init_stdev', for_stdev)
-                    # actual standard deviation of uniform distribution is width/sqrt(12) -
-                    # use of 1/4 range in the uniform distribution FloatAttribute setup
-                    # (and thus the above) is to make it easier to figure out how to
-                    # get a given initialization range that is not the same as the
-                    # overall min/max range.
-                else:
-                    self.evolved_param_dicts[n].setdefault('init_stdev',
-                                                           ((4.0*for_stdev)/sqrt(12.0)))
                 if param_dict['mutate_rate'] > 0:
                     mutate_power = (min(1.0,(param_dict['replace_rate']/
                                              param_dict['mutate_rate']))*

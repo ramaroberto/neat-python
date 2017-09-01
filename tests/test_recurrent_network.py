@@ -46,14 +46,14 @@ def test_basic():
 
     assert r.active == 1
     assert r.values[1][-1] == 0.2
-    assert_almost_equal(r.values[1][0], 0.72711, 0.001)
+    assert_almost_equal(r.values[1][0], 0.7311, 0.001)
     assert result[0] == r.values[1][0]
 
     result = r.activate([0.4])
 
     assert r.active == 0
     assert r.values[0][-1] == 0.4
-    assert_almost_equal(r.values[0][0], 0.8765, 0.001)
+    assert_almost_equal(r.values[0][0], 0.8808, 0.001)
     assert result[0] == r.values[0][0]
 
 

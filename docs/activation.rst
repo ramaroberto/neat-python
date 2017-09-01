@@ -311,7 +311,7 @@ triangle_wave
     :scale: 100 %
     :alt: Triangle wave with period matching sin activation function
 
-CPPN-intended activation functions (multi-parameter)
+CPPN-intended activation functions (multiparameter)
 ---------------------------------------------------------------------------
 
 .. _hat-gauss-rectangular-label:

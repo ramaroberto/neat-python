@@ -39,11 +39,10 @@ def print_for_testing(string, result, data):
         raise
     global save_to_print, save_exact_to_print, save_to_print_abs
     result = float(result)
-    if result or (math.copysign(1.0,result) > 0):
-        name = "activations.{0}".format(string)
-    else:
-        name = "abs(activations.{0})".format(string) # signed 0 problem
-        result = abs(result)
+    name = "activations.{0}".format(string)
+    if not (result or (math.copysign(1.0,result) > 0)):
+        print("# Skipping {0} with result {1!r}".format(name,result)) # signed zero
+        return
     rounded = round(result,6)
     if rounded == result:
         print("assert {0} == {1!r}".format(name, result))
@@ -213,17 +212,21 @@ for n in sorted(iterkeys(mps.norm_func_dict['activation'])):
 for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
     mpf = mps.multiparam_func_dict['activation'][n]
     f = mpf.user_func
+    param_name = mpf.evolved_param_names[0]
+    print("{0} dict for {1}: {2!r}".format(
+        n, param_name, mpf.evolved_param_dicts[param_name]))
     if len(mpf.evolved_param_names) > 2: # NOTE: EVENTUALLY ALSO NEED TO CHECK FOR NON-FLOAT!
         print("Cannot currently handle 3+ evolved parameters (function {0!s}: {1!r})".format(n,f))
         continue
     elif len(mpf.evolved_param_names) > 1:
         param2_name = mpf.evolved_param_names[1]
         swap=[False,True]
+        print("{0} dict for {1}: {2!r}".format(
+            n, param2_name, mpf.evolved_param_dicts[param2_name]))
     else:
         param2_name = None
         swap=[False]
     for do_swap in swap:
-        param_name = mpf.evolved_param_names[0]
         if param2_name is not None:
             fig = plt.figure(figsize=((5*num_subfigures),4))
         else:
@@ -261,7 +264,7 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
                 max_value2_use = max_value2
                 min_value2_use = min_value2
                 init2_use = init_type2
-        param_value_list = np.linspace(max_value_use, min_value_use, num_subfigures)
+        param_value_list = [round(a,3) for a in list(np.linspace(max_value_use, min_value_use, num_subfigures))]
         middle_param_value = median2(param_value_list)
         if init_use.lower() in 'uniform':
             important_nums = (min_value_use,middle_param_value,max_value_use)
@@ -277,7 +280,7 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
             subplot_num += 1
             fig.add_subplot(1,num_subfigures,subplot_num)
             if param2_name is not None:
-                param2_value_list = np.linspace(max_value2_use, min_value2_use, 5)
+                param2_value_list = [round(b,3) for b in list(np.linspace(max_value2_use, min_value2_use, 5))]
                 if init2_use.lower() in ('gaussian','normal'):
                     colors_use = ['c--','g-','b-','r-','m--']
                     important_colors = ('g-','b-','r-')

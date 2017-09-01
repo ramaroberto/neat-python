@@ -144,8 +144,8 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3.5', None)}
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'page_width': 'auto', # getting cutoff of included source code
-    'show_related': 'True',
+  'page_width': 'auto', # getting cutoff of included source code
+  'show_related': True,
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

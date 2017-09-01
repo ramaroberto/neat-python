@@ -286,7 +286,7 @@ class DefaultGenome(object):
                 if config.num_hidden > 0:
                     print(
                         "Warning: initial_connection = full with hidden nodes"
-                        + "will not do direct input-output connections;",
+                        + " will not do direct input-output connections;",
                         "\tif this is desired, set initial_connection = full_nodirect;",
                         "\tif not, set initial_connection = full_direct",
                         sep='\n', file=sys.stderr);
@@ -300,9 +300,9 @@ class DefaultGenome(object):
                 if config.num_hidden > 0:
                     print(
                         "Warning: initial_connection = partial with hidden nodes"
-                        + "will not do direct input-output connections;",
+                        + " will not do direct input-output connections;",
                         "\tif this is desired, set initial_connection ="
-                        + "partial_nodirect {0:n};".format(
+                        + " partial_nodirect {0:n};".format(
                             config.connection_fraction),
                         "\tif not, set initial_connection = partial_direct {0:n}".format(
                             config.connection_fraction),

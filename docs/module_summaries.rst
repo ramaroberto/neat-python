@@ -945,9 +945,9 @@ distributed
   .. py:data:: _EXCEPTION_TYPE_UNCERTAIN
   .. py:data:: _EXCEPTION_TYPE_BAD
 
-    Values - which should be treated as constants - that are returned by the :py:meth:`_check_exception <DistributedEvaluator._check_exception()>` method. The first is
+    Values - which should be treated as constants - that are returned by the :py:func:`_check_exception()` function. The first is
     for a queue being empty and similar reasons to try again. The second indicates likely disconnection, but should try to reconnect. The third includes all other cases, and
-    is responded to with either immediately `raising <raise>` the exception again, or returning and exiting with a non-zero exit (status) value.
+    is responded to in the calling code by either immediately `raising <raise>` the exception again, or returning and exiting with a non-zero exit (status) value.
 
   .. py:exception:: ModeError(RuntimeError)
 
@@ -986,6 +986,23 @@ distributed
     :return: A list of chunks containing (as a list) at most ``chunksize`` elements of data.
     :rtype: list(list(object))
     :raises ValueError: If ``chunksize`` is not 1+ or is not an integer
+
+  .. index:: TODO
+
+  .. py:function:: _check_exception(e)
+
+    Evaluates whether an exception should be treated as simply a reason to retry the operation, as indicating a need to reconnect, or as some worse type of error.
+    TODO: Currently, due to problems with the variety of exceptions emitted by the `multiprocessing` module - particularly due to different versions of
+    Python - attempts in most (but not all) cases to evaluate the exception via `repr`, looking for keywords, which is uncertain at best. The `multiprocessing` module
+    in particular has a large number of `assert` checks, frequently without user messages. Two pull requests have been submitted to correct this for the most problematic
+    portions of the module, in at least the latest (developmental) version of Python ("nightly"), of which one has been accepted thus far; the other is awaiting review.
+
+    :param e: The exception to be evaluated.
+    :type e: :datamodel:`instance <index-48>`
+    :return: One of :py:data:`_EXCEPTION_TYPE_OK`, :py:data:`_EXCEPTION_TYPE_UNCERTAIN`, or :py:data:`_EXCEPTION_TYPE_BAD`.
+    :rtype: int
+
+
 
   .. py:class:: _ExtendedManager(addr, authkey, mode, start=False)
 
@@ -1109,21 +1126,6 @@ distributed
       :param bool force_secondary_shutdown: Causes secondaries to shutdown even if started with ``reconnect`` true.
       :raises ModeError: If not the :term:`primary node` (not in :py:data:`MODE_PRIMARY`).
       :raises RuntimeError: If not yet :py:meth:`started <start()>`.
-
-    .. index:: TODO
-
-    .. py:staticmethod:: _check_exception(e)
-
-      Evaluates whether an exception should be treated as simply a reason to retry the operation, as indicating a need to reconnect, or as some worse type of error.
-      TODO: Currently, due to problems with the variety of exceptions emitted by the `multiprocessing` module - particularly due to different versions of
-      Python - attempts in most (but not all) cases to evaluate the exception via `repr`, looking for keywords, which is uncertain at best. The `multiprocessing` module
-      in particular has a large number of `assert` checks, frequently without user messages. Two pull requests have been submitted to correct this for the most problematic
-      portions of the module, in at least the latest (developmental) version of Python ("nightly"), of which one has been accepted thus far; the other is awaiting review.
-
-      :param e: The exception to be evaluated.
-      :type e: :datamodel:`instance <index-48>`
-      :return: One of :py:data:`_EXCEPTION_TYPE_OK`, :py:data:`_EXCEPTION_TYPE_UNCERTAIN`, or :py:data:`_EXCEPTION_TYPE_BAD`.
-      :rtype: int
 
     .. index:: TODO
 
