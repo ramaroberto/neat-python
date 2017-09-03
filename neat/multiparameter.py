@@ -218,8 +218,8 @@ class MultiParameterFunction(object):
                 self.evolved_param_dicts[n]['init_mean'] = middle
             else:
                 raise ValueError(
-                    "{0}: Contradictory max/min values and init_mean {1:n}".format(
-                        tmp_name,middle))
+                    "{0}: Contradictory max/min mean {1:n} and init_mean {2:n}".format(
+                        tmp_name,middle,param_dict['init_mean']))
         else:
             self.evolved_param_dicts[n].setdefault('init_mean', middle)
         for_stdev = abs(param_dict['max_init_value']-param_dict['min_init_value'])/4.0
@@ -237,8 +237,8 @@ class MultiParameterFunction(object):
                 self.evolved_param_dicts[n]['init_stdev'] = for_stdev
             else:
                 raise ValueError(
-                    "{0}: Contradictory max/min values and init_stdev {1:n}".format(
-                        tmp_name,for_stdev))
+                    "{0}: Contradictory max/min stdev {1:n} and init_stdev {1:n}".format(
+                        tmp_name,for_stdev,param_dict['init_stdev']))
         else:
             self.evolved_param_dicts[n].setdefault('init_stdev', for_stdev)
 

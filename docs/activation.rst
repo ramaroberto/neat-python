@@ -6,34 +6,39 @@ Overview of builtin activation functions
 .. index:: ! activation function
 
 Note that some of these :term:`functions <activation function>` are scaled differently from the canonical
-versions you may be familiar with.  The intention of the scaling is to place
-more of the functions' "interesting" behavior in the region :math:`\left[-1, 1\right] \times \left[-1, 1\right]`.
-Some of these are more intended for :term:`CPPNs <CPPN>` (e.g., for :term:`HyperNEAT`) than for "direct" problem-solving,
-as noted below; however, even those meant mainly for CPPNs can be of use elsewhere - `abs` and ``hat`` can both solve xor in one generation,
-for instance (although note for the former that it is included in several others such as :ref:`multiparam_relu <multiparam-relu-description-label>`).
-
-The :term:`multiparameter` functions below, and some of the others, are new; if users wish to try substituting them for previously-used activation functions, the following are suggested:
-
-======== =======================================================
-Old            New
-======== =======================================================
-abs             multiparam_relu, multiparam_relu_softplus, or weighted_lu
-clamped      :ref:`clamped_tanh_step <clamped-tanh-step-label>`
-cube           :ref:`multiparam_pow <multiparam-pow-label>`
-gauss         hat_gauss_rectangular or multiparam_gauss
-hat             :ref:`hat_gauss_rectangular <hat-gauss-rectangular-label>`
-identity       multiparam_relu, multiparam_relu_softplus, or weighted_lu
-inv             :ref:`multiparam_log_inv <multiparam-log-inv-label>`, if for a CPPN
-log             :ref:`scaled_expanded_log <scaled-expanded-log-label>`, if for a CPPN
-relu            multiparam_relu, multiparam_relu_softplus, or weighted_lu
-sigmoid      :ref:`multiparam_sigmoid <multiparam-sigmoid-label>`
-sin             :ref:`wave <wave-label>`
-softplus      :ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`
-square        :ref:`multiparam_pow <multiparam-pow-label>`
-tanh           :ref:`clamped_tanh_step <clamped-tanh-step-label>`
-======== =======================================================
+versions you may be familiar with.  The intention of the scaling is to place more of the functions' "interesting"
+behavior in the region :math:`\left[-1, 1\right] \times \left[-1, 1\right]`. Some of these are more intended for
+:term:`CPPNs <CPPN>` (e.g., for :term:`HyperNEAT`) than for "direct" problem-solving, as noted below;
+however, even those meant mainly for CPPNs can be of use elsewhere - :ref:`abs <abs-label>` and
+:ref:`hat <hat-label>` can both solve the :ref:`xor example <xor-example-label>`) task in one generation, for instance (although
+note for the former that it is included in several others such as
+:ref:`multiparam_relu <multiparam-relu-description-label>`).
 
 The implementations of these functions can be found in the :py:mod:`activations` module.
+
+The :term:`multiparameter` functions below, and some of the others, are new; if users wish to try substituting them for previously-used activation functions, the following are suggested as possibilities among the multiparameter functions:
+
+.. csv-table::
+    :widths: auto
+    :header: Old, New
+    :align: center
+
+    abs, ":ref:`multiparam_relu <multiparam-relu-description-label>`, :ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`, or weighted_lu"
+    clamped, ":ref:`clamped_tanh_step <clamped-tanh-step-label>`"
+    cube, ":ref:`multiparam_pow <multiparam-pow-label>`"
+    gauss, ":ref:`hat_gauss_rectangular <hat-gauss-rectangular-label>` or multiparam_gauss"
+    hat, ":ref:`hat_gauss_rectangular <hat-gauss-rectangular-label>`"
+    identity, ":ref:`multiparam_relu <multiparam-relu-description-label>`, :ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`, or weighted_lu"
+    inv, ":ref:`multiparam_log_inv <multiparam-log-inv-label>`, if for a CPPN"
+    log, ":ref:`scaled_expanded_log <scaled-expanded-log-label>`, if for a CPPN"
+    relu, ":ref:`multiparam_relu <multiparam-relu-description-label>`, :ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`, or weighted_lu"
+    sigmoid, ":ref:`multiparam_sigmoid <multiparam-sigmoid-label>`"
+    sin, ":ref:`wave <wave-label>`"
+    softplus, ":ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`"
+    square, ":ref:`multiparam_pow <multiparam-pow-label>`"
+    tanh, ":ref:`clamped_tanh_step <clamped-tanh-step-label>`"
+
+Two potentially-faster approximations of the :ref:`sigmoid <sigmoid-label>` and :ref:`tanh <tanh-label>` functions have also been added, namely :ref:`sigmoid_approx <sigmoid-approx-label>` and :ref:`tanh_approx <tanh-approx-label>`.
 
 General-use activation functions (single-parameter)
 -----------------------------------------------------------------------
@@ -75,6 +80,14 @@ sigmoid
    :scale: 100 %
    :alt: sigmoid function
 
+sigmoid_approx
+^^^^^^^^^^^^^^^
+
+.. figure:: activation-sigmoid_approx.png
+    :scale: 100 %
+    :alt: Potentially-faster approximation for the sigmoid function.
+    :name: sigmoid-approx-label
+
 softplus
 ^^^^^^^^
 
@@ -98,10 +111,17 @@ tanh
    :scale: 100 %
    :alt: hyperbolic tangent function
 
+tanh_approx
+^^^^^^^^^^^^
+
+.. figure:: activation-tanh_approx.png
+    :scale: 100 %
+    :alt: Potentially-faster approximation for the tanh function.
+    :name: tanh-approx-label
+
+
 General-use activation functions (multiparameter)
 ---------------------------------------------------------------------
-
-.. _clamped-tanh-step-label:
 
 clamped_tanh_step
 ^^^^^^^^^^^^^^^^^^
@@ -109,6 +129,7 @@ clamped_tanh_step
 .. figure:: activation-clamped_tanh_step.png
     :scale: 100 %
     :alt: Weighted combination of clamped, :ref:`tanh <tanh-label>`, and step functions.
+    :name: clamped-tanh-step-label
 
 multiparam_elu
 ^^^^^^^^^^^^^^^
@@ -121,16 +142,13 @@ multiparam_elu
     :scale: 100 %
     :alt: Variable-scaling version of the exponential linear function (ELU)
 
-.. _multiparam-pow-label:
-
 multiparam_pow
 ^^^^^^^^^^^^^^^^^^^^
 
 .. figure:: activation-multiparam_pow.png
     :scale: 100 %
     :alt: Above a=1, pow(z, a); below 1, pow(z, pow(2,(a-1.0))
-
-.. _multiparam-relu-description-label:
+    :name: multiparam-pow-label
 
 multiparam_relu
 ^^^^^^^^^^^^^^^
@@ -138,6 +156,7 @@ multiparam_relu
 .. figure:: activation-multiparam_relu.png
     :scale: 100 %
     :alt: max(x, a*x), where a is an evolved parameter with a range from -1 to 1, inclusive. Acts like a weighted combination of abs, relu, and identity.
+    :name: multiparam-relu-description-label
 
 .. _multiparam-relu-softplus-label:
 
@@ -146,13 +165,11 @@ multiparam_relu_softplus
 
 .. figure:: activation-multiparam_relu_softplus.png
     :scale: 100 %
-    :alt: A weighted combination of softplus, relu, abs, and identity.
+    :alt: A combination of multiparam_relu and multiparam_softplus.
 
 .. figure:: activation-swap-multiparam_relu_softplus.png
     :scale: 100 %
-    :alt: A weighted combination of softplus, relu, abs, and identity.
-
-.. _multiparam-sigmoid-label:
+    :alt: A combination of multiparam_relu and multiparam_softplus.
 
 multiparam_sigmoid
 ^^^^^^^^^^^^^^^^^^^
@@ -160,6 +177,7 @@ multiparam_sigmoid
 .. figure:: activation-multiparam_sigmoid.png
     :scale: 100 %
     :alt: A version of :ref:`clamped_tanh_step <clamped-tanh-step-label>` rescaled to match :ref:`sigmoid <sigmoid-label>` instead of :ref:`tanh <tanh-label>`.
+    :name: multiparam-sigmoid-label
 
 multiparam_sigmoid_approx
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -168,16 +186,23 @@ multiparam_sigmoid_approx
     :scale: 100 %
     :alt: A version of multiparam_tanh_approx rescaled to match :ref:`sigmoid <sigmoid-label>` instead of :ref:`tanh <tanh-label>`, and constrained to 0-1
 
+multiparam_softplus
+^^^^^^^^^^^^^^^^^^^
+
+.. figure:: activation-multiparam_softplus.png
+    :scale: 100 %
+    :alt: A version of softplus with variable curvature at 0 x.
+
 multiparam_tanh_approx
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 .. figure:: activation-multiparam_tanh_approx.png
     :scale: 100 %
-    :alt: Trying out an approximation to tanh that may be more efficient
+    :alt: An adjustable version of tanh_approx.
 
 .. figure:: activation-swap-multiparam_tanh_approx.png
     :scale: 100 %
-    :alt: Trying out an approximation to tanh that may be more efficient
+    :alt: An adjustable version of tanh_approx.
 
 multiparam_tanh_log1p
 ^^^^^^^^^^^^^^^^^^^^^
@@ -215,8 +240,9 @@ abs
 ^^^
 
 .. figure:: activation-abs.png
-   :scale: 100 %
-   :alt: absolute value function
+    :scale: 100 %
+    :alt: absolute value function
+    :name: abs-label
 
 exp
 ^^^
@@ -243,17 +269,17 @@ hat
 ^^^
 
 .. figure:: activation-hat.png
-   :scale: 100 %
-   :alt: hat function
-
-.. _identity-label:
+    :scale: 100 %
+    :alt: hat function
+    :name: hat-label
 
 identity
 ^^^^^^^^
 
 .. figure:: activation-identity.png
-   :scale: 100 %
-   :alt: identity function
+    :scale: 100 %
+    :alt: identity function
+    :name: identity-label
 
 inv
 ^^^
@@ -314,6 +340,37 @@ triangle_wave
 CPPN-intended activation functions (multiparameter)
 ---------------------------------------------------------------------------
 
+.. _bicentral-label:
+
+bicentral
+^^^^^^^^^
+
+This combination of two sigmoid functions is taken from the article "Taxonomy of neural transfer functions" [taxonomy]_, with adjustments.
+It is uncertain whether it is more suitable for direct use, or for CPPNs.
+
+.. figure:: activation-bicentral.png
+    :scale: 100 %
+    :alt: A differently-parameterized combination of two sigmoids than bisigmoid.
+
+.. figure:: activation-swap-bicentral.png
+    :scale: 100 %
+    :alt: A differently-parameterized combination of two sigmoids than bisigmoid.
+
+bisigmoid
+^^^^^^^^^^
+
+This is a differently-parameterized version of the :ref:`bicentral <bicentral-label>` function. As with that function, it is uncertain whether it is
+more suitable for direct use, or for CPPNs.
+
+.. figure:: activation-bisigmoid.png
+    :scale: 100 %
+    :alt: A combination of two oppositely-aligned sigmoids.
+
+.. figure:: activation-swap-bisigmoid.png
+    :scale: 100 %
+    :alt: A combination of two oppositely-aligned sigmoids.
+
+
 .. _hat-gauss-rectangular-label:
 
 hat_gauss_rectangular
@@ -338,16 +395,13 @@ multiparam_gauss
     :scale: 100 %
     :alt: Gauss with variations on exponent, effective SD
 
-.. _multiparam-log-inv-label:
-
 multiparam_log_inv
 ^^^^^^^^^^^^^^^^^^^^
 
 .. figure:: activation-multiparam_log_inv.png
     :scale: 100 %
-    :alt: Above 0.0, equivalent to scaled_expanded_log with a+1.0; below, weighted mean with inv of -1*x.
-
-.. _scaled-expanded-log-label:
+    :alt: Above 0.0, from scaled_expanded_log; below, weighted mean with inv of -1*x.
+    :name: multiparam-log-inv-label
 
 scaled_expanded_log
 ^^^^^^^^^^^^^^^^^^^^
@@ -355,8 +409,7 @@ scaled_expanded_log
 .. figure:: activation-scaled_expanded_log.png
     :scale: 100 %
     :alt: A version of expanded_log with variable scaling (with partially-counterbalancing weights both inside and outside the expanded_log function).
-
-.. _wave-label:
+    :name: scaled-expanded-log-label
 
 wave
 ^^^^
@@ -364,3 +417,6 @@ wave
 .. figure:: activation-wave.png
     :scale: 100 %
     :alt: Weighted mean of triangle_wave, sin, and square_wave activation functions.
+    :name: wave-label
+
+.. [taxonomy] Duch, Włodzisław; Jankowski, Norbert. 2000. Taxonomy of neural transfer functions. ICJNN 2000. `CiteSeerX Link <http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.29.9375>`_.

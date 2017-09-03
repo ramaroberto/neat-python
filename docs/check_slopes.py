@@ -17,7 +17,9 @@ from neat.six_util import iterkeys
 
 FULL_TEST = True
 
-x = np.linspace(-2, 2, 1000)
+DO_ONLY = ("multiparam_tanh_approx","multiparam_sigmoid_approx","bisigmoid","bicentral")
+
+x = list(np.linspace(-2, -1, 200)) + list(np.linspace(-1, 1, 600)) + list(np.linspace(1, 2, 200))
 
 def do_theilsen(y_data, x_data):
     slope, ignored_intercept, low, high = stats.theilslopes(y_data, x_data, alpha=0.25)
@@ -25,7 +27,7 @@ def do_theilsen(y_data, x_data):
     for x_use, y_use in zip(x_data,y_data):
         intercept_list.append(y_use - (slope*x_use)) # could check low, high admittedly...
     intercept = median2(intercept_list)
-    return slope, intercept, low, high
+    return slope, intercept, low, high, stats.scoreatpercentile(y_data,1), stats.scoreatpercentile(y_data,99)
 
 def get_slope_intercept(n, f, checking, checking_range, names, all_dict, other_params, checking_val=None, done_params=None, param_values_list=None):
     if done_params is None:
@@ -60,13 +62,13 @@ def get_slope_intercept(n, f, checking, checking_range, names, all_dict, other_p
         raise ValueError("{0}: Too few members of param_values_list ({1!r})".format(n,param_values_list))
 
     if wanted in all_dict:
-        slope, intercept, low, high = all_dict[wanted]
+        slope, intercept, low, high, low_y, high_y = all_dict[wanted]
     else:
-        slope, intercept, low, high = do_theilsen([f(i,*param_values_list) for i in x],x)
-        all_dict[wanted] = [slope, intercept, low, high]
+        slope, intercept, low, high, low_y, high_y = do_theilsen([f(i,*param_values_list) for i in x],x)
+        all_dict[wanted] = [slope, intercept, low, high, low_y, high_y]
     param_dict = dict(zip(names, param_values_list))
     other_values = tuple([param_dict[a] for a in names if (a != checking)])
-    to_return_dict[tuple([other_values, checking_val])] = [slope, intercept, low, high]
+    to_return_dict[tuple([other_values, checking_val])] = [slope, intercept, low, high, low_y, high_y]
     return to_return_dict
     
             
@@ -74,6 +76,8 @@ mps = MultiParameterSet('activation')
 afs = ActivationFunctionSet(mps)
 for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
     if n in ('hat_gauss_rectangular', 'wave', 'multiparam_gauss'):
+        continue
+    if (DO_ONLY is not None) and (n not in DO_ONLY):
         continue
     mpf = mps.multiparam_func_dict['activation'][n]
     f = mpf.user_func
@@ -87,7 +91,7 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
         init_type = param_dict.get('init_type', 'uniform')
         if init_type.lower() in 'uniform':
             params_check[param_name] = [min_value,max_value]
-            other_params[param_name] = np.linspace(min_value,max_value, 10)
+            other_params[param_name] = np.linspace(min_value,max_value, 5)
         elif init_type.lower() in ('gaussian','normal'):
             params_gaussian.add(param_name)
             if ('init_mean' in param_dict) and ('init_stdev' in param_dict):
@@ -105,7 +109,7 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
                     n, init_type, param_name))
     all_dict = {}
     for param_name in iterkeys(params_check):
-        if (not FULL_TEST) and (param_name in ('tilt','width')) and (not len(params_gaussian)):
+        if (not FULL_TEST) and (param_name in ('tilt','width','lower')):
             continue
         print("{0}: Checking {1}".format(n,param_name))
         if len(other_params) == 1:
@@ -126,22 +130,44 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
                                           params_check[param_name][1],
                                           500)
             param_range_x3 = []
+            param_list = []
             slope_list = []
             intercept_list = []
+            low_y_list = []
+            high_y_list = []
             for param in param_range:
-                slope, intercept, low, high = do_theilsen([f(i,param) for i in x],x)
-                param_range_x3.extend([param,param,param])
-                slope_list.extend([low,slope,high])
-                intercept_list.append(intercept)
+                slope, intercept, low, high, low_y, high_y = do_theilsen([f(i,param) for i in x],x)
+                if not (math.isnan(slope)
+                        or math.isnan(intercept)
+                        or math.isnan(low_y)
+                        or math.isnan(high_y)):
+                    param_range_x3.extend([param,param,param])
+                    param_list.append(param)
+                    slope_list.extend([low,slope,high])
+                    intercept_list.append(intercept)
+                    low_y_list.append(low_y)
+                    high_y_list.append(high_y)
+            if not param_list:
+                print("{0}: {1} All results nan?!?".format(n,param_name))
+                continue
             slope_corr, slope_p_val = stats.spearmanr(param_range_x3, slope_list)
             print("{0}: {1} slope p-val {2:n}, correlation {3:n}".format(
                 n, param_name, slope_p_val, slope_corr))
-            intercept_corr, intercept_p_val = stats.spearmanr(param_range, intercept_list)
+            intercept_corr, intercept_p_val = stats.spearmanr(param_list, intercept_list)
             print("{0}: {1} intercept p-val {2:n}, correlation {3:n}".format(
                 n, param_name, intercept_p_val, intercept_corr))
             median_intercept = median2(intercept_list)
             print("{0}: {1} intercept range: {2:n}/{3:n}/{4:n}".format(
                 n, param_name, min(intercept_list), median_intercept, max(intercept_list)))
+            low_y_corr, low_y_p_val = stats.spearmanr(param_list, low_y_list)
+            high_y_corr, high_y_p_val = stats.spearmanr(param_list, high_y_list)
+            print("{0}: {1} low_y p-val {2:n}, correlation {3:n}".format(
+                n, param_name, low_y_p_val, low_y_corr))
+            print("{0}: {1} high_y p-val {2:n}, correlation {3:n}".format(
+                n, param_name, high_y_p_val, high_y_corr))
+            print("{0}: {1} low_y/high_y range: {2:n}/{3:n}/{4:n}/{5:n}".format(
+                n, param_name, min(low_y_list), median2(low_y_list),
+                median2(high_y_list), max(high_y_list)))
             min_good_intercept = min(-2,median_intercept)
             max_good_intercept = max(2,median_intercept)
             median_slope = median2(slope_list)
@@ -157,12 +183,12 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
                 plt.grid()
                 plt.xlim(params_check[param_name][0], params_check[param_name][-1])
                 plt.ylim(min(slope_list),max(slope_list))
-                plt.gca().set_aspect(1)
+                #plt.gca().set_aspect(1)
                 plt.savefig("slope-{0}.png".format(n))
                 plt.close()
                 if (max(intercept_list)-min(intercept_list)) > NORM_EPSILON:
                     plt.figure(figsize=(4, 4))
-                    params_use = [param_range[i] for i in range(len(param_range)) if min_good_intercept <= intercept_list[i] <= max_good_intercept]
+                    params_use = [param_list[i] for i in range(len(param_list)) if min_good_intercept <= intercept_list[i] <= max_good_intercept]
                     plt.plot(params_use,
                              [intercept_list[i] for i in range(len(intercept_list)) if min_good_intercept <= intercept_list[i] <= max_good_intercept],
                              'r-')
@@ -170,8 +196,9 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
                     plt.grid()
                     plt.xlim(math.floor(10*min(params_use))/10.0,
                              math.ceil(10*max(params_use))/10.0)
-                    plt.autoscale(enable=True, axis='y')
-                    plt.gca().set_aspect(1)
+                    plt.ylim(max(min_good_intercept,min(intercept_list)),
+                             min(max_good_intercept,max(intercept_list)))
+                    #plt.gca().set_aspect(1)
                     plt.savefig("intercept-{0}.png".format(n))
                     plt.close()
             else:
@@ -188,7 +215,7 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
                 plt.ylim(min(min(slope_list),max(min_good_intercept,min(intercept_list))),
                          max(max(slope_list),min(max_good_intercept,max(intercept_list))))
                 plt.legend()
-                plt.gca().set_aspect(1)
+                #plt.gca().set_aspect(1)
                 plt.savefig("slope_intercept-{0}.png".format(n))
                 plt.close()
         else:
@@ -225,33 +252,59 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
             slope_p_val_list = []
             intercept_corr_list = []
             intercept_p_val_list = []
+            low_y_corr_list = []
+            low_y_p_val_list = []
+            high_y_corr_list = []
+            high_y_p_val_list = []
             param_x3_list = []
             slope_list = []
             param_list = []
             intercept_list = []
+            low_y_list = []
+            high_y_list = []
             for other_values in iterkeys(other_values_dict):
                 param_vals1 = []
                 slope_vals = []
                 param_vals2 = []
                 intercept_vals = []
+                low_y_vals = []
+                high_y_vals = []
                 for param_val in other_values_dict[other_values]:
-                    slope, intercept, low, high = other_values_dict[other_values][param_val]
+                    slope, intercept, low, high, low_y, high_y = other_values_dict[other_values][param_val]
                     param_vals1.extend([param_val,param_val,param_val])
                     slope_vals.extend([low,slope,high])
                     param_vals2.append(param_val)
                     intercept_vals.append(intercept)
+                    low_y_vals.append(low_y)
+                    high_y_vals.append(high_y)
                 slope_corr, slope_p_val = stats.spearmanr(param_vals1, slope_vals)
                 if slope_p_val < 0.25:
                     param_x3_list.extend(param_vals1)
                     slope_list.extend(slope_vals)
                 intercept_corr, intercept_p_val = stats.spearmanr(param_vals2, intercept_vals)
-                if intercept_p_val < 0.25:
-                    param_list.extend(param_vals2)
-                    intercept_list.extend(intercept_vals)
+                if math.isnan(intercept_corr) or math.isnan(intercept_p_val):
+                    intercept_corr = 0.0
+                    intercept_p_val = 1.0
+                param_list.extend(param_vals2)
+                intercept_list.extend(intercept_vals)
                 slope_corr_list.append(slope_corr)
                 slope_p_val_list.append(slope_p_val)
                 intercept_corr_list.append(intercept_corr)
                 intercept_p_val_list.append(intercept_p_val)
+                low_y_list.extend(low_y_vals)
+                high_y_list.extend(high_y_vals)
+                low_y_corr, low_y_p_val = stats.spearmanr(param_vals2, low_y_vals)
+                if math.isnan(low_y_corr) or math.isnan(low_y_p_val):
+                    low_y_corr = 0.0
+                    low_y_p_val = 1.0
+                high_y_corr, high_y_p_val = stats.spearmanr(param_vals2, high_y_vals)
+                if math.isnan(high_y_corr) or math.isnan(high_y_p_val):
+                    high_y_corr = 0.0
+                    high_y_p_val = 1.0
+                low_y_corr_list.append(low_y_corr)
+                low_y_p_val_list.append(low_y_p_val)
+                high_y_corr_list.append(high_y_corr)
+                high_y_p_val_list.append(high_y_p_val)
             ignored, slope_p_val = stats.combine_pvalues(slope_p_val_list)
             ignored, intercept_p_val = stats.combine_pvalues(intercept_p_val_list)
             lower_slope_corr = stats.scoreatpercentile(slope_corr_list,25)
@@ -273,6 +326,26 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
                                                                        len(intercept_list)))
             print("{0}: {1} intercept range: {2:n}/{3:n}/{4:n}".format(
                 n, param_name, min(intercept_list), median_intercept, max(intercept_list)))
+            ignored, low_y_p_val = stats.combine_pvalues(low_y_p_val_list)
+            ignored, high_y_p_val = stats.combine_pvalues(high_y_p_val_list)
+            lower_low_y_corr = stats.scoreatpercentile(low_y_corr_list,25)
+            median_low_y_corr = stats.scoreatpercentile(low_y_corr_list,50)
+            higher_low_y_corr = stats.scoreatpercentile(low_y_corr_list,75)
+            lower_high_y_corr = stats.scoreatpercentile(high_y_corr_list,25)
+            median_high_y_corr = stats.scoreatpercentile(high_y_corr_list,50)
+            higher_high_y_corr = stats.scoreatpercentile(high_y_corr_list,75)
+            print("{0}: {1} low_y p-value {2:n}, corrs {3:n}/{4:n}/{5:n}/{6:n}/{7:n}".format(
+                n, param_name, low_y_p_val, min(low_y_corr_list), lower_low_y_corr,
+                median_low_y_corr, higher_low_y_corr, max(low_y_corr_list)))
+            median_low_y = median2(low_y_list)
+            print("{0}: {1} low_y range: {2:n}/{3:n}/{4:n}".format(
+                n, param_name, min(low_y_list), median_low_y, max(low_y_list)))
+            print("{0}: {1} high_y p-value {2:n}, corrs {3:n}/{4:n}/{5:n}/{6:n}/{7:n}".format(
+                n, param_name, high_y_p_val, min(high_y_corr_list), lower_high_y_corr,
+                median_high_y_corr, higher_high_y_corr, max(high_y_corr_list)))
+            median_high_y = median2(high_y_list)
+            print("{0}: {1} high_y range: {2:n}/{3:n}/{4:n}".format(
+                n, param_name, min(high_y_list), median_high_y, max(high_y_list)))
             min_good_intercept = min(-2,median_intercept)
             max_good_intercept = max(2,median_intercept)
             median_slope = median2(slope_list)
@@ -289,7 +362,7 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
                 plt.xlim(params_check[param_name][0], params_check[param_name][-1])
                 plt.ylim(math.floor(10*min(slope_list))/10.0,
                          math.ceil(10*max(slope_list))/10.0)
-                plt.gca().set_aspect(1)
+                #plt.gca().set_aspect(1)
                 plt.savefig("slope-{0}-{1}.png".format(n,param_name))
                 plt.close()
                 if (max(intercept_list)-min(intercept_list)) > NORM_EPSILON:
@@ -302,8 +375,9 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
                     plt.grid()
                     plt.xlim(math.floor(10*min(params_use))/10.0,
                              math.ceil(10*max(params_use))/10.0)
-                    plt.autoscale(enable=True, axis='y')
-                    plt.gca().set_aspect(1)
+                    plt.ylim(max(min_good_intercept,min(intercept_list)),
+                             min(max_good_intercept,max(intercept_list)))
+                    #plt.gca().set_aspect(1)
                     plt.savefig("intercept-{0}-{1}.png".format(n, param_name))
                     plt.close()
             else:
@@ -320,6 +394,6 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
                 plt.ylim(math.floor(10*min(min(slope_list),max(min_good_intercept,min(intercept_list))))/10.0,
                          math.ceil(10*max(max(slope_list),min(max_good_intercept,max(intercept_list))))/10.0)
                 plt.legend()
-                plt.gca().set_aspect(1)
+                #plt.gca().set_aspect(1)
                 plt.savefig("slope_intercept-{0}-{1}.png".format(n,param_name))
                 plt.close()

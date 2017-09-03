@@ -19,6 +19,8 @@ from neat.six_util import iterkeys
 
 DO_PRINT_FOR_TESTING = True
 
+DO_ONLY = ("multiparam_sigmoid_approx","multiparam_tanh_approx","sigmoid_approx","tanh_approx","bisigmoid","bicentral")
+
 save_to_print = {}
 save_exact_to_print = {}
 save_to_print_abs = {}
@@ -68,6 +70,12 @@ def print_for_testing(string, result, data):
         else:
             save_exact_to_print[result] = [[name,data]]
 ##        print("assert_almost_equal({0},{1!r})".format(name, result))
+    elif (abs(result) >= sys.float_info.epsilon) and (abs(result) < NORM_EPSILON):
+        high_norm_epsilon = round(math.ceil(NORM_EPSILON*(10**6))*(10**-6),6)
+        if result > 0.0:
+            print("assert 0.0 <= {0} <= {1!r}".format(name,high_norm_epsilon))
+        else:
+            print("assert {0!r} <= {1} <= 0.0".format(-high_norm_epsilon,name))
     else:
         print("# Skipping {0} with result {1!r}".format(name,result))
 
@@ -122,9 +130,9 @@ def do_prints():
             did_print_result_exact.add(result2)
             did_print_result_abs.add(abs_result)
             if abs(result1-result2) < 1e-06:
-                print("assert_almost_equal({0},{1})".format(name1,name2))
+                print("assert_almost_equal({0},\n {1})".format(name1,name2))
             elif abs(result1+result2) < 1e-06:
-                print("assert_almost_equal({0},-1*{1})".format(name1,name2))
+                print("assert_almost_equal({0},\n -1*{1})".format(name1,name2))
             else:
                 raise RuntimeError(
                     "{0} result abs({1!r}) != {2} result abs({3!r})".format(
@@ -141,7 +149,7 @@ def do_prints():
             name1, result1, ignored_data1 = save_to_print[save_result][0]
             name2, result2, ignored_data2 = save_to_print[save_result][1]
             if abs(result1-result2) < 1e-06:
-                print("assert_almost_equal({0},{1})".format(name1,name2))
+                print("assert_almost_equal({0},\n {1})".format(name1,name2))
             else:
                 raise RuntimeError(
                     "{0} result {1!r} != {2} result {3!r}".format(
@@ -155,13 +163,13 @@ def do_prints():
         abs_rounded = round(abs(result),sys.float_info.dig)
         if len(save_exact_to_print[result]) == 1:
             if (rounded not in did_print_result) and (abs_rounded not in did_print_result_abs):
-                print("assert_almost_equal({0},{1!r})".format(save_exact_to_print[result][0][0],result))
+                print("assert_almost_equal({0},\n {1!r})".format(save_exact_to_print[result][0][0],result))
                 did_print_result.add(rounded)
                 did_print_result_abs.add(abs_rounded)
         elif len(save_exact_to_print[result]) == 2:
             name1 = save_exact_to_print[result][0][0]
             name2 = save_exact_to_print[result][1][0]
-            print("assert_almost_equal({0},{1})".format(name1,name2))
+            print("assert_almost_equal({0},\n {1})".format(name1,name2))
             did_print_result.add(rounded)
             did_print_result_abs.add(abs_rounded)
         else:
@@ -183,7 +191,7 @@ def do_prints():
             poss_pairs.sort(reverse=True, key=lambda x: dist1_dict[x])
             name1 = poss_pairs[0][0]
             name2 = poss_pairs[0][1]
-            print("assert_almost_equal({0},{1})".format(name1,name2))
+            print("assert_almost_equal({0},\n {1})".format(name1,name2))
             did_print_result.add(rounded)
             did_print_result_abs.add(abs_rounded)
     save_exact_to_print = {}
@@ -195,6 +203,8 @@ x = np.linspace(-2.5, 2.5, 5000)
 mps = MultiParameterSet('activation')
 afs = ActivationFunctionSet(mps)
 for n in sorted(iterkeys(mps.norm_func_dict['activation'])):
+    if (DO_ONLY is not None) and (n not in DO_ONLY):
+        continue
     f = mps.norm_func_dict['activation'][n]
     plt.figure(figsize=(4, 4))
     plt.plot(x, [f(i) for i in x])
@@ -210,6 +220,8 @@ for n in sorted(iterkeys(mps.norm_func_dict['activation'])):
     do_prints()
 
 for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
+    if (DO_ONLY is not None) and (n not in DO_ONLY):
+        continue
     mpf = mps.multiparam_func_dict['activation'][n]
     f = mpf.user_func
     param_name = mpf.evolved_param_names[0]

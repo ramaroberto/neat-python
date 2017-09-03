@@ -1,5 +1,7 @@
 .. index:: examples
 
+.. _xor-example-label:
+
 Overview of the basic XOR example (xor2.py)
 ===========================================
 

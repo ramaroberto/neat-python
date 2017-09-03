@@ -36,17 +36,28 @@ def tanh_activation(z):
     else:
         return to_return
 
+_TANH_APPROX_ADD = math.pow(5.887823,-0.239897)
+
+def tanh_approx_activation(z):
+    if z >= (sys.float_info.max/5.887823):
+        return 1.0
+    if z <= (-1*sys.float_info.max/5.887823):
+        return -1.0
+    to_return = (5.887823*z)/(_TANH_APPROX_ADD + abs(5.887823*z))
+    return min(1.0,max(-1.0,(1.0222006359744715*to_return)))
+
+def sigmoid_approx_activation(z):
+    return min(1.0,max(0.0,((1.0+tanh_approx_activation(1.1054759*z))/2.0)))
 
 def sin_activation(z):
     z = max(-60.0, min(60.0, 5.0 * z))
     return math.sin(z)
 
-
 def gauss_activation(z):
     try:
         to_return = math.exp(-5.0 * z**2)
     except ArithmeticError: # pragma: no cover
-        if abs(z) > NORM_EPSILON:
+        if abs(z) > 0.5:
             return 0.0
         return 1.0
     else:
@@ -80,11 +91,11 @@ def clamped_activation(z):
 
 def inv_activation(z):
     try:
-        z = 1.0 / z
+        to_return = 1.0 / z
     except ArithmeticError: # handle overflows
         return 0.0
     else:
-        return z
+        return to_return
 
 
 def log_activation(z):
@@ -153,7 +164,7 @@ def rectangular_activation(z):
 def multiparam_relu_activation(z, tilt):
     return max(z, (z*tilt))
 
-def multiparam_elu_activation_inner(z, a, b):
+def _multiparam_elu_activation_inner(z, a, b):
     try:
         result = 0.2 * min(abs(z*5), max((z*5), (math.exp(a)*(math.exp((z*5)+b)-math.exp(b)))))
     except ArithmeticError:
@@ -174,7 +185,7 @@ def multiparam_elu_activation(z, tilt, lower):
     a = (1.0-tilt)/2.0
     b = (2.0*lower)-1.0
     a_use = min(sys.float_info.max_10_exp, max(sys.float_info.min_10_exp, a))
-    return multiparam_elu_activation_inner((z*min(1.0,math.exp(-a_use))), a, b)
+    return _multiparam_elu_activation_inner((z*min(1.0,math.exp(-a_use))), a, b)
 
 ##def multiparam_elu_variant_activation(z, a, b):
 ##    try:
@@ -202,19 +213,42 @@ def weighted_lu_activation(z, a, tilt):
     _check_value_range(a, 0.0, 1.0, 'weighted_lu', 'a')
 
     return ((a*multiparam_relu_activation(z, tilt))+
-            ((1-a)*multiparam_elu_activation_inner(z, tilt, 0.0)))
+            ((1-a)*_multiparam_elu_activation_inner(z, tilt, 0.0)))
+
+def multiparam_softplus_activation(z, lower):
+    a = (lower*2.5)-1.5
+    try:
+        to_return = math.log1p(math.exp(5.0*z*math.exp(a)))*0.2*math.exp(-a)
+    except ArithmeticError: # pragma: no cover
+        if z >= NORM_EPSILON:
+            return z
+        elif z <= -1*NORM_EPSILON:
+            return 0.0
+        return (z+NORM_EPSILON)/2.0
+    else:
+        return to_return
 
 def multiparam_relu_softplus_activation(z, tilt, lower):
     _check_value_range(tilt, -1.0, 1.0, 'multiparam_relu_softplus', 'tilt')
     _check_value_range(lower, 0.0, 1.0, 'multiparam_relu_softplus', 'lower')
 
-    a = (1.0-tilt)/2.0
+    weight_softplus = (2.0-abs(tilt)-lower)/2.0
+    if weight_softplus < NORM_EPSILON:
+        return multiparam_relu_activation(z, tilt)
+    
+##    lower_sub = abs(tilt)*1.0
+##    lower_use = (lower*(1.0+lower_sub)) - lower_sub
 
-    val1 = ((a*relu_activation(z))+
-            ((1.0-a)*z))
-    val2 = ((a*abs(z))+
-            ((1.0-a)*softplus_activation(z)))
-    return ((lower*val1)+((1.0-lower)*val2))
+    return ((weight_softplus*multiparam_softplus_activation(z, lower))
+            + ((1.0-weight_softplus)*multiparam_relu_activation(z, tilt)))
+
+##    a = (1.0-tilt)/2.0
+
+##    val1 = ((a*relu_activation(z))+
+##            ((1.0-a)*z))
+##    val2 = ((a*abs(z))+
+##            ((1.0-a)*softplus_activation(z)))
+##    return ((lower*min(val1,val2))+((1.0-lower)*max(val1,val2)))
 
 def clamped_tanh_step_activation(z, tilt):
     _check_value_range(tilt, -1.0, 1.0, 'clamped_tanh_step', 'tilt')
@@ -235,7 +269,7 @@ def multiparam_sigmoid_activation(z, tilt):
     """Conversion of clamped_tanh_step_activation to a 0-1 output range"""
     return max(0.0,min(1.0,((clamped_tanh_step_activation(z, tilt)+1.0)/2.0)))
 
-ABS_GAUSS_EPSILON = math.exp(-5.0 * NORM_EPSILON)
+_ABS_GAUSS_EPSILON = math.exp(-5.0 * NORM_EPSILON)
 
 def multiparam_gauss_activation(z, width, b):
     _check_value_range(width, 0.0, 1.0, 'multiparam_gauss', 'width')
@@ -247,8 +281,8 @@ def multiparam_gauss_activation(z, width, b):
     if a < 1.0:
         a = math.exp(a-1.0)
         test_value = math.exp(-5.0 * NORM_EPSILON**a)
-        if test_value < ABS_GAUSS_EPSILON:
-            mult = ABS_GAUSS_EPSILON/test_value
+        if test_value < _ABS_GAUSS_EPSILON:
+            mult = _ABS_GAUSS_EPSILON/test_value
 
     if b < 0.5:
         b = 0.5*math.exp(b-0.5)
@@ -349,15 +383,39 @@ def multiparam_tanh_approx_activation(z, a, tilt):
     b = 1.0-tilt
 
     try:
-        to_return = (2.47*z)/(math.pow(2.47,a) + (b*abs(2.47*z)))
+        to_return = (max(1.0,b)*5.887823*z)/(math.pow(5.887823,a) + (b*abs(5.887823*z)))
     except ArithmeticError: # pragma: no cover
         _check_value_range(a, -12.0, 12.0, 'multiparam_tanh_approx', 'a')
         raise
     else:
-        return to_return
+        minmax = 1.0
+        if tilt >= 1.0:
+            return to_return*1.0222006359744715
+        if tilt > 0.0:
+            minmax = inv_activation(1.0-tilt)
+            if (minmax <= 0.0) or (minmax >= sys.float_info.max):
+                return to_return*1.0222006359744715
+        return min(minmax,max(-minmax,(to_return*1.0222006359744715)))
 
 def multiparam_sigmoid_approx_activation(z, a):
-    return min(1.0,max(0.0,((1.0+multiparam_tanh_approx_activation((2.0*z), a, 0.0))/2.0)))
+    return min(1.0,max(0.0,((1.0+multiparam_tanh_approx_activation((1.1054759*z), a, 0.0))/2.0)))
+
+def bisigmoid_activation(z, a, width):
+    a = min(sys.float_info.max_10_exp, max(sys.float_info.min_10_exp, a))
+    part1 = math.exp(a)*(z + width)
+    part2 = math.exp(-a)*(z - width)
+
+    return sigmoid_approx_activation(part1)*(1.0-sigmoid_approx_activation(part2))
+
+def bicentral_activation(z, lower, tilt):
+    a = ((lower*-2.0)+1.0)*3.0
+    b = tilt*3.0
+    a = min((sys.float_info.max_10_exp/2.0), max((sys.float_info.min_10_exp/2.0), a))
+    b = min((sys.float_info.max_10_exp/2.0), max((sys.float_info.min_10_exp/2.0), b))
+    part1 = math.exp(a+b)*(z + 0.5)
+    part2 = math.exp(a-b)*(z - 0.5)
+
+    return sigmoid_approx_activation(part1)*(1.0-sigmoid_approx_activation(part2))
 
 class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""
@@ -370,6 +428,8 @@ class ActivationFunctionSet(object):
         self.multiparameterset = multiparameterset
         self.add('sigmoid', sigmoid_activation)
         self.add('tanh', tanh_activation)
+        self.add('sigmoid_approx', sigmoid_approx_activation)
+        self.add('tanh_approx', tanh_approx_activation)
         self.add('sin', sin_activation)
         self.add('gauss', gauss_activation)
         self.add('relu', relu_activation)
@@ -439,17 +499,26 @@ class ActivationFunctionSet(object):
         self.add('wave', wave_activation,
                  width={'min_value':0.0, 'max_value': 1.0})
         self.add('multiparam_tanh_approx', multiparam_tanh_approx_activation,
-                 a={'min_init_value':-2.0, 'max_init_value':1.0,
+                 a={'init_mean':-0.239897, 'init_stdev':0.8660254037844387,
                     'min_value':-12.0, 'max_value':12.0,
                     'init_type':'gaussian'},
                  tilt={'min_value':-1.0, 'max_value':1.0})
         self.add('multiparam_sigmoid_approx', multiparam_sigmoid_approx_activation,
-                 a={'min_init_value':-2.0, 'max_init_value':1.0,
+                 a={'init_mean':-0.239897, 'init_stdev':0.8660254037844387,
                     'min_value':-12.0, 'max_value':12.0,
                     'init_type':'gaussian'})
         self.add('multiparam_gauss', multiparam_gauss_activation,
                  width={'min_value':0.0, 'max_value':1.0},
                  b={'min_value':0.0, 'max_value':2.0})
+        self.add('bisigmoid', bisigmoid_activation,
+                 a={'min_init_value':-3.0, 'max_init_value':3.0,
+                    'min_value':-12.0, 'max_value':12.0},
+                 width={'min_value':0.0, 'max_value':1.0})
+        self.add('bicentral', bicentral_activation,
+                 lower={'min_value':0.0, 'max_value':1.0},
+                 tilt={'min_value':-1.0, 'max_value':1.0})
+        self.add('multiparam_softplus', multiparam_softplus_activation,
+                 lower={'min_value':0.0, 'max_value':1.0})
 
 
     def add(self, name, function, **kwargs):
