@@ -10,13 +10,12 @@ versions you may be familiar with.  The intention of the scaling is to place mor
 behavior in the region :math:`\left[-1, 1\right] \times \left[-1, 1\right]`. Some of these are more intended for
 :term:`CPPNs <CPPN>` (e.g., for :term:`HyperNEAT`) than for "direct" problem-solving, as noted below;
 however, even those meant mainly for CPPNs can be of use elsewhere - :ref:`abs <abs-label>` and
-:ref:`hat <hat-label>` can both solve the :ref:`xor example <xor-example-label>`) task in one generation, for instance (although
-note for the former that it is included in several others such as
-:ref:`multiparam_relu <multiparam-relu-description-label>`).
+:ref:`hat <hat-label>` can both solve the :ref:`xor example <xor-example-label>` task in one generation, for instance (although
+note for the former that it is included in several others such as :ref:`multiparam_relu <multiparam-relu-description-label>`).
 
 The implementations of these functions can be found in the :py:mod:`activations` module.
 
-The :term:`multiparameter` functions below, and some of the others, are new; if users wish to try substituting them for previously-used activation functions, the following are suggested as possibilities among the multiparameter functions:
+The :term:`multiparameter` functions below, and some of the others, are new; if you wish to try substituting them for previously-used activation functions, the following are suggested as possibilities among the multiparameter functions:
 
 .. csv-table::
     :widths: auto
@@ -35,10 +34,10 @@ The :term:`multiparameter` functions below, and some of the others, are new; if 
     sigmoid, ":ref:`multiparam_sigmoid <multiparam-sigmoid-label>`"
     sin, ":ref:`wave <wave-label>`"
     softplus, ":ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`"
-    square, ":ref:`multiparam_pow <multiparam-pow-label>`"
+    square, ":ref:`multiparam_pow <multiparam-pow-label>`", if the result does not need to be positive
     tanh, ":ref:`clamped_tanh_step <clamped-tanh-step-label>`"
 
-Two potentially-faster approximations of the :ref:`sigmoid <sigmoid-label>` and :ref:`tanh <tanh-label>` functions have also been added, namely :ref:`sigmoid_approx <sigmoid-approx-label>` and :ref:`tanh_approx <tanh-approx-label>`.
+The builtin multiparameter functions are also present to serve as examples of ways to construct and configure new such functions. Two potentially-faster approximations of the :ref:`sigmoid <sigmoid-label>` and :ref:`tanh <tanh-label>` functions have also been added, namely :ref:`sigmoid_approx <sigmoid-approx-label>` and :ref:`tanh_approx <tanh-approx-label>`.
 
 General-use activation functions (single-parameter)
 -----------------------------------------------------------------------

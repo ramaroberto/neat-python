@@ -4,6 +4,8 @@ import math
 import os
 import sys
 
+from fractions import Fraction
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -18,8 +20,12 @@ from neat.math_util import median2, NORM_EPSILON
 from neat.six_util import iterkeys
 
 DO_PRINT_FOR_TESTING = True
+PRINT_LONG_NUMS_FOR_TESTING = False
+PRINT_CHOOSING_AMONG = False
 
-DO_ONLY = ("multiparam_sigmoid_approx","multiparam_tanh_approx","sigmoid_approx","tanh_approx","bisigmoid","bicentral")
+DO_ONLY = ("multiparam_tanh_approx","multiparam_sigmoid_approx")
+
+HIGH_NORM_EPSILON = round(math.ceil(NORM_EPSILON*(10**6))*(10**-6),6)
 
 save_to_print = {}
 save_exact_to_print = {}
@@ -71,11 +77,15 @@ def print_for_testing(string, result, data):
             save_exact_to_print[result] = [[name,data]]
 ##        print("assert_almost_equal({0},{1!r})".format(name, result))
     elif (abs(result) >= sys.float_info.epsilon) and (abs(result) < NORM_EPSILON):
-        high_norm_epsilon = round(math.ceil(NORM_EPSILON*(10**6))*(10**-6),6)
         if result > 0.0:
-            print("assert 0.0 <= {0} <= {1!r}".format(name,high_norm_epsilon))
+            print("assert 0.0 <= {0} <= {1!r}".format(name,HIGH_NORM_EPSILON))
         else:
-            print("assert {0!r} <= {1} <= 0.0".format(-high_norm_epsilon,name))
+            print("assert {0!r} <= {1} <= 0.0".format(-HIGH_NORM_EPSILON,name))
+    elif ((abs(result)-1.0) >= sys.float_info.epsilon) and ((abs(result)-1.0) < NORM_EPSILON):
+        if result > 0.0:
+            print("assert 1.0 <= {0} <= {1!r}".format(name,round((1.0+HIGH_NORM_EPSILON),6)))
+        else:
+            print("assert {0!r} <= {1} <= -1.0".format(round((-1.0-HIGH_NORM_EPSILON),6)))
     else:
         print("# Skipping {0} with result {1!r}".format(name,result))
 
@@ -105,6 +115,17 @@ def get_data_dists(data1, data2):
         dist2 += get_log2_dist(a) + get_log2_dist(b)
     return [dist1,dist2]
 
+def try_as_fraction(num):
+    init_fraction = Fraction(num)
+    ignored_integer, floating = math.modf(num)
+    max_len = max(4,int(math.ceil((len(repr(abs(floating)))-2)/2.0)))
+    round_fraction = init_fraction.limit_denominator(10**max_len)
+    new_num = (round_fraction.numerator/round_fraction.denominator)
+    if abs(new_num-num) < min(abs(round(num,7)-num),1e-07,math.sqrt(sys.float_info.epsilon)):
+        return "({0!r}/{1!r})".format(round_fraction.numerator,
+                                      round_fraction.denominator)
+    return "{0!r}".format(num)
+
 def do_prints():
     if not DO_PRINT_FOR_TESTING:
         return
@@ -116,11 +137,13 @@ def do_prints():
     did_print_result_exact = set([])
     for abs_result in sorted(iterkeys(save_to_print_abs)):
         if len(save_to_print_abs[abs_result]) == 1:
-            print("assert_almost_equal({0},{1!r})".format(save_to_print_abs[abs_result][0][0],
-                                                          save_to_print_abs[abs_result][0][1]))
-            did_print_result.add(round(save_to_print_abs[abs_result][0][1],sys.float_info.dig))
-            did_print_result_exact.add(save_to_print_abs[abs_result][0][1])
-            did_print_result_abs.add(abs_result)
+            poss_frac = try_as_fraction(save_to_print_abs[abs_result][0][1])
+            if PRINT_LONG_NUMS_FOR_TESTING or ("/" in poss_frac):
+                print("assert_almost_equal({0},{1})".format(save_to_print_abs[abs_result][0][0],
+                                                            poss_frac))
+                did_print_result.add(round(save_to_print_abs[abs_result][0][1],sys.float_info.dig))
+                did_print_result_exact.add(save_to_print_abs[abs_result][0][1])
+                did_print_result_abs.add(abs_result)
         elif len(save_to_print_abs[abs_result]) == 2:
             name1, result1, ignored_data1 = save_to_print_abs[abs_result][0]
             name2, result2, ignored_data2 = save_to_print_abs[abs_result][1]
@@ -141,10 +164,12 @@ def do_prints():
     for save_result in sorted([n for n in iterkeys(save_to_print) if n not in did_print_result]):
         if len(save_to_print[save_result]) == 1:
             if abs(save_result) not in did_print_result_abs:
-                print("assert_almost_equal({0},{1!r})".format(save_to_print[save_result][0][0],
-                                                              save_to_print[save_result][0][1]))
-                did_print_result_exact.add(save_to_print[save_result][0][1])
-                did_print_result_abs.add(abs(save_result))
+                poss_frac = try_as_fraction(save_to_print[save_result][0][1])
+                if PRINT_LONG_NUMS_FOR_TESTING or ("/" in poss_frac):
+                    print("assert_almost_equal({0},{1})".format(save_to_print[save_result][0][0],
+                                                                poss_frac))
+                    did_print_result_exact.add(save_to_print[save_result][0][1])
+                    did_print_result_abs.add(abs(save_result))
         elif len(save_to_print[save_result]) == 2:
             name1, result1, ignored_data1 = save_to_print[save_result][0]
             name2, result2, ignored_data2 = save_to_print[save_result][1]
@@ -163,9 +188,12 @@ def do_prints():
         abs_rounded = round(abs(result),sys.float_info.dig)
         if len(save_exact_to_print[result]) == 1:
             if (rounded not in did_print_result) and (abs_rounded not in did_print_result_abs):
-                print("assert_almost_equal({0},\n {1!r})".format(save_exact_to_print[result][0][0],result))
-                did_print_result.add(rounded)
-                did_print_result_abs.add(abs_rounded)
+                poss_frac = try_as_fraction(result)
+                if PRINT_LONG_NUMS_FOR_TESTING or ("/" in poss_frac):
+                    print("assert_almost_equal({0},{1})".format(save_exact_to_print[result][0][0],
+                                                                poss_frac))
+                    did_print_result.add(rounded)
+                    did_print_result_abs.add(abs_rounded)
         elif len(save_exact_to_print[result]) == 2:
             name1 = save_exact_to_print[result][0][0]
             name2 = save_exact_to_print[result][1][0]
@@ -173,8 +201,9 @@ def do_prints():
             did_print_result.add(rounded)
             did_print_result_abs.add(abs_rounded)
         else:
-            print("#Choosing among {0:n} possibilities for result {1!r}".format(
-                len(save_exact_to_print[result]), result))
+            if PRINT_CHOOSING_AMONG:
+                print("#Choosing among {0:n} possibilities for result {1!r}".format(
+                    len(save_exact_to_print[result]), result))
             dist1_dict = {}
             dist2_dict = {}
             poss = []

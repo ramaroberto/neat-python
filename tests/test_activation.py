@@ -93,6 +93,9 @@ def test_softplus():
     assert_almost_equal((activations.softplus_activation(1.0)
                          -activations.softplus_activation(-1.0)),1.0)
     assert_almost_equal(activations.softplus_activation(5.0),5.0)
+    assert_almost_equal(activations.softplus_activation(-0.5),(108/6845))
+    assert_almost_equal(activations.softplus_activation(0.0),(1321/9529))
+    assert_almost_equal(activations.softplus_activation(0.25),(1635/5443))
 
 
 def test_identity():
@@ -116,6 +119,9 @@ def test_inv():
     assert activations.inv_activation(1.0) == 1.0
 
 def test_log():
+    assert_almost_equal(activations.log_activation(0.75),(-1817/6316))
+    assert_almost_equal(activations.log_activation(0.5),(-4319/6231))
+    assert_almost_equal(activations.log_activation(0.25),(-11369/8201))
     assert activations.log_activation(1.0) == 0.0
     for i in [0.25,0.5,0.75]:
         assert_almost_equal(activations.log_activation(math.exp(i)),i)
@@ -143,6 +149,11 @@ def test_exp():
         assert_almost_equal(math.log(activations.exp_activation(-i)),-i)
         assert_almost_equal(math.log(activations.exp_activation(i)),i)
     assert activations.exp_activation(0.0) == 1.0
+    assert_almost_equal(activations.exp_activation(-0.75),(1000/2117))
+    assert_almost_equal(activations.exp_activation(-0.25),(6767/8689))
+    assert_almost_equal(activations.exp_activation(0.25),(8689/6767))
+    assert_almost_equal(activations.exp_activation(1.0),(25946/9545))
+
 
 
 def test_abs():
@@ -225,6 +236,17 @@ def test_multiparam_relu():
     assert activations.multiparam_relu_activation(1.0,-1.0) == 1.0
 
 def test_multiparam_elu():
+    assert_almost_equal(activations.multiparam_elu_activation(-1.0,1.0,0.0),(-610/8347))
+    assert_almost_equal(activations.multiparam_elu_activation(-0.5,-1.0,0.0),(-601/4997))
+    assert_almost_equal(activations.multiparam_elu_activation(-1.0,1.0,0.25),(-424/3519))
+    assert_almost_equal(activations.multiparam_elu_activation(-1.0,0.0,0.25),(-877/4607))
+    assert_almost_equal(activations.multiparam_elu_activation(-1.0,1.0,0.5),(-855/4304))
+    assert_almost_equal(activations.multiparam_elu_activation(-1.0,0.0,0.5),(-1477/4706))
+    assert_almost_equal(activations.multiparam_elu_activation(-1.0,1.0,0.75),(-620/1893))
+    assert_almost_equal(activations.multiparam_elu_activation(-1.0,-0.5,0.5),(-3504/9137))
+    assert_almost_equal(activations.multiparam_elu_activation(-1.0,0.0,0.75),(-3364/6501))
+    assert_almost_equal(activations.multiparam_elu_activation(-1.0,1.0,1.0),(-1600/2963))
+    assert_almost_equal(activations.multiparam_elu_activation(-1.0,-0.5,1.0),(-1000/2117))
     assert activations.multiparam_elu_activation(0.0,1.0,1.0) == 0.0
     assert activations.multiparam_elu_activation(0.5,1.0,1.0) == 0.5
     assert activations.multiparam_elu_activation(1.0,1.0,1.0) == 1.0
@@ -280,26 +302,74 @@ def test_multiparam_elu():
 
 
 def test_weighted_lu():
-    assert activations.weighted_lu_activation(-1.0,1.0,1.0) == -1.0
     assert activations.weighted_lu_activation(0.0,1.0,1.0) == 0.0
+    assert activations.weighted_lu_activation(0.5,1.0,1.0) == 0.5
     assert activations.weighted_lu_activation(1.0,1.0,1.0) == 1.0
+    assert activations.weighted_lu_activation(0.0,1.0,0.5) == 0.0
+    assert activations.weighted_lu_activation(1.0,1.0,0.5) == 1.0
     assert activations.weighted_lu_activation(0.0,1.0,0.0) == 0.0
+    assert activations.weighted_lu_activation(0.5,1.0,0.0) == 0.5
     assert activations.weighted_lu_activation(1.0,1.0,0.0) == 1.0
-    assert activations.weighted_lu_activation(-1.0,1.0,-1.0) == 1.0
+    assert activations.weighted_lu_activation(0.0,1.0,-0.5) == 0.0
+    assert activations.weighted_lu_activation(1.0,1.0,-0.5) == 1.0
     assert activations.weighted_lu_activation(0.0,1.0,-1.0) == 0.0
+    assert activations.weighted_lu_activation(0.5,1.0,-1.0) == 0.5
     assert activations.weighted_lu_activation(1.0,1.0,-1.0) == 1.0
+    assert activations.weighted_lu_activation(0.0,0.75,1.0) == 0.0
+    assert activations.weighted_lu_activation(1.0,0.75,1.0) == 1.0
+    assert activations.weighted_lu_activation(0.0,0.75,0.0) == 0.0
+    assert activations.weighted_lu_activation(1.0,0.75,0.0) == 1.0
+    assert activations.weighted_lu_activation(0.0,0.75,-1.0) == 0.0
+    assert activations.weighted_lu_activation(1.0,0.75,-1.0) == 1.0
     assert activations.weighted_lu_activation(0.0,0.5,1.0) == 0.0
+    assert activations.weighted_lu_activation(0.5,0.5,1.0) == 0.5
     assert activations.weighted_lu_activation(1.0,0.5,1.0) == 1.0
+    assert activations.weighted_lu_activation(0.0,0.5,0.5) == 0.0
+    assert activations.weighted_lu_activation(1.0,0.5,0.5) == 1.0
     assert activations.weighted_lu_activation(0.0,0.5,0.0) == 0.0
+    assert activations.weighted_lu_activation(0.5,0.5,0.0) == 0.5
     assert activations.weighted_lu_activation(1.0,0.5,0.0) == 1.0
+    assert activations.weighted_lu_activation(0.0,0.5,-0.5) == 0.0
+    assert activations.weighted_lu_activation(1.0,0.5,-0.5) == 1.0
     assert activations.weighted_lu_activation(0.0,0.5,-1.0) == 0.0
+    assert activations.weighted_lu_activation(0.5,0.5,-1.0) == 0.5
     assert activations.weighted_lu_activation(1.0,0.5,-1.0) == 1.0
+    assert activations.weighted_lu_activation(0.0,0.25,1.0) == 0.0
+    assert activations.weighted_lu_activation(1.0,0.25,1.0) == 1.0
+    assert activations.weighted_lu_activation(0.0,0.25,0.0) == 0.0
+    assert activations.weighted_lu_activation(1.0,0.25,0.0) == 1.0
+    assert activations.weighted_lu_activation(0.0,0.25,-1.0) == 0.0
+    assert activations.weighted_lu_activation(1.0,0.25,-1.0) == 1.0
+    assert activations.weighted_lu_activation(-1.0,0.0,1.0) == -1.0
+    assert activations.weighted_lu_activation(-0.5,0.0,1.0) == -0.5
     assert activations.weighted_lu_activation(0.0,0.0,1.0) == 0.0
+    assert activations.weighted_lu_activation(0.5,0.0,1.0) == 0.5
     assert activations.weighted_lu_activation(1.0,0.0,1.0) == 1.0
+    assert activations.weighted_lu_activation(-1.0,0.0,0.5) == -0.5
+    assert activations.weighted_lu_activation(0.0,0.0,0.5) == 0.0
+    assert activations.weighted_lu_activation(1.0,0.0,0.5) == 1.0
     assert activations.weighted_lu_activation(0.0,0.0,0.0) == 0.0
+    assert activations.weighted_lu_activation(0.5,0.0,0.0) == 0.5
     assert activations.weighted_lu_activation(1.0,0.0,0.0) == 1.0
+    assert activations.weighted_lu_activation(-1.0,0.0,-0.5) == 0.5
+    assert activations.weighted_lu_activation(0.0,0.0,-0.5) == 0.0
+    assert activations.weighted_lu_activation(1.0,0.0,-0.5) == 1.0
+    assert activations.weighted_lu_activation(-1.0,0.0,-1.0) == 1.0
+    assert activations.weighted_lu_activation(-0.5,0.0,-1.0) == 0.5
     assert activations.weighted_lu_activation(0.0,0.0,-1.0) == 0.0
+    assert activations.weighted_lu_activation(0.5,0.0,-1.0) == 0.5
     assert activations.weighted_lu_activation(1.0,0.0,-1.0) == 1.0
+    assert_almost_equal(activations.weighted_lu_activation(-1.0,1.0,-1.0),(-610/8347))
+    assert_almost_equal(activations.weighted_lu_activation(-1.0,0.5,0.0),(-855/8608))
+    assert_almost_equal(activations.weighted_lu_activation(-1.0,1.0,-0.5),(-424/3519))
+    assert_almost_equal(activations.weighted_lu_activation(-1.0,1.0,0.0),(-855/4304))
+    assert_almost_equal(activations.weighted_lu_activation(-1.0,1.0,0.5),(-620/1893))
+    assert_almost_equal(activations.weighted_lu_activation(-1.0,0.5,0.5),(-3133/7572))
+    assert_almost_equal(activations.weighted_lu_activation(-0.5,0.5,1.0),(-3606/7219))
+    assert_almost_equal(activations.weighted_lu_activation(-1.0,1.0,1.0),(-1600/2963))
+    assert_almost_equal(activations.weighted_lu_activation(-1.0,0.25,-1.0),(7089/9688))
+    assert_almost_equal(activations.weighted_lu_activation(-1.0,0.5,1.0),(-4563/5926))
+
     try:
         ignored = activations.weighted_lu_activation(-1.0,2.0,1.0)
     except ValueError:
@@ -309,58 +379,83 @@ def test_weighted_lu():
             "weighted_lu_activation(-1.0,2.0,1.0) did not raise a ValueError/derived")
 
 def test_multiparam_softplus():
-    assert 0.0 <= activations.multiparam_softplus_activation(-1.0,1.0) <= 0.000123
-    assert 0.0 <= activations.multiparam_softplus_activation(-0.5,1.0) <= 0.000123
-    assert 0.0 <= activations.multiparam_softplus_activation(-1.0,0.75) <= 0.000123
-    assert_almost_equal(activations.multiparam_softplus_activation(-5.0,1.0),0.0)
+    assert 0.0 <= activations.multiparam_softplus_activation(-1.0,0.25) <= 0.000123
+    assert 1.0 <= activations.multiparam_softplus_activation(1.0,0.25) <= 1.000123
+    assert 0.0 <= activations.multiparam_softplus_activation(-1.0,0.0) <= 0.000123
+    assert 0.0 <= activations.multiparam_softplus_activation(-0.5,0.0) <= 0.000123
+    assert 1.0 <= activations.multiparam_softplus_activation(1.0,0.0) <= 1.000123
+    assert_almost_equal(activations.multiparam_softplus_activation(-60.0,1.0),0.0)
     for x in [0.0, 0.25, 0.5, 0.75, 1.0]:
         assert_almost_equal((activations.multiparam_softplus_activation(1.0,x)
                              -activations.multiparam_softplus_activation(-1.0,x)),1.0)
-    assert_almost_equal(activations.multiparam_softplus_activation(5.0,1.0),5.0)
+    assert_almost_equal(activations.multiparam_softplus_activation(60.0,1.0),60.0)
 
 def test_multiparam_relu_softplus():
-    assert activations.multiparam_relu_softplus_activation(-1.0,1.0,1.0) == -1.0
-    assert activations.multiparam_relu_softplus_activation(-0.5,1.0,1.0) == -0.5
-    assert activations.multiparam_relu_softplus_activation(0.0,1.0,1.0) == 0.0
-    assert activations.multiparam_relu_softplus_activation(0.5,1.0,1.0) == 0.5
-    assert activations.multiparam_relu_softplus_activation(1.0,1.0,1.0) == 1.0
-    assert 0.0 <= activations.multiparam_relu_softplus_activation(-1.0,0.0,1.0) <= 0.000123
-    assert 0.0 <= activations.multiparam_relu_softplus_activation(-0.5,0.0,1.0) <= 0.000123
-    assert 0.0 <= activations.multiparam_relu_softplus_activation(-1.0,0.0,0.75) <= 0.000123
-    assert activations.multiparam_relu_softplus_activation(-1.0,-1.0,1.0) == 1.0
-    assert activations.multiparam_relu_softplus_activation(-0.5,-1.0,1.0) == 0.5
-    assert activations.multiparam_relu_softplus_activation(0.0,-1.0,1.0) == 0.0
-    assert activations.multiparam_relu_softplus_activation(0.5,-1.0,1.0) == 0.5
-    assert activations.multiparam_relu_softplus_activation(1.0,-1.0,1.0) == 1.0
-    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,1.0,0.75),
-                        activations.multiparam_relu_softplus_activation(0.0,-1.0,0.75))
-    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,0.5,1.0),
-                        activations.multiparam_relu_softplus_activation(0.0,-0.5,1.0))
-    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,1.0,0.5),
-                        activations.multiparam_relu_softplus_activation(0.0,-1.0,0.5))
-    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,0.5,0.5),
-                        activations.multiparam_relu_softplus_activation(0.0,-0.5,0.5))
+    assert 1.0 <= activations.multiparam_relu_softplus_activation(1.0,1.0,0.25) <= 1.000123
+    assert activations.multiparam_relu_softplus_activation(-1.0,1.0,0.0) == -1.0
+    assert activations.multiparam_relu_softplus_activation(-0.5,1.0,0.0) == -0.5
+    assert activations.multiparam_relu_softplus_activation(0.0,1.0,0.0) == 0.0
+    assert activations.multiparam_relu_softplus_activation(0.5,1.0,0.0) == 0.5
+    assert activations.multiparam_relu_softplus_activation(1.0,1.0,0.0) == 1.0
+    assert 1.0 <= activations.multiparam_relu_softplus_activation(1.0,0.5,0.0) <= 1.000123
+    assert 0.0 <= activations.multiparam_relu_softplus_activation(-1.0,0.0,0.25) <= 0.000123
+    assert 1.0 <= activations.multiparam_relu_softplus_activation(1.0,0.0,0.25) <= 1.000123
+    assert 0.0 <= activations.multiparam_relu_softplus_activation(-1.0,0.0,0.0) <= 0.000123
+    assert 0.0 <= activations.multiparam_relu_softplus_activation(-0.5,0.0,0.0) <= 0.000123
+    assert 1.0 <= activations.multiparam_relu_softplus_activation(1.0,0.0,0.0) <= 1.000123
+    assert 1.0 <= activations.multiparam_relu_softplus_activation(1.0,-0.5,0.0) <= 1.000123
+    assert 1.0 <= activations.multiparam_relu_softplus_activation(1.0,-1.0,0.25) <= 1.000123
+    assert activations.multiparam_relu_softplus_activation(-1.0,-1.0,0.0) == 1.0
+    assert activations.multiparam_relu_softplus_activation(-0.5,-1.0,0.0) == 0.5
+    assert activations.multiparam_relu_softplus_activation(0.0,-1.0,0.0) == 0.0
+    assert activations.multiparam_relu_softplus_activation(0.5,-1.0,0.0) == 0.5
+    assert activations.multiparam_relu_softplus_activation(1.0,-1.0,0.0) == 1.0
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(-1.0,0.0,0.5),(29/7469))
     assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,1.0,0.25),
                         activations.multiparam_relu_softplus_activation(0.0,-1.0,0.25))
-    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,1.0,0.0),
-                        activations.multiparam_relu_softplus_activation(0.0,-1.0,0.0))
     assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,0.5,0.0),
                         activations.multiparam_relu_softplus_activation(0.0,-0.5,0.0))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,0.0,0.0),(254/9961))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,1.0,0.5),
+                        activations.multiparam_relu_softplus_activation(0.0,-1.0,0.5))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,0.0,0.25),(449/7540))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,0.5,0.5),
+                        activations.multiparam_relu_softplus_activation(0.0,-0.5,0.5))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,1.0,0.75),
+                        activations.multiparam_relu_softplus_activation(0.0,-1.0,0.75))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,0.0,0.5),(1103/8262))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(-1.0,0.5,0.5),(-1601/6471))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(-1.0,-0.5,0.5),(1049/4153))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,0.0,0.75),(2011/6911))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,1.0,1.0),
+                        activations.multiparam_relu_softplus_activation(0.0,-1.0,1.0))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(-1.0,-0.5,1.0),(1248/3955))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(-0.5,1.0,0.5),(-3546/9677))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(-0.5,-1.0,0.5),(2105/5488))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(-0.5,0.0,1.0),(2371/5844))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(-0.5,-1.0,1.0),(4049/8941))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,0.5,1.0),
+                        activations.multiparam_relu_softplus_activation(0.0,-0.5,1.0))
     assert_almost_equal(activations.multiparam_relu_softplus_activation(0.5,1.0,0.5),
                         activations.multiparam_relu_softplus_activation(0.5,-1.0,0.5))
-    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.5,1.0,0.0),
-                        activations.multiparam_relu_softplus_activation(0.5,-1.0,0.0))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.5,0.0,0.5),(3018/5741))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.0,0.0,1.0),(3793/6105))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.5,1.0,1.0),
+                        activations.multiparam_relu_softplus_activation(0.5,-1.0,1.0))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(-1.0,1.0,0.5),(-5351/7147))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(-1.0,-1.0,0.5),(7111/9465))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(0.5,0.0,1.0),(8098/8941))
     assert_almost_equal(activations.multiparam_relu_softplus_activation(1.0,1.0,0.5),
                         activations.multiparam_relu_softplus_activation(1.0,-1.0,0.5))
     assert_almost_equal(activations.multiparam_relu_softplus_activation(1.0,0.5,0.5),
                         activations.multiparam_relu_softplus_activation(1.0,-0.5,0.5))
-    assert_almost_equal(activations.multiparam_relu_softplus_activation(1.0,1.0,0.25),
-                        activations.multiparam_relu_softplus_activation(1.0,-1.0,0.25))
-    assert_almost_equal(activations.multiparam_relu_softplus_activation(1.0,1.0,0.0),
-                        activations.multiparam_relu_softplus_activation(1.0,-1.0,0.0))
-    assert_almost_equal(activations.multiparam_relu_softplus_activation(1.0,0.5,0.0),
-                        activations.multiparam_relu_softplus_activation(1.0,-0.5,0.0))
-
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(1.0,0.0,0.5),(7498/7469))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(1.0,1.0,0.75),
+                        activations.multiparam_relu_softplus_activation(1.0,-1.0,0.75))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(1.0,1.0,1.0),
+                        activations.multiparam_relu_softplus_activation(1.0,-1.0,1.0))
+    assert_almost_equal(activations.multiparam_relu_softplus_activation(1.0,0.5,1.0),
+                        activations.multiparam_relu_softplus_activation(1.0,-0.5,1.0))
 
 def test_clamped_tanh_step():
     assert activations.clamped_tanh_step_activation(-1.0,1.0) == -1.0
@@ -408,6 +503,15 @@ def test_multiparam_sigmoid():
     assert activations.multiparam_sigmoid_activation(-1.0,-1.0) == 0.0
     assert activations.multiparam_sigmoid_activation(0.0,-1.0) == 0.5
     assert activations.multiparam_sigmoid_activation(1.0,-1.0) == 1.0
+    assert_almost_equal(activations.multiparam_sigmoid_activation(-1.0,0.0),(46/6873))
+    assert_almost_equal(activations.multiparam_sigmoid_activation(-0.5,-0.5),(337/8885))
+    assert_almost_equal(activations.multiparam_sigmoid_activation(-0.5,0.0),(674/8885))
+    assert_almost_equal(activations.multiparam_sigmoid_activation(-0.25,0.0),(1605/7207))
+    assert_almost_equal(activations.multiparam_sigmoid_activation(0.25,0.0),(5602/7207))
+    assert_almost_equal(activations.multiparam_sigmoid_activation(0.5,0.0),(8211/8885))
+    assert_almost_equal(activations.multiparam_sigmoid_activation(0.5,-0.5),(8548/8885))
+    assert_almost_equal(activations.multiparam_sigmoid_activation(1.0,0.0),(6827/6873))
+
 
 def test_hat_gauss_rectangular():
     assert activations.hat_gauss_rectangular_activation(0.0,1.0,1.0) == 1.0
@@ -530,91 +634,116 @@ def test_scaled_log1p():
 
 def test_multiparam_tanh_log1p():
     assert activations.multiparam_tanh_log1p_activation(-1.0,1.0,1.0) == -1.0
+    assert activations.multiparam_tanh_log1p_activation(-0.5,1.0,1.0) == -0.5
     assert activations.multiparam_tanh_log1p_activation(0.0,1.0,1.0) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(0.5,1.0,1.0) == 0.5
     assert activations.multiparam_tanh_log1p_activation(1.0,1.0,1.0) == 1.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,1.0,0.5) == 0.0
     assert activations.multiparam_tanh_log1p_activation(0.0,1.0,0.0) == 0.0
-    assert activations.multiparam_tanh_log1p_activation(-1.0,1.0,-1.0) == -1.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,1.0,-0.5) == 0.0
     assert activations.multiparam_tanh_log1p_activation(0.0,1.0,-1.0) == 0.0
-    assert activations.multiparam_tanh_log1p_activation(1.0,1.0,-1.0) == 1.0
+    assert activations.multiparam_tanh_log1p_activation(-1.0,0.75,1.0) == -1.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.75,1.0) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(1.0,0.75,1.0) == 1.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.75,0.0) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.75,-1.0) == 0.0
     assert activations.multiparam_tanh_log1p_activation(-1.0,0.5,1.0) == -1.0
+    assert activations.multiparam_tanh_log1p_activation(-0.5,0.5,1.0) == -0.5
     assert activations.multiparam_tanh_log1p_activation(0.0,0.5,1.0) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(0.5,0.5,1.0) == 0.5
     assert activations.multiparam_tanh_log1p_activation(1.0,0.5,1.0) == 1.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.5,0.5) == 0.0
     assert activations.multiparam_tanh_log1p_activation(0.0,0.5,0.0) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.5,-0.5) == 0.0
     assert activations.multiparam_tanh_log1p_activation(0.0,0.5,-1.0) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(-1.0,0.25,1.0) == -1.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.25,1.0) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(1.0,0.25,1.0) == 1.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.25,0.0) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.25,-1.0) == 0.0
     assert activations.multiparam_tanh_log1p_activation(-1.0,0.0,1.0) == -1.0
+    assert activations.multiparam_tanh_log1p_activation(-0.5,0.0,1.0) == -0.5
     assert activations.multiparam_tanh_log1p_activation(0.0,0.0,1.0) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(0.5,0.0,1.0) == 0.5
     assert activations.multiparam_tanh_log1p_activation(1.0,0.0,1.0) == 1.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.0,0.5) == 0.0
     assert activations.multiparam_tanh_log1p_activation(0.0,0.0,0.0) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(0.0,0.0,-0.5) == 0.0
+    assert activations.multiparam_tanh_log1p_activation(-1.0,0.0,-1.0) == -1.0
+    assert activations.multiparam_tanh_log1p_activation(-0.5,0.0,-1.0) == -1.0
     assert activations.multiparam_tanh_log1p_activation(0.0,0.0,-1.0) == 0.0
-    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-0.5,0.0,-1.0),
-                        -1*activations.multiparam_tanh_log1p_activation(0.5,0.0,-1.0))
-    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.0,-1.0),
-                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.0,-1.0))
-    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-0.5,0.0,0.0),
-                        -1*activations.multiparam_tanh_log1p_activation(0.5,0.0,0.0))
-    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.25,-1.0),
-                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.25,-1.0))
+    assert activations.multiparam_tanh_log1p_activation(0.5,0.0,-1.0) == 1.0
+    assert activations.multiparam_tanh_log1p_activation(1.0,0.0,-1.0) == 1.0
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-0.5,1.0,-1.0),
+                        -1*activations.multiparam_tanh_log1p_activation(0.5,1.0,-1.0))
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,1.0,-1.0),
+                        -1*activations.multiparam_tanh_log1p_activation(1.0,1.0,-1.0))
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-0.5,1.0,0.0),
+                        -1*activations.multiparam_tanh_log1p_activation(0.5,1.0,0.0))
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.75,-1.0),
+                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.75,-1.0))
     assert_almost_equal(activations.multiparam_tanh_log1p_activation(-0.5,0.5,-1.0),
                         -1*activations.multiparam_tanh_log1p_activation(0.5,0.5,-1.0))
-    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.0,-0.5),
-                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.0,-0.5))
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,1.0,-0.5),
+                        -1*activations.multiparam_tanh_log1p_activation(1.0,1.0,-0.5))
     assert_almost_equal(activations.multiparam_tanh_log1p_activation(-0.5,0.5,0.0),
                         -1*activations.multiparam_tanh_log1p_activation(0.5,0.5,0.0))
     assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.5,-1.0),
                         -1*activations.multiparam_tanh_log1p_activation(1.0,0.5,-1.0))
-    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-0.5,1.0,0.0),
-                        -1*activations.multiparam_tanh_log1p_activation(0.5,1.0,0.0))
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-0.5,0.0,0.0),
+                        -1*activations.multiparam_tanh_log1p_activation(0.5,0.0,0.0))
     assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.5,-0.5),
                         -1*activations.multiparam_tanh_log1p_activation(1.0,0.5,-0.5))
-    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.75,-1.0),
-                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.75,-1.0))
-    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.0,0.0),
-                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.0,0.0))
-    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.25,0.0),
-                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.25,0.0))
-    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.5,0.0),
-                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.5,0.0))
-    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.75,0.0),
-                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.75,0.0))
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.25,-1.0),
+                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.25,-1.0))
     assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,1.0,0.0),
                         -1*activations.multiparam_tanh_log1p_activation(1.0,1.0,0.0))
-    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.0,0.5),
-                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.0,0.5))
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.75,0.0),
+                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.75,0.0))
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.5,0.0),
+                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.5,0.0))
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.25,0.0),
+                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.25,0.0))
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.0,0.0),
+                        -1*activations.multiparam_tanh_log1p_activation(1.0,0.0,0.0))
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,1.0,0.5),
+                        -1*activations.multiparam_tanh_log1p_activation(1.0,1.0,0.5))
     assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.5,0.5),
                         -1*activations.multiparam_tanh_log1p_activation(1.0,0.5,0.5))
-    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,1.0,0.5),
-                        activations.multiparam_tanh_log1p_activation(-1.0,1.0,-0.5))
-    assert_almost_equal(activations.multiparam_tanh_log1p_activation(1.0,1.0,0.5),
-                        activations.multiparam_tanh_log1p_activation(1.0,1.0,-0.5))
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(-1.0,0.0,0.5),
+                        activations.multiparam_tanh_log1p_activation(-1.0,0.0,-0.5))
+    assert_almost_equal(activations.multiparam_tanh_log1p_activation(1.0,0.0,0.5),
+                        activations.multiparam_tanh_log1p_activation(1.0,0.0,-0.5))
+
 
 def test_multiparam_pow():
-    assert activations.multiparam_pow_activation(-1.0,4.0) == -1.0
-    assert activations.multiparam_pow_activation(-0.5,4.0) == -0.0625
-    assert activations.multiparam_pow_activation(0.0,4.0) == 0.0
-    assert activations.multiparam_pow_activation(0.5,4.0) == 0.0625
-    assert activations.multiparam_pow_activation(1.0,4.0) == 1.0
-    assert activations.multiparam_pow_activation(-1.0,2.75) == -1.0
-    assert activations.multiparam_pow_activation(0.0,2.75) == 0.0
-    assert activations.multiparam_pow_activation(1.0,2.75) == 1.0
-    assert activations.multiparam_pow_activation(-1.0,1.5) == -1.0
-    assert activations.multiparam_pow_activation(-0.25,1.5) == -0.125
-    assert activations.multiparam_pow_activation(0.0,1.5) == 0.0
-    assert activations.multiparam_pow_activation(0.25,1.5) == 0.125
-    assert activations.multiparam_pow_activation(1.0,1.5) == 1.0
-    assert activations.multiparam_pow_activation(-1.0,0.25) == -1.0
-    assert activations.multiparam_pow_activation(0.0,0.25) == 0.0
-    assert activations.multiparam_pow_activation(1.0,0.25) == 1.0
+    assert activations.multiparam_pow_activation(-1.0,1.0) == -1.0
+    assert activations.multiparam_pow_activation(-0.5,1.0) == -0.0625
+    assert activations.multiparam_pow_activation(0.0,1.0) == 0.0
+    assert activations.multiparam_pow_activation(0.5,1.0) == 0.0625
+    assert activations.multiparam_pow_activation(1.0,1.0) == 1.0
+    assert activations.multiparam_pow_activation(-1.0,0.5) == -1.0
+    assert activations.multiparam_pow_activation(0.0,0.5) == 0.0
+    assert activations.multiparam_pow_activation(1.0,0.5) == 1.0
+    assert activations.multiparam_pow_activation(-1.0,0.0) == -1.0
+    assert activations.multiparam_pow_activation(-0.75,0.0) == -0.75
+    assert activations.multiparam_pow_activation(-0.5,0.0) == -0.5
+    assert activations.multiparam_pow_activation(-0.25,0.0) == -0.25
+    assert activations.multiparam_pow_activation(0.0,0.0) == 0.0
+    assert activations.multiparam_pow_activation(0.25,0.0) == 0.25
+    assert activations.multiparam_pow_activation(0.5,0.0) == 0.5
+    assert activations.multiparam_pow_activation(0.75,0.0) == 0.75
+    assert activations.multiparam_pow_activation(1.0,0.0) == 1.0
+    assert activations.multiparam_pow_activation(-1.0,-0.5) == -1.0
+    assert activations.multiparam_pow_activation(0.0,-0.5) == 0.0
+    assert activations.multiparam_pow_activation(1.0,-0.5) == 1.0
     assert activations.multiparam_pow_activation(-1.0,-1.0) == -1.0
     assert activations.multiparam_pow_activation(0.0,-1.0) == 0.0
     assert activations.multiparam_pow_activation(1.0,-1.0) == 1.0
-    assert_almost_equal(activations.multiparam_pow_activation(-0.5,2.75),
-                        -1*activations.multiparam_pow_activation(0.5,2.75))
-    assert_almost_equal(activations.multiparam_pow_activation(-0.5,1.5),
-                        -1*activations.multiparam_pow_activation(0.5,1.5))
-    assert_almost_equal(activations.multiparam_pow_activation(-0.75,1.5),
-                        -1*activations.multiparam_pow_activation(0.75,1.5))
-    assert_almost_equal(activations.multiparam_pow_activation(-0.5,0.25),
-                        -1*activations.multiparam_pow_activation(0.5,0.25))
+    assert_almost_equal(activations.multiparam_pow_activation(-0.5,0.5),
+                        -1*activations.multiparam_pow_activation(0.5,0.5))
+    assert_almost_equal(activations.multiparam_pow_activation(-0.5,-0.5),
+                        -1*activations.multiparam_pow_activation(0.5,-0.5))
     assert_almost_equal(activations.multiparam_pow_activation(-0.5,-1.0),
                         -1*activations.multiparam_pow_activation(0.5,-1.0))
 
@@ -661,8 +790,14 @@ def test_multiparam_tanh_approx():
     assert activations.multiparam_tanh_approx_activation(0.0,-0.24,1.0) == 0.0
     assert activations.multiparam_tanh_approx_activation(0.0,-0.24,0.5) == 0.0
     assert activations.multiparam_tanh_approx_activation(0.0,-0.24,0.0) == 0.0
+    assert activations.multiparam_tanh_approx_activation(-1.0,-0.24,-0.5) == -1.0
     assert activations.multiparam_tanh_approx_activation(0.0,-0.24,-0.5) == 0.0
+    assert activations.multiparam_tanh_approx_activation(1.0,-0.24,-0.5) == 1.0
+    assert activations.multiparam_tanh_approx_activation(-1.0,-0.24,-1.0) == -1.0
+    assert activations.multiparam_tanh_approx_activation(-0.5,-0.24,-1.0) == -1.0
     assert activations.multiparam_tanh_approx_activation(0.0,-0.24,-1.0) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.5,-0.24,-1.0) == 1.0
+    assert activations.multiparam_tanh_approx_activation(1.0,-0.24,-1.0) == 1.0
     assert activations.multiparam_tanh_approx_activation(0.0,-0.99,1.0) == 0.0
     assert activations.multiparam_tanh_approx_activation(0.0,-0.99,0.5) == 0.0
     assert activations.multiparam_tanh_approx_activation(0.0,-0.99,0.0) == 0.0
@@ -670,7 +805,9 @@ def test_multiparam_tanh_approx():
     assert activations.multiparam_tanh_approx_activation(0.0,-0.99,-0.5) == 0.0
     assert activations.multiparam_tanh_approx_activation(1.0,-0.99,-0.5) == 1.0
     assert activations.multiparam_tanh_approx_activation(-1.0,-0.99,-1.0) == -1.0
+    assert activations.multiparam_tanh_approx_activation(-0.5,-0.99,-1.0) == -1.0
     assert activations.multiparam_tanh_approx_activation(0.0,-0.99,-1.0) == 0.0
+    assert activations.multiparam_tanh_approx_activation(0.5,-0.99,-1.0) == 1.0
     assert activations.multiparam_tanh_approx_activation(1.0,-0.99,-1.0) == 1.0
     assert activations.multiparam_tanh_approx_activation(0.0,-1.74,1.0) == 0.0
     assert activations.multiparam_tanh_approx_activation(-1.0,-1.74,0.0) == -1.0
@@ -683,22 +820,26 @@ def test_multiparam_tanh_approx():
                         -1*activations.multiparam_tanh_approx_activation(1.0,1.26,0.0))
     assert_almost_equal(activations.multiparam_tanh_approx_activation(-0.5,0.51,0.0),
                         -1*activations.multiparam_tanh_approx_activation(0.5,0.51,0.0))
-    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,1.26,-1.0),
-                        -1*activations.multiparam_tanh_approx_activation(1.0,1.26,-1.0))
     assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,1.26,1.0),
                         -1*activations.multiparam_tanh_approx_activation(1.0,1.26,1.0))
-    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.51,-0.5),
-                        -1*activations.multiparam_tanh_approx_activation(1.0,0.51,-0.5))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.51,0.0),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,0.51,0.0))
     assert_almost_equal(activations.multiparam_tanh_approx_activation(-0.5,-0.24,0.0),
                         -1*activations.multiparam_tanh_approx_activation(0.5,-0.24,0.0))
-    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.51,-1.0),
-                        -1*activations.multiparam_tanh_approx_activation(1.0,0.51,-1.0))
-    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-0.24,-0.5),
-                        -1*activations.multiparam_tanh_approx_activation(1.0,-0.24,-0.5))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-0.24,0.0),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,-0.24,0.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,1.26,-1.0),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,1.26,-1.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.51,-0.5),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,0.51,-0.5))
     assert_almost_equal(activations.multiparam_tanh_approx_activation(-0.5,-0.99,0.0),
                         -1*activations.multiparam_tanh_approx_activation(0.5,-0.99,0.0))
-    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-0.24,-1.0),
-                        -1*activations.multiparam_tanh_approx_activation(1.0,-0.24,-1.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-0.5,0.51,-1.0),
+                        -1*activations.multiparam_tanh_approx_activation(0.5,0.51,-1.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-0.99,0.0),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,-0.99,0.0))
+    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.51,-1.0),
+                        -1*activations.multiparam_tanh_approx_activation(1.0,0.51,-1.0))
     assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.51,0.5),
                         -1*activations.multiparam_tanh_approx_activation(1.0,0.51,0.5))
     assert_almost_equal(activations.multiparam_tanh_approx_activation(-0.5,0.51,1.0),
@@ -713,18 +854,7 @@ def test_multiparam_tanh_approx():
                         -1*activations.multiparam_tanh_approx_activation(0.5,-0.24,1.0))
     assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-0.24,1.0),
                         -1*activations.multiparam_tanh_approx_activation(1.0,-0.24,1.0))
-    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-0.99,0.0),
-                        activations.multiparam_tanh_approx_activation(-0.5,-0.99,-1.0))
-    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,-0.24,0.0),
-                        activations.multiparam_tanh_approx_activation(-0.5,-0.24,-1.0))
-    assert_almost_equal(activations.multiparam_tanh_approx_activation(-1.0,0.51,0.0),
-                        activations.multiparam_tanh_approx_activation(-0.5,0.51,-1.0))
-    assert_almost_equal(activations.multiparam_tanh_approx_activation(1.0,0.51,0.0),
-                        activations.multiparam_tanh_approx_activation(0.5,0.51,-1.0))
-    assert_almost_equal(activations.multiparam_tanh_approx_activation(1.0,-0.24,0.0),
-                        activations.multiparam_tanh_approx_activation(0.5,-0.24,-1.0))
-    assert_almost_equal(activations.multiparam_tanh_approx_activation(1.0,-0.99,0.0),
-                        activations.multiparam_tanh_approx_activation(0.5,-0.99,-1.0))
+
 
 
 def test_multiparam_sigmoid_approx():
@@ -737,10 +867,34 @@ def test_multiparam_sigmoid_approx():
     assert activations.multiparam_sigmoid_approx_activation(0.0,-1.74) == 0.5
     assert activations.multiparam_sigmoid_approx_activation(0.5,-1.74) == 1.0
     assert activations.multiparam_sigmoid_approx_activation(1.0,-1.74) == 1.0
+    assert_almost_equal(activations.multiparam_sigmoid_approx_activation(-1.0,-0.99),(17/8005))
+    assert_almost_equal(activations.multiparam_sigmoid_approx_activation(-1.0,-0.24),(268/7543))
+    assert_almost_equal(activations.multiparam_sigmoid_approx_activation(-0.5,-0.24),(277/3725))
+    assert_almost_equal(activations.multiparam_sigmoid_approx_activation(-1.0,0.51),(1203/9290))
+    assert_almost_equal(activations.multiparam_sigmoid_approx_activation(-0.5,0.51),(1302/6217))
+    assert_almost_equal(activations.multiparam_sigmoid_approx_activation(-1.0,1.26),(900/3103))
+    assert_almost_equal(activations.multiparam_sigmoid_approx_activation(1.0,1.26),(2203/3103))
+    assert_almost_equal(activations.multiparam_sigmoid_approx_activation(0.5,0.51),(4915/6217))
+    assert_almost_equal(activations.multiparam_sigmoid_approx_activation(1.0,0.51),(8087/9290))
+    assert_almost_equal(activations.multiparam_sigmoid_approx_activation(0.5,-0.24),(3448/3725))
+    assert_almost_equal(activations.multiparam_sigmoid_approx_activation(1.0,-0.24),(7275/7543))
+    assert_almost_equal(activations.multiparam_sigmoid_approx_activation(1.0,-0.99),(7988/8005))
+
 
 def test_multiparam_gauss():
+    assert 0.0 <= activations.multiparam_gauss_activation(-1.0,1.0,1.0) <= 0.000123
+    assert 0.0 <= activations.multiparam_gauss_activation(1.0,1.0,1.0) <= 0.000123
+    assert 0.0 <= activations.multiparam_gauss_activation(-1.0,0.75,1.0) <= 0.000123
+    assert 0.0 <= activations.multiparam_gauss_activation(1.0,0.75,1.0) <= 0.000123
+    assert 0.0 <= activations.multiparam_gauss_activation(-1.0,0.5,1.0) <= 0.000123
+    assert 0.0 <= activations.multiparam_gauss_activation(1.0,0.5,1.0) <= 0.000123
+    assert 0.0 <= activations.multiparam_gauss_activation(-1.0,0.25,1.0) <= 0.000123
+    assert 0.0 <= activations.multiparam_gauss_activation(1.0,0.25,1.0) <= 0.000123
+    assert 0.0 <= activations.multiparam_gauss_activation(-1.0,0.0,1.0) <= 0.000123
+    assert 0.0 <= activations.multiparam_gauss_activation(1.0,0.0,1.0) <= 0.000123
+
     for a in [0.0, 0.25, 0.5, 0.75, 1.0]:
-        for b in [0.0, 0.5, 1.0, 1.5, 2.0]:
+        for b in [0.0, 0.25, 0.5, 0.75, 1.0]:
             assert activations.multiparam_gauss_activation(0.0,a,b) == 1.0
             for z in [0.25,0.5,0.75,1.0]:
                 assert_almost_equal(activations.multiparam_gauss_activation(z,a,b),
@@ -764,6 +918,9 @@ def test_bicentral():
     assert activations.bicentral_activation(1.0,0.0,-0.5) == 0.0
     assert activations.bicentral_activation(-0.5,0.0,-1.0) == 0.5
     assert activations.bicentral_activation(1.0,0.0,-1.0) == 0.0
+    assert_almost_equal(activations.bicentral_activation(0.0,0.75,0.0),(2777/4696))
+    assert_almost_equal(activations.bicentral_activation(0.0,0.5,0.0),(7777/9077))
+    assert_almost_equal(activations.bicentral_activation(0.0,0.25,0.0),(7956/8131))
     assert_almost_equal(activations.bicentral_activation(-1.0,0.75,1.0),
                         activations.bicentral_activation(1.0,0.75,-1.0))
     assert_almost_equal(activations.bicentral_activation(-1.0,0.5,0.5),
@@ -792,6 +949,8 @@ def test_bicentral():
                         activations.bicentral_activation(-1.0,0.75,-1.0))
     assert_almost_equal(activations.bicentral_activation(1.0,1.0,1.0),
                         activations.bicentral_activation(-1.0,1.0,-1.0))
+    assert_almost_equal(activations.bicentral_activation(1.0,0.0,1.0),
+                        activations.bicentral_activation(-1.0,0.0,-1.0))
     assert_almost_equal(activations.bicentral_activation(0.0,0.75,1.0),
                         activations.bicentral_activation(0.0,0.75,-1.0))
     assert_almost_equal(activations.bicentral_activation(0.0,0.5,1.0),
@@ -814,31 +973,32 @@ def test_bicentral():
                         activations.bicentral_activation(0.5,0.0,-1.0))
 
 def test_bisigmoid():
-    assert activations.bisigmoid_activation(1.0,3.0,1.0) == 0.5
-    assert activations.bisigmoid_activation(-1.0,3.0,0.75) == 0.0
-    assert activations.bisigmoid_activation(-1.0,3.0,0.5) == 0.0
-    assert activations.bisigmoid_activation(0.5,3.0,0.5) == 0.5
-    assert activations.bisigmoid_activation(-1.0,3.0,0.25) == 0.0
-    assert activations.bisigmoid_activation(-1.0,3.0,0.0) == 0.0
-    assert activations.bisigmoid_activation(-0.5,3.0,0.0) == 0.0
-    assert activations.bisigmoid_activation(0.0,3.0,0.0) == 0.25
-    assert activations.bisigmoid_activation(1.0,1.5,1.0) == 0.5
-    assert 0.0 <= activations.bisigmoid_activation(-1.0,1.5,0.0) <= 0.000123
-    assert activations.bisigmoid_activation(0.0,1.5,0.0) == 0.25
+    assert activations.bisigmoid_activation(1.0,1.0,1.0) == 0.5
+    assert activations.bisigmoid_activation(-1.0,1.0,0.75) == 0.0
+    assert activations.bisigmoid_activation(-1.0,1.0,0.5) == 0.0
+    assert activations.bisigmoid_activation(0.5,1.0,0.5) == 0.5
+    assert activations.bisigmoid_activation(-1.0,1.0,0.25) == 0.0
+    assert activations.bisigmoid_activation(-1.0,1.0,0.0) == 0.0
+    assert activations.bisigmoid_activation(-0.5,1.0,0.0) == 0.0
+    assert activations.bisigmoid_activation(0.0,1.0,0.0) == 0.25
+    assert activations.bisigmoid_activation(1.0,0.5,1.0) == 0.5
+    assert activations.bisigmoid_activation(-1.0,0.5,0.5) == 0.0
+    assert activations.bisigmoid_activation(-1.0,0.5,0.0) == 0.0
+    assert activations.bisigmoid_activation(0.0,0.5,0.0) == 0.25
     assert activations.bisigmoid_activation(0.0,0.0,0.0) == 0.25
-    assert activations.bisigmoid_activation(-1.0,-1.5,1.0) == 0.5
-    assert activations.bisigmoid_activation(0.0,-1.5,0.0) == 0.25
-    assert 0.0 <= activations.bisigmoid_activation(1.0,-1.5,0.0) <= 0.000123
-    assert activations.bisigmoid_activation(-1.0,-3.0,1.0) == 0.5
-    assert activations.bisigmoid_activation(1.0,-3.0,0.75) == 0.0
-    assert activations.bisigmoid_activation(-0.5,-3.0,0.5) == 0.5
-    assert activations.bisigmoid_activation(1.0,-3.0,0.5) == 0.0
-    assert activations.bisigmoid_activation(1.0,-3.0,0.25) == 0.0
-    assert activations.bisigmoid_activation(0.0,-3.0,0.0) == 0.25
-    assert activations.bisigmoid_activation(0.5,-3.0,0.0) == 0.0
-    assert activations.bisigmoid_activation(1.0,-3.0,0.0) == 0.0
-    assert_almost_equal(activations.bisigmoid_activation(-1.0,1.5,0.5),
-                        activations.bisigmoid_activation(1.0,-1.5,0.5))
+    assert activations.bisigmoid_activation(-1.0,-0.5,1.0) == 0.5
+    assert activations.bisigmoid_activation(1.0,-0.5,0.5) == 0.0
+    assert activations.bisigmoid_activation(0.0,-0.5,0.0) == 0.25
+    assert activations.bisigmoid_activation(1.0,-0.5,0.0) == 0.0
+    assert activations.bisigmoid_activation(-1.0,-1.0,1.0) == 0.5
+    assert activations.bisigmoid_activation(1.0,-1.0,0.75) == 0.0
+    assert activations.bisigmoid_activation(-0.5,-1.0,0.5) == 0.5
+    assert activations.bisigmoid_activation(1.0,-1.0,0.5) == 0.0
+    assert activations.bisigmoid_activation(1.0,-1.0,0.25) == 0.0
+    assert activations.bisigmoid_activation(0.0,-1.0,0.0) == 0.25
+    assert activations.bisigmoid_activation(0.5,-1.0,0.0) == 0.0
+    assert activations.bisigmoid_activation(1.0,-1.0,0.0) == 0.0
+    assert_almost_equal(activations.bisigmoid_activation(0.0,0.0,0.5),(7777/9077))
     assert_almost_equal(activations.bisigmoid_activation(-1.0,0.0,0.0),
                         activations.bisigmoid_activation(1.0,0.0,0.0))
     assert_almost_equal(activations.bisigmoid_activation(-1.0,0.0,0.25),
@@ -849,44 +1009,46 @@ def test_bisigmoid():
                         activations.bisigmoid_activation(1.0,0.0,0.5))
     assert_almost_equal(activations.bisigmoid_activation(-1.0,0.0,0.75),
                         activations.bisigmoid_activation(1.0,0.0,0.75))
-    assert_almost_equal(activations.bisigmoid_activation(1.0,1.5,0.0),
-                        activations.bisigmoid_activation(-1.0,-1.5,0.0))
-    assert_almost_equal(activations.bisigmoid_activation(1.0,1.5,0.5),
-                        activations.bisigmoid_activation(-1.0,-1.5,0.5))
-    assert_almost_equal(activations.bisigmoid_activation(1.0,3.0,0.0),
-                        activations.bisigmoid_activation(-1.0,-3.0,0.0))
-    assert_almost_equal(activations.bisigmoid_activation(-0.5,3.0,0.5),
-                        activations.bisigmoid_activation(0.5,-3.0,0.5))
-    assert_almost_equal(activations.bisigmoid_activation(1.0,3.0,0.25),
-                        activations.bisigmoid_activation(-1.0,-3.0,0.25))
-    assert_almost_equal(activations.bisigmoid_activation(-1.0,3.0,1.0),
-                        activations.bisigmoid_activation(1.0,-3.0,1.0))
-    assert_almost_equal(activations.bisigmoid_activation(-1.0,1.5,1.0),
-                        activations.bisigmoid_activation(1.0,-1.5,1.0))
+    assert_almost_equal(activations.bisigmoid_activation(-0.5,1.0,0.5),
+                        activations.bisigmoid_activation(0.5,-1.0,0.5))
+    assert_almost_equal(activations.bisigmoid_activation(1.0,0.5,0.0),
+                        activations.bisigmoid_activation(-1.0,-0.5,0.0))
+    assert_almost_equal(activations.bisigmoid_activation(-1.0,1.0,1.0),
+                        activations.bisigmoid_activation(1.0,-1.0,1.0))
+    assert_almost_equal(activations.bisigmoid_activation(1.0,0.5,0.5),
+                        activations.bisigmoid_activation(-1.0,-0.5,0.5))
+    assert_almost_equal(activations.bisigmoid_activation(-1.0,0.5,1.0),
+                        activations.bisigmoid_activation(1.0,-0.5,1.0))
+    assert_almost_equal(activations.bisigmoid_activation(1.0,1.0,0.0),
+                        activations.bisigmoid_activation(-1.0,-1.0,0.0))
+    assert_almost_equal(activations.bisigmoid_activation(1.0,1.0,0.25),
+                        activations.bisigmoid_activation(-1.0,-1.0,0.25))
     assert_almost_equal(activations.bisigmoid_activation(-0.5,0.0,0.5),
                         activations.bisigmoid_activation(0.5,0.0,0.5))
+    assert_almost_equal(activations.bisigmoid_activation(1.0,1.0,0.75),
+                        activations.bisigmoid_activation(-1.0,-1.0,0.75))
     assert_almost_equal(activations.bisigmoid_activation(-1.0,0.0,1.0),
                         activations.bisigmoid_activation(1.0,0.0,1.0))
-    assert_almost_equal(activations.bisigmoid_activation(0.0,3.0,0.75),
-                        activations.bisigmoid_activation(0.0,-3.0,0.75))
-    assert_almost_equal(activations.bisigmoid_activation(0.0,3.0,1.0),
-                        activations.bisigmoid_activation(0.0,-3.0,1.0))
-    assert_almost_equal(activations.bisigmoid_activation(-0.5,3.0,1.0),
-                        activations.bisigmoid_activation(0.5,-3.0,1.0))
-    assert_almost_equal(activations.bisigmoid_activation(0.0,1.5,0.5),
-                        activations.bisigmoid_activation(0.0,-1.5,0.5))
-    assert_almost_equal(activations.bisigmoid_activation(0.0,1.5,1.0),
-                        activations.bisigmoid_activation(0.0,-1.5,1.0))
+    assert_almost_equal(activations.bisigmoid_activation(0.0,1.0,0.25),
+                        activations.bisigmoid_activation(0.0,-1.0,0.25))
+    assert_almost_equal(activations.bisigmoid_activation(0.0,1.0,0.75),
+                        activations.bisigmoid_activation(0.0,-1.0,0.75))
+    assert_almost_equal(activations.bisigmoid_activation(0.0,1.0,1.0),
+                        activations.bisigmoid_activation(0.0,-1.0,1.0))
+    assert_almost_equal(activations.bisigmoid_activation(-0.5,1.0,1.0),
+                        activations.bisigmoid_activation(0.5,-1.0,1.0))
+    assert_almost_equal(activations.bisigmoid_activation(0.0,0.5,0.5),
+                        activations.bisigmoid_activation(0.0,-0.5,0.5))
+    assert_almost_equal(activations.bisigmoid_activation(0.0,0.5,1.0),
+                        activations.bisigmoid_activation(0.0,-0.5,1.0))
     assert_almost_equal(activations.bisigmoid_activation(-0.5,0.0,1.0),
                         activations.bisigmoid_activation(0.5,0.0,1.0))
-    assert_almost_equal(activations.bisigmoid_activation(-1.0,-3.0,0.5),
-                        activations.bisigmoid_activation(-0.5,-3.0,0.0))
-    assert_almost_equal(activations.bisigmoid_activation(1.0,3.0,0.5),
-                        activations.bisigmoid_activation(0.5,3.0,0.0))
-    assert_almost_equal(activations.bisigmoid_activation(-0.5,-3.0,1.0),
-                        activations.bisigmoid_activation(0.0,-3.0,0.5))
-    assert_almost_equal(activations.bisigmoid_activation(0.5,3.0,1.0),
-                        activations.bisigmoid_activation(0.0,3.0,0.5))
+    assert_almost_equal(activations.bisigmoid_activation(-1.0,-1.0,0.5),
+                        activations.bisigmoid_activation(-0.5,-1.0,0.0))
+    assert_almost_equal(activations.bisigmoid_activation(1.0,1.0,0.5),
+                        activations.bisigmoid_activation(0.5,1.0,0.0))
+    assert_almost_equal(activations.bisigmoid_activation(0.0,1.0,0.5),
+                        activations.bisigmoid_activation(-0.5,-1.0,1.0))
 
 
 def plus_activation(x):
@@ -903,6 +1065,22 @@ def test_add_plus():
     assert config.genome_config.activation_defs.get('plus') is not None
     assert config.genome_config.activation_defs.is_valid('plus')
 
+def multiparam_plus_activation(x, a):
+    """Again, not useful..."""
+    return abs(x+a)
+
+def test_add_multiparam_plus():
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, 'test_configuration')
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_path)
+    config.genome_config.add_activation('multiparam_plus', multiparam_plus_activation,
+                                        a={'min_value':-1.0, 'max_value':3.0})
+    assert config.genome_config.multiparameterset.get_MPF('multiparam_plus',
+                                                          'activation') is not None
+    assert config.genome_config.activation_defs.is_valid('multiparam_plus')
+
 NORM_ACT_FUNC = """sigmoid tanh sigmoid_approx tanh_approx sin gauss relu identity clamped inv
                    log expanded_log skewed_log1p log1p exp abs hat square cube square_wave
                    triangle_wave rectangular""".split()
@@ -916,10 +1094,10 @@ def test_function_set():
     m = multiparameter.MultiParameterSet('activation')
     s = activations.ActivationFunctionSet(m)
     for name in NORM_ACT_FUNC:
-        assert s.get(name) is not None
+        assert s.get(name) is not None, "Failed to get {0}".format(name)
         assert s.is_valid(name), "Function {0} not valid".format(name)
     for name in MULT_ACT_FUNC:
-        assert m.get_MPF(name, 'activation') is not None
+        assert m.get_MPF(name, 'activation') is not None, "Failed get_MPF({0})".format(name)
         assert s.is_valid(name), "Function {0} not valid".format(name)
 
     assert not s.is_valid('foo')
@@ -1082,6 +1260,7 @@ if __name__ == '__main__':
     test_bicentral()
     test_bisigmoid()
     test_add_plus()
+    test_add_multiparam_plus()
     test_function_set()
     test_get_MPF()
     test_get_Evolved_MPF_simple()
