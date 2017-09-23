@@ -19,25 +19,32 @@ The :term:`multiparameter` functions below, and some of the others, are new; if 
 
 .. csv-table::
     :widths: auto
-    :header: Old, New
+    :header: Old, New, Notes
     :align: center
 
-    abs, ":ref:`multiparam_relu <multiparam-relu-description-label>`, :ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`, or weighted_lu"
-    clamped, ":ref:`clamped_tanh_step <clamped-tanh-step-label>`"
+    abs, ":ref:`multiparam_relu <multiparam-relu-description-label>`, :ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`, or :ref:`weighted_lu <weighted-lu-label>`", "If the result does not need to be positive"
+    abs, ":ref:`fourth_square_abs <fourth-square-abs-label>`", "If the result needs to be positive"
+    clamped, ":ref:`clamped_tanh_step <clamped-tanh-step-label>` or :ref:`clamped_step <clamped-step-label>`"
     cube, ":ref:`multiparam_pow <multiparam-pow-label>`"
-    gauss, ":ref:`hat_gauss_rectangular <hat-gauss-rectangular-label>` or multiparam_gauss"
+    gauss, ":ref:`hat_gauss_rectangular <hat-gauss-rectangular-label>` or :ref:`multiparam_gauss <multiparam-gauss-label>`", "Either is suitable for seeding a HyperNEAT-LEO CPPN"
     hat, ":ref:`hat_gauss_rectangular <hat-gauss-rectangular-label>`"
-    identity, ":ref:`multiparam_relu <multiparam-relu-description-label>`, :ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`, or weighted_lu"
-    inv, ":ref:`multiparam_log_inv <multiparam-log-inv-label>`, if for a CPPN"
-    log, ":ref:`scaled_expanded_log <scaled-expanded-log-label>`, if for a CPPN"
-    relu, ":ref:`multiparam_relu <multiparam-relu-description-label>`, :ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`, or weighted_lu"
+    identity, ":ref:`multiparam_relu <multiparam-relu-description-label>`, :ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`, :ref:`weighted_lu <weighted-lu-label>`, or :ref:`multiparam_pow <multiparam-pow-label>`"
+    inv, ":ref:`multiparam_log_inv <multiparam-log-inv-label>`", "If for a CPPN"
+    log, ":ref:`scaled_expanded_log <scaled-expanded-log-label>` or :ref:`multiparam_log_inv <multiparam-log-inv-label>`", "If for a CPPN"
+    relu, ":ref:`multiparam_relu <multiparam-relu-description-label>`, :ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`, or :ref:`weighted_lu <weighted-lu-label>`", "If the result does not need to be positive"
+    relu, ":ref:`multiparam_softplus <multiparam-softplus-label>`", "If the result needs to be positive"
     sigmoid, ":ref:`multiparam_sigmoid <multiparam-sigmoid-label>`"
     sin, ":ref:`wave <wave-label>`"
-    softplus, ":ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`"
-    square, ":ref:`multiparam_pow <multiparam-pow-label>`", if the result does not need to be positive
-    tanh, ":ref:`clamped_tanh_step <clamped-tanh-step-label>`"
+    softplus, ":ref:`multiparam_relu_softplus <multiparam-relu-softplus-label>`", "If the result does not need to be positive"
+    softplus, ":ref:`multiparam_softplus <multiparam-softplus-label>`", "If the result needs to be positive"
+    square, ":ref:`multiparam_pow <multiparam-pow-label>`", "If the result does not need to be positive"
+    square, ":ref:`fourth_square_abs <fourth-square-abs-label>`", "If the result needs to be positive"
+    tanh, ":ref:`clamped_tanh_step <clamped-tanh-step-label>`", "If the result needs to be within [-1, 1]"
+    tanh, ":ref:`multiparam_tanh_log1p <multiparam-tanh-log1p-label>`", "If it does not need to be within [-1, 1]"
 
-The builtin multiparameter functions are also present to serve as examples of ways to construct and configure new such functions. Two potentially-faster approximations of the :ref:`sigmoid <sigmoid-label>` and :ref:`tanh <tanh-label>` functions have also been added, namely :ref:`sigmoid_approx <sigmoid-approx-label>` and :ref:`tanh_approx <tanh-approx-label>`.
+The builtin multiparameter functions are also present to serve as examples of how to construct and configure new such functions.
+
+Two potentially-faster approximations of the :ref:`sigmoid <sigmoid-label>` and :ref:`tanh <tanh-label>` functions have also been added, namely :ref:`sigmoid_approx <sigmoid-approx-label>` and :ref:`tanh_approx <tanh-approx-label>`.
 
 General-use activation functions (single-parameter)
 -----------------------------------------------------------------------
@@ -122,6 +129,25 @@ tanh_approx
 General-use activation functions (multiparameter)
 ---------------------------------------------------------------------
 
+clamped_log1p_step
+^^^^^^^^^^^^^^^^^^^
+
+.. figure:: activation-clamped_log1p_step.png
+  :scale: 100 %
+  :alt: Weighted combination of (extended) clamped_step and scaled_log1p functions.
+
+.. figure:: activation-swap-clamped_log1p_step.png
+  :scale: 100 %
+  :alt: Weighted combination of (extended) clamped_step and scaled_log1p functions.
+
+clamped_step
+^^^^^^^^^^^^^
+
+.. figure:: activation-clamped_step.png
+    :scale: 100 %
+    :alt: Clamped with varying slope, including vertical (step function)
+    :name: clamped-step-label
+
 clamped_tanh_step
 ^^^^^^^^^^^^^^^^^^
 
@@ -191,6 +217,7 @@ multiparam_softplus
 .. figure:: activation-multiparam_softplus.png
     :scale: 100 %
     :alt: A version of softplus with variable curvature at 0 x.
+    :name: multiparam-softplus-label
 
 multiparam_tanh_approx
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -202,6 +229,8 @@ multiparam_tanh_approx
 .. figure:: activation-swap-multiparam_tanh_approx.png
     :scale: 100 %
     :alt: An adjustable version of tanh_approx.
+
+.. _multiparam-tanh-log1p-label:
 
 multiparam_tanh_log1p
 ^^^^^^^^^^^^^^^^^^^^^
@@ -220,6 +249,8 @@ scaled_log1p
 .. figure:: activation-scaled_log1p.png
     :scale: 100 %
     :alt: A version of log1p with variable scaling (with partially-counterbalancing weights inside and outside the log1p function).
+
+.. _weighted-lu-label:
 
 weighted_lu
 ^^^^^^^^^^^^
@@ -347,28 +378,37 @@ bicentral
 This combination of two sigmoid functions is taken from the article "Taxonomy of neural transfer functions" [taxonomy]_, with adjustments.
 It is uncertain whether it is more suitable for direct use, or for CPPNs.
 
-.. figure:: activation-bicentral.png
+.. figure:: activation-bicentral-tilt-width.png
     :scale: 100 %
-    :alt: A differently-parameterized combination of two sigmoids than bisigmoid.
+    :alt: A combination of two oppositely-aligned sigmoids
 
-.. figure:: activation-swap-bicentral.png
+.. figure:: activation-bicentral-lower-width.png
     :scale: 100 %
-    :alt: A differently-parameterized combination of two sigmoids than bisigmoid.
+    :alt: A combination of two oppositely-aligned sigmoids
 
-bisigmoid
-^^^^^^^^^^
-
-This is a differently-parameterized version of the :ref:`bicentral <bicentral-label>` function. As with that function, it is uncertain whether it is
-more suitable for direct use, or for CPPNs.
-
-.. figure:: activation-bisigmoid.png
+.. figure:: activation-bicentral-lower-tilt.png
     :scale: 100 %
-    :alt: A combination of two oppositely-aligned sigmoids.
+    :alt: A combination of two oppositely-aligned sigmoids
 
-.. figure:: activation-swap-bisigmoid.png
+.. figure:: activation-bicentral-width-tilt.png
     :scale: 100 %
-    :alt: A combination of two oppositely-aligned sigmoids.
+    :alt: A combination of two oppositely-aligned sigmoids
 
+.. figure:: activation-bicentral-width-lower.png
+    :scale: 100 %
+    :alt: A combination of two oppositely-aligned sigmoids
+
+.. figure:: activation-bicentral-tilt-lower.png
+    :scale: 100 %
+    :alt: A combination of two oppositely-aligned sigmoids
+
+fourth_square_abs
+^^^^^^^^^^^^^^^^^^
+
+.. figure:: activation-fourth_square_abs.png
+    :scale: 100 %
+    :alt: A weighted combination of x**4, x**2, and abs
+    :name: fourth-square-abs-label
 
 .. _hat-gauss-rectangular-label:
 
@@ -382,6 +422,8 @@ hat_gauss_rectangular
 .. figure:: activation-swap-hat_gauss_rectangular.png
     :scale: 100 %
     :alt: Weighted mean of hat, multiparam_gauss, and rectangular functions
+
+.. _multiparam-gauss-label:
 
 multiparam_gauss
 ^^^^^^^^^^^^^^^^^^^^

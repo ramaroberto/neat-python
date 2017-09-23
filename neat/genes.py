@@ -1,8 +1,12 @@
 """Handles genes coding for node and connection attributes."""
+import copy
 import warnings
+
+from argparse import Namespace
 from random import random
 
 from neat.attributes import FloatAttribute, BoolAttribute, FuncAttribute
+from neat.six_util import iterkeys
 
 # TODO: There is probably a lot of room for simplification of these classes using metaprogramming.
 # TODO: Evaluate using __slots__ for performance/memory usage improvement.
@@ -15,6 +19,7 @@ class BaseGene(object):
     """
     def __init__(self, key):
         self.key = key
+        self.param_namespace = Namespace() # admittedly only needed for nodes currently...
 
     def __str__(self):
         attrib = ['key'] + [a.name for a in self._gene_attributes]
@@ -45,21 +50,36 @@ class BaseGene(object):
 
     def init_attributes(self, config):
         for a in self._gene_attributes:
-            setattr(self, a.name, a.init_value(config))
+            if isinstance(a, FuncAttribute):
+                setattr(self, a.name, a.init_value(config, param_namespace=self.param_namespace))
+            else:
+                setattr(self, a.name, a.init_value(config))
 
     def mutate(self, config):
         for a in self._gene_attributes:
             v = getattr(self, a.name)
-            setattr(self, a.name, a.mutate_value(v, config))
+            if hasattr(v, 'set_param_namespace'):
+                v.set_param_namespace(self.param_namespace)
+            if isinstance(a, FuncAttribute):
+                setattr(self, a.name, a.mutate_value(v, config,
+                                                     param_namespace=self.param_namespace))
+            else:
+                setattr(self, a.name, a.mutate_value(v, config))
 
     def copy(self):
         new_gene = self.__class__(self.key)
+        for attr_name in iterkeys(vars(self.param_namespace)):
+            setattr(new_gene.param_namespace, attr_name,
+                    copy.deepcopy(getattr(self.param_namespace, attr_name)))
         for a in self._gene_attributes:
             value = getattr(self, a.name)
             if hasattr(value, 'copy'):
                 setattr(new_gene, a.name, value.copy())
             else:
                 setattr(new_gene, a.name, value)
+            new_value = getattr(new_gene, a.name)
+            if hasattr(new_value, 'set_param_namespace'):
+                new_value.set_param_namespace(new_gene.param_namespace)
         return new_gene
 
     def __copy__(self):
@@ -72,6 +92,21 @@ class BaseGene(object):
         # Note: we use "a if random() > 0.5 else b" instead of choice((a, b))
         # here because `choice` is substantially slower.
         new_gene = self.__class__(self.key)
+        for attr_name in iterkeys(vars(self.param_namespace)):
+            if hasattr(gene2.param_namespace, attr_name):
+                if random() > 0.5:
+                    setattr(new_gene.param_namespace, attr_name,
+                            copy.deepcopy(getattr(self.param_namespace, attr_name)))
+                else:
+                    setattr(new_gene.param_namespace, attr_name,
+                            copy.deepcopy(getattr(gene2.param_namespace, attr_name)))
+            else:
+                setattr(new_gene.param_namespace, attr_name,
+                        copy.deepcopy(getattr(self.param_namespace, attr_name)))
+        for attr_name in iterkeys(vars(gene2.param_namespace)):
+            if not hasattr(new_gene.param_namespace, attr_name):
+                setattr(new_gene.param_namespace, attr_name,
+                        copy.deepcopy(getattr(gene2.param_namespace, attr_name)))
         for a in self._gene_attributes:
             if random() > 0.5:
                 value = getattr(self, a.name)
@@ -85,10 +120,15 @@ class BaseGene(object):
                     setattr(new_gene, a.name, gene2_attr.copy())
                 else:
                     setattr(new_gene, a.name, gene2_attr)
+            new_value = getattr(new_gene, a.name)
+            if hasattr(new_value, 'set_param_namespace'):
+                new_value.set_param_namespace(new_gene.param_namespace)
         return new_gene
 
 
 # TODO: Should these be in the nn module?  iznn and ctrnn can have additional attributes.
+# OTOH, can base iznn, others off of DefaultNodeGene instead of BaseGene - helpful for
+# adding information associated with nodes or connections only.
 
 
 class DefaultNodeGene(BaseGene):
@@ -114,7 +154,7 @@ class DefaultNodeGene(BaseGene):
             d += self.aggregation.distance(other.aggregation)
         elif self.aggregation != other.aggregation:
             d += 1.0
-        
+
         return d * config.compatibility_weight_coefficient
 
 

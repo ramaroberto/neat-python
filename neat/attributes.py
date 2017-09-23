@@ -1,5 +1,5 @@
 """Deals with the attributes (variable parameters) of genes"""
-#from __future__ import print_function
+from __future__ import print_function, division
 import copy
 import sys
 import warnings
@@ -9,7 +9,7 @@ from random import choice, gauss, random, uniform
 from neat.config import ConfigParameter
 from neat.six_util import iterkeys, iteritems
 
-if sys.version_info.major > 2:
+if sys.version_info[0] > 2:
     unicode = str # pylint: disable=redefined-builtin
 
 # TODO: There is probably a lot of room for simplification of these classes using metaprogramming.
@@ -190,7 +190,7 @@ class FuncAttribute(BaseAttribute):
 ##    def copy(self):
 ##        return copy.deepcopy(self)
 
-    def init_value(self, config):
+    def init_value(self, config, param_namespace=None):
         default = getattr(config, self.default_name)
 
         if default in (None, 'random'):
@@ -198,7 +198,7 @@ class FuncAttribute(BaseAttribute):
             default = choice(options)
 
         if hasattr(default, 'init_value'): # pragma: no cover
-            default.init_value(config)
+            default.init_value(config, param_namespace=param_namespace)
         elif not isinstance(default, (str, unicode)): # put in test for
             raise RuntimeError("Unknown what to do with value {0!r} for {1!s}".format(default,
                                                                                       self.name))
@@ -206,12 +206,13 @@ class FuncAttribute(BaseAttribute):
             multiparam = config.multiparameterset
 
             if multiparam.is_multiparameter(default, self.name):
-                default = multiparam.init_multiparameter(default, self, config)
+                default = multiparam.init_multiparameter(default, self, config,
+                                                         param_namespace=param_namespace)
 
         return default
 
 
-    def mutate_value(self, value, config):
+    def mutate_value(self, value, config, param_namespace=None):
         mutate_rate = getattr(config, self.mutate_rate_name)
 
         if mutate_rate > 0:
@@ -222,14 +223,15 @@ class FuncAttribute(BaseAttribute):
 
         if hasattr(value, 'mutate_value'):
             #print("Accessing mutate_value function of {!r}".format(value))
-            value.mutate_value(config)
+            value.mutate_value(config, param_namespace=param_namespace)
         elif not isinstance(value, (str, unicode)): # put in test for
             raise RuntimeError("Unknown what to do with value {0!r} for {1!s}".format(value,
                                                                                       self.name))
         elif hasattr(config, 'multiparameterset'):
             multiparam = config.multiparameterset
             if multiparam.is_multiparameter(value, self.name):
-                value = multiparam.init_multiparameter(value, self, config)
+                value = multiparam.init_multiparameter(value, self, config,
+                                                       param_namespace=param_namespace)
 
         return value
 

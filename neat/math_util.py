@@ -4,6 +4,7 @@ from __future__ import division
 import math
 import random
 
+from pprint import saferepr
 from sys import float_info
 
 NORM_EPSILON = math.pow(float_info.epsilon, 0.25) # half-precision works for machine learning
@@ -27,9 +28,9 @@ def median2(values):
     if n <= 2:
         return mean(values)
     values.sort()
-    if (n % 2) == 1:
-        return values[n//2]
     i = n//2
+    if (n % 2) == 1:
+        return values[i]
     return (values[i - 1] + values[i])/2.0
 
 def tmean(values, trim=0.25):
@@ -41,6 +42,8 @@ def tmean(values, trim=0.25):
     """
     values = list(values)
     if (len(values) < 3) or (not trim):
+        if len(values) == 1:
+            return values[0]
         return mean(values)
     elif trim == 0.5:
         return median2(values)
@@ -65,7 +68,7 @@ def tmean(values, trim=0.25):
         center_values = center_values[:-1]
     curr_sum = math.fsum(map(float,center_values))
     div_by = len(center_values)
-    
+
     if (trim_partially > trim_fully):
         curr_sum += values[0]*(trim_partially-trim_fully)
         curr_sum += values[-1]*(trim_partially-trim_fully)
@@ -73,12 +76,14 @@ def tmean(values, trim=0.25):
     return curr_sum/div_by
 
 def variance(values):
+    """Find the population variance."""
     values = list(values)
     m = mean(values)
     return math.fsum((v - m) ** 2 for v in values) / len(values)
 
 
 def stdev(values):
+    """Find the population standard deviation."""
     return math.sqrt(variance(values))
 
 
@@ -92,13 +97,27 @@ def softmax(values):
     inv_s = 1.0 / s
     return [ev * inv_s for ev in e_values]
 
+def check_value_range(var, min_val, max_val, caller, var_name, add_name=None): # DOCUMENT!
+    if not min_val <= var <= max_val:
+        use_caller = caller
+        if add_name is not None:
+            use_caller = caller + '_' + add_name
+        raise ValueError(
+            "{0} for {1} must be between {2:n} and {3:n}, not {4!s}".format(
+                var_name, use_caller, min_val, max_val, saferepr(var)))
+
 def random_proportional_selection(freqs, max_freq=None):
     """Roulette selection - see http://jbn.github.io/fast_proportional_selection/ for analysis"""
     n = len(freqs)
 
     if n == 1:
         return 0
-    elif n == 2:
+
+    if any([1 for x in freqs if x <= 0.0]):
+        raise ValueError(
+            "Freqs may not be 0 or negative ({})".format(saferepr(freqs)))
+
+    if n == 2:
         chance_first = float(freqs[0])/sum(freqs)
         if random.random() < chance_first:
             return 0
@@ -111,6 +130,10 @@ def random_proportional_selection(freqs, max_freq=None):
         min_freq = min(freqs)
         if min_freq == 1:
             return random.choice(range(n))
+    elif max_freq < float_info.epsilon:
+        raise ValueError(
+            "Maximum freq {0!r} is below epsilon {1!r}".format(max_freq,
+                                                               float_info.epsilon))
 
     max_freq = float(max_freq)
 

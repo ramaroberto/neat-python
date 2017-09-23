@@ -268,15 +268,15 @@ class Config(object):
         f.write('# or the experiment itself.  This is the only required section.\n')
         f.write('[NEAT]\n')
         write_pretty_params(f, self, self.__params)
-        
+
         f.write('\n[{0}]\n'.format(self.genome_type.__name__))
         self.genome_type.write_config(f, self.genome_config)
-        
+
         f.write('\n[{0}]\n'.format(self.species_set_type.__name__))
         self.species_set_type.write_config(f, self.species_set_config)
-        
+
         f.write('\n[{0}]\n'.format(self.stagnation_type.__name__))
         self.stagnation_type.write_config(f, self.stagnation_config)
-        
+
         f.write('\n[{0}]\n'.format(self.reproduction_type.__name__))
         self.reproduction_type.write_config(f, self.reproduction_config)

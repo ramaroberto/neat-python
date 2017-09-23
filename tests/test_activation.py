@@ -4,6 +4,8 @@ import math
 import sys
 import warnings
 
+from argparse import Namespace
+
 import neat
 from neat import activations, multiparameter, repr_util
 
@@ -381,9 +383,20 @@ def test_weighted_lu():
 def test_multiparam_softplus():
     assert 0.0 <= activations.multiparam_softplus_activation(-1.0,0.25) <= 0.000123
     assert 1.0 <= activations.multiparam_softplus_activation(1.0,0.25) <= 1.000123
-    assert 0.0 <= activations.multiparam_softplus_activation(-1.0,0.0) <= 0.000123
-    assert 0.0 <= activations.multiparam_softplus_activation(-0.5,0.0) <= 0.000123
-    assert 1.0 <= activations.multiparam_softplus_activation(1.0,0.0) <= 1.000123
+    assert activations.multiparam_softplus_activation(-1.0,0.0) == 0.0
+    assert activations.multiparam_softplus_activation(-0.5,0.0) == 0.0
+    assert activations.multiparam_softplus_activation(0.0,0.0) == 0.0
+    assert activations.multiparam_softplus_activation(0.5,0.0) == 0.5
+    assert activations.multiparam_softplus_activation(1.0,0.0) == 1.0
+    assert_almost_equal(activations.multiparam_softplus_activation(-0.25,0.5),(687/8348))
+    assert_almost_equal(activations.multiparam_softplus_activation(0.0,0.25),(589/6594))
+    assert_almost_equal(activations.multiparam_softplus_activation(-0.5,0.75),(1273/8783))
+    assert_almost_equal(activations.multiparam_softplus_activation(0.0,0.5),(1243/6983))
+    assert_almost_equal(activations.multiparam_softplus_activation(0.25,0.5),(1387/4174))
+    assert_almost_equal(activations.multiparam_softplus_activation(-0.5,1.0),(2371/5844))
+    assert_almost_equal(activations.multiparam_softplus_activation(0.0,1.0),(3793/6105))
+    assert_almost_equal(activations.multiparam_softplus_activation(0.75,0.5),(4261/5581))
+    assert_almost_equal(activations.multiparam_softplus_activation(0.5,1.0),(8098/8941))
     assert_almost_equal(activations.multiparam_softplus_activation(-60.0,1.0),0.0)
     for x in [0.0, 0.25, 0.5, 0.75, 1.0]:
         assert_almost_equal((activations.multiparam_softplus_activation(1.0,x)
@@ -511,6 +524,37 @@ def test_multiparam_sigmoid():
     assert_almost_equal(activations.multiparam_sigmoid_activation(0.5,0.0),(8211/8885))
     assert_almost_equal(activations.multiparam_sigmoid_activation(0.5,-0.5),(8548/8885))
     assert_almost_equal(activations.multiparam_sigmoid_activation(1.0,0.0),(6827/6873))
+
+def test_clamped_step():
+    assert activations.clamped_step_activation(-1.0,1.0) == -1.0
+    assert activations.clamped_step_activation(-0.5,1.0) == -0.5
+    assert activations.clamped_step_activation(0.0,1.0) == 0.0
+    assert activations.clamped_step_activation(0.5,1.0) == 0.5
+    assert activations.clamped_step_activation(1.0,1.0) == 1.0
+    assert activations.clamped_step_activation(-1.0,0.5) == -1.0
+    assert activations.clamped_step_activation(0.0,0.5) == 0.0
+    assert activations.clamped_step_activation(1.0,0.5) == 1.0
+    assert activations.clamped_step_activation(-1.0,0.0) == -1.0
+    assert activations.clamped_step_activation(-0.75,0.0) == -1.0
+    assert activations.clamped_step_activation(-0.5,0.0) == -1.0
+    assert activations.clamped_step_activation(-0.25,0.0) == -0.5
+    assert activations.clamped_step_activation(0.0,0.0) == 0.0
+    assert activations.clamped_step_activation(0.25,0.0) == 0.5
+    assert activations.clamped_step_activation(0.5,0.0) == 1.0
+    assert activations.clamped_step_activation(0.75,0.0) == 1.0
+    assert activations.clamped_step_activation(1.0,0.0) == 1.0
+    assert activations.clamped_step_activation(-1.0,-0.5) == -1.0
+    assert activations.clamped_step_activation(-0.5,-0.5) == -1.0
+    assert activations.clamped_step_activation(0.0,-0.5) == 0.0
+    assert activations.clamped_step_activation(0.5,-0.5) == 1.0
+    assert activations.clamped_step_activation(1.0,-0.5) == 1.0
+    assert activations.clamped_step_activation(-1.0,-1.0) == -1.0
+    assert activations.clamped_step_activation(-0.5,-1.0) == -1.0
+    assert activations.clamped_step_activation(0.0,-1.0) == 0.0
+    assert activations.clamped_step_activation(0.5,-1.0) == 1.0
+    assert activations.clamped_step_activation(1.0,-1.0) == 1.0
+    assert_almost_equal(activations.clamped_step_activation(-0.5,0.5),
+                        -1*activations.clamped_step_activation(0.5,0.5))
 
 
 def test_hat_gauss_rectangular():
@@ -715,6 +759,89 @@ def test_multiparam_tanh_log1p():
     assert_almost_equal(activations.multiparam_tanh_log1p_activation(1.0,0.0,0.5),
                         activations.multiparam_tanh_log1p_activation(1.0,0.0,-0.5))
 
+def test_clamped_log1p_step():
+    assert activations.clamped_log1p_step_activation(0.0,curve=1.0,tilt=1.0) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=1.0,tilt=0.5) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=1.0,tilt=0.0) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=1.0,tilt=-0.5) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=1.0,tilt=-1.0) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.75,tilt=1.0) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.75,tilt=0.0) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.75,tilt=-1.0) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.5,tilt=1.0) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.5,tilt=0.5) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.5,tilt=0.0) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.5,tilt=-0.5) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.5,tilt=-1.0) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.25,tilt=1.0) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.25,tilt=0.0) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.25,tilt=-1.0) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.0,tilt=1.0) == 0.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.0,tilt=0.5) == 0.0
+    assert activations.clamped_log1p_step_activation(-1.0,curve=0.0,tilt=0.0) == -1.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.0,tilt=0.0) == 0.0
+    assert activations.clamped_log1p_step_activation(1.0,curve=0.0,tilt=0.0) == 1.0
+    assert activations.clamped_log1p_step_activation(-1.0,curve=0.0,tilt=-0.5) == -1.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.0,tilt=-0.5) == 0.0
+    assert activations.clamped_log1p_step_activation(1.0,curve=0.0,tilt=-0.5) == 1.0
+    assert activations.clamped_log1p_step_activation(-1.0,curve=0.0,tilt=-1.0) == -1.0
+    assert activations.clamped_log1p_step_activation(-0.5,curve=0.0,tilt=-1.0) == -1.0
+    assert activations.clamped_log1p_step_activation(0.0,curve=0.0,tilt=-1.0) == 0.0
+    assert activations.clamped_log1p_step_activation(0.5,curve=0.0,tilt=-1.0) == 1.0
+    assert activations.clamped_log1p_step_activation(1.0,curve=0.0,tilt=-1.0) == 1.0
+    assert_almost_equal(activations.clamped_log1p_step_activation(-0.5,curve=0.0,tilt=1.0),
+                        -1*activations.clamped_log1p_step_activation(0.5,curve=0.0,tilt=1.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-0.5,curve=1.0,tilt=-1.0),
+                        -1*activations.clamped_log1p_step_activation(0.5,curve=1.0,tilt=-1.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=1.0,tilt=-1.0),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=1.0,tilt=-1.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-0.5,curve=0.5,tilt=1.0),
+                        -1*activations.clamped_log1p_step_activation(0.5,curve=0.5,tilt=1.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-0.5,curve=1.0,tilt=0.0),
+                        -1*activations.clamped_log1p_step_activation(0.5,curve=1.0,tilt=0.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=0.75,tilt=-1.0),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=0.75,tilt=-1.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-0.5,curve=0.5,tilt=0.0),
+                        -1*activations.clamped_log1p_step_activation(0.5,curve=0.5,tilt=0.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-0.5,curve=0.5,tilt=-1.0),
+                        -1*activations.clamped_log1p_step_activation(0.5,curve=0.5,tilt=-1.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=1.0,tilt=-0.5),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=1.0,tilt=-0.5))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=0.5,tilt=-1.0),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=0.5,tilt=-1.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-0.5,curve=1.0,tilt=1.0),
+                        -1*activations.clamped_log1p_step_activation(0.5,curve=1.0,tilt=1.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=0.25,tilt=1.0),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=0.25,tilt=1.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=0.5,tilt=-0.5),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=0.5,tilt=-0.5))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=0.25,tilt=-1.0),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=0.25,tilt=-1.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=0.0,tilt=0.5),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=0.0,tilt=0.5))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=1.0,tilt=0.0),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=1.0,tilt=0.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=0.75,tilt=0.0),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=0.75,tilt=0.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=0.5,tilt=0.0),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=0.5,tilt=0.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=0.25,tilt=0.0),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=0.25,tilt=0.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=0.5,tilt=1.0),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=0.5,tilt=1.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=0.5,tilt=0.5),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=0.5,tilt=0.5))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=1.0,tilt=0.5),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=1.0,tilt=0.5))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=0.75,tilt=1.0),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=0.75,tilt=1.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=1.0,tilt=1.0),
+                        -1*activations.clamped_log1p_step_activation(1.0,curve=1.0,tilt=1.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(-1.0,curve=0.0,tilt=1.0),
+                        activations.clamped_log1p_step_activation(-0.5,curve=0.0,tilt=0.0))
+    assert_almost_equal(activations.clamped_log1p_step_activation(1.0,curve=0.0,tilt=1.0),
+                        activations.clamped_log1p_step_activation(0.5,curve=0.0,tilt=0.0))
+
 
 def test_multiparam_pow():
     assert activations.multiparam_pow_activation(-1.0,1.0) == -1.0
@@ -901,155 +1028,289 @@ def test_multiparam_gauss():
                                     activations.multiparam_gauss_activation(-z,a,b))
 
 def test_bicentral():
-    assert activations.bicentral_activation(-1.0,0.5,1.0) == 0.0
-    assert activations.bicentral_activation(0.5,0.5,1.0) == 0.5
-    assert activations.bicentral_activation(-0.5,0.5,-1.0) == 0.5
-    assert activations.bicentral_activation(1.0,0.5,-1.0) == 0.0
-    assert activations.bicentral_activation(-1.0,0.25,1.0) == 0.0
-    assert activations.bicentral_activation(1.0,0.25,-1.0) == 0.0
-    assert activations.bicentral_activation(-1.0,0.0,1.0) == 0.0
-    assert activations.bicentral_activation(0.5,0.0,1.0) == 0.5
-    assert activations.bicentral_activation(-1.0,0.0,0.5) == 0.0
-    assert activations.bicentral_activation(-1.0,0.0,0.0) == 0.0
-    assert activations.bicentral_activation(-0.5,0.0,0.0) == 0.5
-    assert activations.bicentral_activation(0.0,0.0,0.0) == 1.0
-    assert activations.bicentral_activation(0.5,0.0,0.0) == 0.5
-    assert activations.bicentral_activation(1.0,0.0,0.0) == 0.0
-    assert activations.bicentral_activation(1.0,0.0,-0.5) == 0.0
-    assert activations.bicentral_activation(-0.5,0.0,-1.0) == 0.5
-    assert activations.bicentral_activation(1.0,0.0,-1.0) == 0.0
-    assert_almost_equal(activations.bicentral_activation(0.0,0.75,0.0),(2777/4696))
-    assert_almost_equal(activations.bicentral_activation(0.0,0.5,0.0),(7777/9077))
-    assert_almost_equal(activations.bicentral_activation(0.0,0.25,0.0),(7956/8131))
-    assert_almost_equal(activations.bicentral_activation(-1.0,0.75,1.0),
-                        activations.bicentral_activation(1.0,0.75,-1.0))
-    assert_almost_equal(activations.bicentral_activation(-1.0,0.5,0.5),
-                        activations.bicentral_activation(1.0,0.5,-0.5))
-    assert_almost_equal(activations.bicentral_activation(-1.0,1.0,1.0),
-                        activations.bicentral_activation(1.0,1.0,-1.0))
-    assert_almost_equal(activations.bicentral_activation(-1.0,0.5,0.0),
-                        activations.bicentral_activation(1.0,0.5,0.0))
-    assert_almost_equal(activations.bicentral_activation(-1.0,1.0,0.5),
-                        activations.bicentral_activation(1.0,1.0,-0.5))
-    assert_almost_equal(activations.bicentral_activation(-1.0,0.75,0.0),
-                        activations.bicentral_activation(1.0,0.75,0.0))
-    assert_almost_equal(activations.bicentral_activation(-0.5,1.0,1.0),
-                        activations.bicentral_activation(0.5,1.0,-1.0))
-    assert_almost_equal(activations.bicentral_activation(-1.0,1.0,0.0),
-                        activations.bicentral_activation(1.0,1.0,0.0))
-    assert_almost_equal(activations.bicentral_activation(1.0,0.5,1.0),
-                        activations.bicentral_activation(-1.0,0.5,-1.0))
-    assert_almost_equal(activations.bicentral_activation(0.0,1.0,0.5),
-                        activations.bicentral_activation(0.0,1.0,-0.5))
-    assert_almost_equal(activations.bicentral_activation(1.0,1.0,0.5),
-                        activations.bicentral_activation(-1.0,1.0,-0.5))
-    assert_almost_equal(activations.bicentral_activation(0.0,1.0,1.0),
-                        activations.bicentral_activation(0.0,1.0,-1.0))
-    assert_almost_equal(activations.bicentral_activation(1.0,0.75,1.0),
-                        activations.bicentral_activation(-1.0,0.75,-1.0))
-    assert_almost_equal(activations.bicentral_activation(1.0,1.0,1.0),
-                        activations.bicentral_activation(-1.0,1.0,-1.0))
-    assert_almost_equal(activations.bicentral_activation(1.0,0.0,1.0),
-                        activations.bicentral_activation(-1.0,0.0,-1.0))
-    assert_almost_equal(activations.bicentral_activation(0.0,0.75,1.0),
-                        activations.bicentral_activation(0.0,0.75,-1.0))
-    assert_almost_equal(activations.bicentral_activation(0.0,0.5,1.0),
-                        activations.bicentral_activation(0.0,0.5,-1.0))
-    assert_almost_equal(activations.bicentral_activation(0.0,0.5,0.5),
-                        activations.bicentral_activation(0.0,0.5,-0.5))
-    assert_almost_equal(activations.bicentral_activation(0.0,0.25,1.0),
-                        activations.bicentral_activation(0.0,0.25,-1.0))
-    assert_almost_equal(activations.bicentral_activation(0.0,0.0,1.0),
-                        activations.bicentral_activation(0.0,0.0,-1.0))
-    assert_almost_equal(activations.bicentral_activation(0.0,0.0,0.5),
-                        activations.bicentral_activation(0.0,0.0,-0.5))
-    assert_almost_equal(activations.bicentral_activation(1.0,0.0,0.5),
-                        activations.bicentral_activation(-1.0,0.0,-0.5))
-    assert_almost_equal(activations.bicentral_activation(1.0,0.25,1.0),
-                        activations.bicentral_activation(-1.0,0.25,-1.0))
-    assert_almost_equal(activations.bicentral_activation(-0.5,0.5,1.0),
-                        activations.bicentral_activation(0.5,0.5,-1.0))
-    assert_almost_equal(activations.bicentral_activation(-0.5,0.0,1.0),
-                        activations.bicentral_activation(0.5,0.0,-1.0))
+    assert activations.bicentral_activation(-1.0,lower=0.5,tilt=1.0,width=0.5) == 0.0
+    assert activations.bicentral_activation(0.5,lower=0.5,tilt=1.0,width=0.5) == 0.5
+    assert activations.bicentral_activation(-0.5,lower=0.5,tilt=-1.0,width=0.5) == 0.5
+    assert activations.bicentral_activation(1.0,lower=0.5,tilt=-1.0,width=0.5) == 0.0
+    assert activations.bicentral_activation(-1.0,lower=0.25,tilt=1.0,width=0.5) == 0.0
+    assert activations.bicentral_activation(1.0,lower=0.25,tilt=-1.0,width=0.5) == 0.0
+    assert activations.bicentral_activation(-1.0,lower=0.0,tilt=1.0,width=0.5) == 0.0
+    assert activations.bicentral_activation(0.5,lower=0.0,tilt=1.0,width=0.5) == 0.5
+    assert activations.bicentral_activation(-1.0,lower=0.0,tilt=0.5,width=0.5) == 0.0
+    assert activations.bicentral_activation(-1.0,lower=0.0,tilt=0.0,width=0.5) == 0.0
+    assert activations.bicentral_activation(-0.5,lower=0.0,tilt=0.0,width=0.5) == 0.5
+    assert activations.bicentral_activation(0.0,lower=0.0,tilt=0.0,width=0.5) == 1.0
+    assert activations.bicentral_activation(0.5,lower=0.0,tilt=0.0,width=0.5) == 0.5
+    assert activations.bicentral_activation(1.0,lower=0.0,tilt=0.0,width=0.5) == 0.0
+    assert activations.bicentral_activation(1.0,lower=0.0,tilt=-0.5,width=0.5) == 0.0
+    assert activations.bicentral_activation(-0.5,lower=0.0,tilt=-1.0,width=0.5) == 0.5
+    assert activations.bicentral_activation(1.0,lower=0.0,tilt=-1.0,width=0.5) == 0.0
+    assert activations.bicentral_activation(0.0,lower=1.0,tilt=0.0,width=0.0) == 0.125
+    assert activations.bicentral_activation(0.0,lower=0.75,tilt=0.0,width=0.0) == 0.1875
+    assert activations.bicentral_activation(0.0,lower=0.5,tilt=0.0,width=0.0) == 0.25
+    assert activations.bicentral_activation(-1.0,lower=0.25,tilt=0.0,width=1.0) == 0.5
+    assert activations.bicentral_activation(1.0,lower=0.25,tilt=0.0,width=1.0) == 0.5
+    assert 0.0 <= activations.bicentral_activation(-1.0,lower=0.25,tilt=0.0,width=0.0) <= 0.000123
+    assert activations.bicentral_activation(0.0,lower=0.25,tilt=0.0,width=0.0) == 0.25
+    assert 0.0 <= activations.bicentral_activation(1.0,lower=0.25,tilt=0.0,width=0.0) <= 0.000123
+    assert activations.bicentral_activation(-1.0,lower=0.0,tilt=0.0,width=1.0) == 0.5
+    assert activations.bicentral_activation(-0.5,lower=0.0,tilt=0.0,width=1.0) == 1.0
+    assert activations.bicentral_activation(0.0,lower=0.0,tilt=0.0,width=1.0) == 1.0
+    assert activations.bicentral_activation(0.5,lower=0.0,tilt=0.0,width=1.0) == 1.0
+    assert activations.bicentral_activation(1.0,lower=0.0,tilt=0.0,width=1.0) == 0.5
+    assert activations.bicentral_activation(-1.0,lower=0.0,tilt=0.0,width=0.75) == 0.0
+    assert activations.bicentral_activation(0.0,lower=0.0,tilt=0.0,width=0.75) == 1.0
+    assert activations.bicentral_activation(1.0,lower=0.0,tilt=0.0,width=0.75) == 0.0
+    assert activations.bicentral_activation(-1.0,lower=0.0,tilt=0.0,width=0.25) == 0.0
+    assert activations.bicentral_activation(0.0,lower=0.0,tilt=0.0,width=0.25) == 1.0
+    assert activations.bicentral_activation(1.0,lower=0.0,tilt=0.0,width=0.25) == 0.0
+    assert activations.bicentral_activation(-1.0,lower=0.0,tilt=0.0,width=0.0) == 0.0
+    assert activations.bicentral_activation(-0.5,lower=0.0,tilt=0.0,width=0.0) == 0.0
+    assert activations.bicentral_activation(0.0,lower=0.0,tilt=0.0,width=0.0) == 0.25
+    assert activations.bicentral_activation(0.5,lower=0.0,tilt=0.0,width=0.0) == 0.0
+    assert activations.bicentral_activation(1.0,lower=0.0,tilt=0.0,width=0.0) == 0.0
+    assert activations.bicentral_activation(1.0,lower=0.5,tilt=1.0,width=1.0) == 0.5
+    assert activations.bicentral_activation(-1.0,lower=0.5,tilt=1.0,width=0.75) == 0.0
+    assert activations.bicentral_activation(-1.0,lower=0.5,tilt=1.0,width=0.25) == 0.0
+    assert activations.bicentral_activation(-1.0,lower=0.5,tilt=1.0,width=0.0) == 0.0
+    assert activations.bicentral_activation(-0.5,lower=0.5,tilt=1.0,width=0.0) == 0.0
+    assert activations.bicentral_activation(0.0,lower=0.5,tilt=1.0,width=0.0) == 0.25
+    assert activations.bicentral_activation(1.0,lower=0.5,tilt=0.5,width=1.0) == 0.5
+    assert 0.0 <= activations.bicentral_activation(-1.0,lower=0.5,tilt=0.5,width=0.0) <= 0.000123
+    assert activations.bicentral_activation(0.0,lower=0.5,tilt=0.5,width=0.0) == 0.25
+    assert activations.bicentral_activation(-1.0,lower=0.5,tilt=-0.5,width=1.0) == 0.5
+    assert activations.bicentral_activation(0.0,lower=0.5,tilt=-0.5,width=0.0) == 0.25
+    assert 0.0 <= activations.bicentral_activation(1.0,lower=0.5,tilt=-0.5,width=0.0) <= 0.000123
+    assert activations.bicentral_activation(-1.0,lower=0.5,tilt=-1.0,width=1.0) == 0.5
+    assert activations.bicentral_activation(1.0,lower=0.5,tilt=-1.0,width=0.75) == 0.0
+    assert activations.bicentral_activation(1.0,lower=0.5,tilt=-1.0,width=0.25) == 0.0
+    assert activations.bicentral_activation(0.0,lower=0.5,tilt=-1.0,width=0.0) == 0.25
+    assert activations.bicentral_activation(0.5,lower=0.5,tilt=-1.0,width=0.0) == 0.0
+    assert activations.bicentral_activation(1.0,lower=0.5,tilt=-1.0,width=0.0) == 0.0
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.75,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(1.0,lower=0.75,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=0.5,width=0.5),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=-0.5,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=0.0,width=0.0),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=0.0,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=1.0,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(1.0,lower=1.0,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=0.0,width=0.25),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=0.0,width=0.25))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=1.0,tilt=0.5,width=0.5),
+                        activations.bicentral_activation(1.0,lower=1.0,tilt=-0.5,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=0.5,tilt=0.0,width=0.0),
+                        activations.bicentral_activation(0.5,lower=0.5,tilt=0.0,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=0.0,width=0.5),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=0.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.0,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(-1.0,lower=0.0,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.75,tilt=0.0,width=0.0),
+                        activations.bicentral_activation(1.0,lower=0.75,tilt=0.0,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=1.0,tilt=0.0,width=0.0),
+                        activations.bicentral_activation(1.0,lower=1.0,tilt=0.0,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=1.0,tilt=0.0,width=0.0),
+                        activations.bicentral_activation(0.5,lower=1.0,tilt=0.0,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=1.0,tilt=0.0,width=0.25),
+                        activations.bicentral_activation(1.0,lower=1.0,tilt=0.0,width=0.25))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=0.0,width=0.75),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=0.0,width=0.75))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=1.0,tilt=0.0,width=0.5),
+                        activations.bicentral_activation(1.0,lower=1.0,tilt=0.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.5,tilt=0.5,width=0.0),
+                        activations.bicentral_activation(-1.0,lower=0.5,tilt=-0.5,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.75,tilt=0.0,width=0.5),
+                        activations.bicentral_activation(1.0,lower=0.75,tilt=0.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=1.0,tilt=0.0,width=0.25),(1067/6894))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=1.0,tilt=0.0,width=0.75),
+                        activations.bicentral_activation(1.0,lower=1.0,tilt=0.0,width=0.75))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=1.0,tilt=0.0,width=0.5),
+                        activations.bicentral_activation(0.5,lower=1.0,tilt=0.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=1.0,tilt=0.0,width=1.0),
+                        activations.bicentral_activation(1.0,lower=1.0,tilt=0.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=1.0,tilt=0.5,width=0.5),
+                        activations.bicentral_activation(0.0,lower=1.0,tilt=-0.5,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=1.0,tilt=0.5,width=0.5),
+                        activations.bicentral_activation(-1.0,lower=1.0,tilt=-0.5,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=1.0,tilt=0.0,width=1.0),
+                        activations.bicentral_activation(0.5,lower=1.0,tilt=0.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=1.0,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(0.5,lower=1.0,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.5,tilt=1.0,width=0.0),
+                        activations.bicentral_activation(-1.0,lower=0.5,tilt=-1.0,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=0.5,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(0.5,lower=0.5,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.75,tilt=0.0,width=1.0),
+                        activations.bicentral_activation(1.0,lower=0.75,tilt=0.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.5,tilt=1.0,width=0.25),
+                        activations.bicentral_activation(-1.0,lower=0.5,tilt=-1.0,width=0.25))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=1.0,width=1.0),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=-1.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.75,tilt=0.0,width=0.5),(3396/7657))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.5,tilt=1.0,width=0.75),
+                        activations.bicentral_activation(-1.0,lower=0.5,tilt=-1.0,width=0.75))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=0.5,width=1.0),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=-0.5,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=1.0,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(0.0,lower=1.0,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.75,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(-1.0,lower=0.75,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=1.0,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(-1.0,lower=1.0,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=0.0,width=1.0),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=0.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.75,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(0.0,lower=0.75,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.75,tilt=0.0,width=1.0),(1077/1976))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.5,tilt=1.0,width=0.25),
+                        activations.bicentral_activation(0.0,lower=0.5,tilt=-1.0,width=0.25))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.5,tilt=1.0,width=0.75),
+                        activations.bicentral_activation(0.0,lower=0.5,tilt=-1.0,width=0.75))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.5,tilt=1.0,width=1.0),
+                        activations.bicentral_activation(0.0,lower=0.5,tilt=-1.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=0.5,tilt=1.0,width=1.0),
+                        activations.bicentral_activation(0.5,lower=0.5,tilt=-1.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.5,tilt=0.5,width=0.5),
+                        activations.bicentral_activation(0.0,lower=0.5,tilt=-0.5,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.25,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(0.0,lower=0.25,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.5,tilt=0.5,width=1.0),
+                        activations.bicentral_activation(0.0,lower=0.5,tilt=-0.5,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.5,tilt=0.0,width=0.5),(7777/9077))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=0.5,tilt=0.0,width=1.0),
+                        activations.bicentral_activation(0.5,lower=0.5,tilt=0.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.0,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(0.0,lower=0.0,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.25,tilt=0.0,width=0.5),(7956/8131))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.0,tilt=0.5,width=0.5),
+                        activations.bicentral_activation(0.0,lower=0.0,tilt=-0.5,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.25,tilt=0.0,width=1.0),(5003/5004))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.75,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(1.0,lower=0.75,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=0.5,width=0.5),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=-0.5,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=0.0,width=0.0),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=0.0,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=1.0,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(1.0,lower=1.0,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=0.0,width=0.25),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=0.0,width=0.25))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=1.0,tilt=0.5,width=0.5),
+                        activations.bicentral_activation(1.0,lower=1.0,tilt=-0.5,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=0.5,tilt=0.0,width=0.0),
+                        activations.bicentral_activation(0.5,lower=0.5,tilt=0.0,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=0.0,width=0.5),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=0.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.0,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(-1.0,lower=0.0,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.75,tilt=0.0,width=0.0),
+                        activations.bicentral_activation(1.0,lower=0.75,tilt=0.0,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=1.0,tilt=0.0,width=0.0),
+                        activations.bicentral_activation(1.0,lower=1.0,tilt=0.0,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=1.0,tilt=0.0,width=0.0),
+                        activations.bicentral_activation(0.5,lower=1.0,tilt=0.0,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=1.0,tilt=0.0,width=0.25),
+                        activations.bicentral_activation(1.0,lower=1.0,tilt=0.0,width=0.25))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=0.0,width=0.75),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=0.0,width=0.75))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=1.0,tilt=0.0,width=0.5),
+                        activations.bicentral_activation(1.0,lower=1.0,tilt=0.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.5,tilt=0.5,width=0.0),
+                        activations.bicentral_activation(-1.0,lower=0.5,tilt=-0.5,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.75,tilt=0.0,width=0.5),
+                        activations.bicentral_activation(1.0,lower=0.75,tilt=0.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=1.0,tilt=0.0,width=0.75),
+                        activations.bicentral_activation(1.0,lower=1.0,tilt=0.0,width=0.75))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=1.0,tilt=0.0,width=0.5),
+                        activations.bicentral_activation(0.5,lower=1.0,tilt=0.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=1.0,tilt=0.0,width=1.0),
+                        activations.bicentral_activation(1.0,lower=1.0,tilt=0.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=1.0,tilt=0.5,width=0.5),
+                        activations.bicentral_activation(0.0,lower=1.0,tilt=-0.5,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=1.0,tilt=0.5,width=0.5),
+                        activations.bicentral_activation(-1.0,lower=1.0,tilt=-0.5,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=1.0,tilt=0.0,width=1.0),
+                        activations.bicentral_activation(0.5,lower=1.0,tilt=0.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=1.0,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(0.5,lower=1.0,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.5,tilt=1.0,width=0.0),
+                        activations.bicentral_activation(-1.0,lower=0.5,tilt=-1.0,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=0.5,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(0.5,lower=0.5,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.75,tilt=0.0,width=1.0),
+                        activations.bicentral_activation(1.0,lower=0.75,tilt=0.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.5,tilt=1.0,width=0.25),
+                        activations.bicentral_activation(-1.0,lower=0.5,tilt=-1.0,width=0.25))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=1.0,width=1.0),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=-1.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.5,tilt=1.0,width=0.75),
+                        activations.bicentral_activation(-1.0,lower=0.5,tilt=-1.0,width=0.75))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=0.5,width=1.0),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=-0.5,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=1.0,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(0.0,lower=1.0,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.75,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(-1.0,lower=0.75,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=1.0,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(-1.0,lower=1.0,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=0.0,width=1.0),
+                        activations.bicentral_activation(1.0,lower=0.5,tilt=0.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.75,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(0.0,lower=0.75,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.5,tilt=1.0,width=0.25),
+                        activations.bicentral_activation(0.0,lower=0.5,tilt=-1.0,width=0.25))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.5,tilt=1.0,width=0.75),
+                        activations.bicentral_activation(0.0,lower=0.5,tilt=-1.0,width=0.75))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.5,tilt=1.0,width=1.0),
+                        activations.bicentral_activation(0.0,lower=0.5,tilt=-1.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=0.5,tilt=1.0,width=1.0),
+                        activations.bicentral_activation(0.5,lower=0.5,tilt=-1.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.5,tilt=0.5,width=0.5),
+                        activations.bicentral_activation(0.0,lower=0.5,tilt=-0.5,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.25,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(0.0,lower=0.25,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.5,tilt=0.5,width=1.0),
+                        activations.bicentral_activation(0.0,lower=0.5,tilt=-0.5,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(-0.5,lower=0.5,tilt=0.0,width=1.0),
+                        activations.bicentral_activation(0.5,lower=0.5,tilt=0.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.0,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(0.0,lower=0.0,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.0,tilt=0.5,width=0.5),
+                        activations.bicentral_activation(0.0,lower=0.0,tilt=-0.5,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.0,tilt=0.5,width=0.5),
+                        activations.bicentral_activation(-1.0,lower=0.0,tilt=-0.5,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.25,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(-1.0,lower=0.25,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(-1.0,lower=0.5,tilt=-1.0,width=0.5),
+                        activations.bicentral_activation(-0.5,lower=0.5,tilt=-1.0,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(1.0,lower=0.5,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(0.5,lower=0.5,tilt=1.0,width=0.0))
+    assert_almost_equal(activations.bicentral_activation(0.5,lower=1.0,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(-0.5,lower=1.0,tilt=-1.0,width=0.5))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.5,tilt=-1.0,width=0.5),
+                        activations.bicentral_activation(-0.5,lower=0.5,tilt=-1.0,width=1.0))
+    assert_almost_equal(activations.bicentral_activation(0.0,lower=0.5,tilt=1.0,width=0.5),
+                        activations.bicentral_activation(0.5,lower=0.5,tilt=1.0,width=1.0))
 
-def test_bisigmoid():
-    assert activations.bisigmoid_activation(1.0,1.0,1.0) == 0.5
-    assert activations.bisigmoid_activation(-1.0,1.0,0.75) == 0.0
-    assert activations.bisigmoid_activation(-1.0,1.0,0.5) == 0.0
-    assert activations.bisigmoid_activation(0.5,1.0,0.5) == 0.5
-    assert activations.bisigmoid_activation(-1.0,1.0,0.25) == 0.0
-    assert activations.bisigmoid_activation(-1.0,1.0,0.0) == 0.0
-    assert activations.bisigmoid_activation(-0.5,1.0,0.0) == 0.0
-    assert activations.bisigmoid_activation(0.0,1.0,0.0) == 0.25
-    assert activations.bisigmoid_activation(1.0,0.5,1.0) == 0.5
-    assert activations.bisigmoid_activation(-1.0,0.5,0.5) == 0.0
-    assert activations.bisigmoid_activation(-1.0,0.5,0.0) == 0.0
-    assert activations.bisigmoid_activation(0.0,0.5,0.0) == 0.25
-    assert activations.bisigmoid_activation(0.0,0.0,0.0) == 0.25
-    assert activations.bisigmoid_activation(-1.0,-0.5,1.0) == 0.5
-    assert activations.bisigmoid_activation(1.0,-0.5,0.5) == 0.0
-    assert activations.bisigmoid_activation(0.0,-0.5,0.0) == 0.25
-    assert activations.bisigmoid_activation(1.0,-0.5,0.0) == 0.0
-    assert activations.bisigmoid_activation(-1.0,-1.0,1.0) == 0.5
-    assert activations.bisigmoid_activation(1.0,-1.0,0.75) == 0.0
-    assert activations.bisigmoid_activation(-0.5,-1.0,0.5) == 0.5
-    assert activations.bisigmoid_activation(1.0,-1.0,0.5) == 0.0
-    assert activations.bisigmoid_activation(1.0,-1.0,0.25) == 0.0
-    assert activations.bisigmoid_activation(0.0,-1.0,0.0) == 0.25
-    assert activations.bisigmoid_activation(0.5,-1.0,0.0) == 0.0
-    assert activations.bisigmoid_activation(1.0,-1.0,0.0) == 0.0
-    assert_almost_equal(activations.bisigmoid_activation(0.0,0.0,0.5),(7777/9077))
-    assert_almost_equal(activations.bisigmoid_activation(-1.0,0.0,0.0),
-                        activations.bisigmoid_activation(1.0,0.0,0.0))
-    assert_almost_equal(activations.bisigmoid_activation(-1.0,0.0,0.25),
-                        activations.bisigmoid_activation(1.0,0.0,0.25))
-    assert_almost_equal(activations.bisigmoid_activation(-0.5,0.0,0.0),
-                        activations.bisigmoid_activation(0.5,0.0,0.0))
-    assert_almost_equal(activations.bisigmoid_activation(-1.0,0.0,0.5),
-                        activations.bisigmoid_activation(1.0,0.0,0.5))
-    assert_almost_equal(activations.bisigmoid_activation(-1.0,0.0,0.75),
-                        activations.bisigmoid_activation(1.0,0.0,0.75))
-    assert_almost_equal(activations.bisigmoid_activation(-0.5,1.0,0.5),
-                        activations.bisigmoid_activation(0.5,-1.0,0.5))
-    assert_almost_equal(activations.bisigmoid_activation(1.0,0.5,0.0),
-                        activations.bisigmoid_activation(-1.0,-0.5,0.0))
-    assert_almost_equal(activations.bisigmoid_activation(-1.0,1.0,1.0),
-                        activations.bisigmoid_activation(1.0,-1.0,1.0))
-    assert_almost_equal(activations.bisigmoid_activation(1.0,0.5,0.5),
-                        activations.bisigmoid_activation(-1.0,-0.5,0.5))
-    assert_almost_equal(activations.bisigmoid_activation(-1.0,0.5,1.0),
-                        activations.bisigmoid_activation(1.0,-0.5,1.0))
-    assert_almost_equal(activations.bisigmoid_activation(1.0,1.0,0.0),
-                        activations.bisigmoid_activation(-1.0,-1.0,0.0))
-    assert_almost_equal(activations.bisigmoid_activation(1.0,1.0,0.25),
-                        activations.bisigmoid_activation(-1.0,-1.0,0.25))
-    assert_almost_equal(activations.bisigmoid_activation(-0.5,0.0,0.5),
-                        activations.bisigmoid_activation(0.5,0.0,0.5))
-    assert_almost_equal(activations.bisigmoid_activation(1.0,1.0,0.75),
-                        activations.bisigmoid_activation(-1.0,-1.0,0.75))
-    assert_almost_equal(activations.bisigmoid_activation(-1.0,0.0,1.0),
-                        activations.bisigmoid_activation(1.0,0.0,1.0))
-    assert_almost_equal(activations.bisigmoid_activation(0.0,1.0,0.25),
-                        activations.bisigmoid_activation(0.0,-1.0,0.25))
-    assert_almost_equal(activations.bisigmoid_activation(0.0,1.0,0.75),
-                        activations.bisigmoid_activation(0.0,-1.0,0.75))
-    assert_almost_equal(activations.bisigmoid_activation(0.0,1.0,1.0),
-                        activations.bisigmoid_activation(0.0,-1.0,1.0))
-    assert_almost_equal(activations.bisigmoid_activation(-0.5,1.0,1.0),
-                        activations.bisigmoid_activation(0.5,-1.0,1.0))
-    assert_almost_equal(activations.bisigmoid_activation(0.0,0.5,0.5),
-                        activations.bisigmoid_activation(0.0,-0.5,0.5))
-    assert_almost_equal(activations.bisigmoid_activation(0.0,0.5,1.0),
-                        activations.bisigmoid_activation(0.0,-0.5,1.0))
-    assert_almost_equal(activations.bisigmoid_activation(-0.5,0.0,1.0),
-                        activations.bisigmoid_activation(0.5,0.0,1.0))
-    assert_almost_equal(activations.bisigmoid_activation(-1.0,-1.0,0.5),
-                        activations.bisigmoid_activation(-0.5,-1.0,0.0))
-    assert_almost_equal(activations.bisigmoid_activation(1.0,1.0,0.5),
-                        activations.bisigmoid_activation(0.5,1.0,0.0))
-    assert_almost_equal(activations.bisigmoid_activation(0.0,1.0,0.5),
-                        activations.bisigmoid_activation(-0.5,-1.0,1.0))
-
+def test_fourth_square_abs():
+    for curve in [0.0,0.25,0.5,0.75,1.0]:
+        assert activations.fourth_square_abs_activation(0.0,curve) == 0.0
+        assert activations.fourth_square_abs_activation(1.0,curve) == 1.0
+        assert activations.fourth_square_abs_activation(-1.0,curve) == 1.0
+    assert activations.fourth_square_abs_activation(-0.5,1.0) == 0.0625
+    assert activations.fourth_square_abs_activation(0.5,1.0) == 0.0625
+    assert activations.fourth_square_abs_activation(-0.5,0.75) == 0.15625
+    assert activations.fourth_square_abs_activation(0.5,0.75) == 0.15625
+    assert activations.fourth_square_abs_activation(-0.75,0.5) == 0.5625
+    assert activations.fourth_square_abs_activation(-0.5,0.5) == 0.25
+    assert activations.fourth_square_abs_activation(-0.25,0.5) == 0.0625
+    assert activations.fourth_square_abs_activation(0.25,0.5) == 0.0625
+    assert activations.fourth_square_abs_activation(0.5,0.5) == 0.25
+    assert activations.fourth_square_abs_activation(0.75,0.5) == 0.5625
+    assert activations.fourth_square_abs_activation(-0.5,0.25) == 0.375
+    assert activations.fourth_square_abs_activation(0.5,0.25) == 0.375
+    assert activations.fourth_square_abs_activation(-0.5,0.0) == 0.5
+    assert activations.fourth_square_abs_activation(0.5,0.0) == 0.5
 
 def plus_activation(x):
     """ Not useful - just a check. """
@@ -1085,10 +1346,10 @@ NORM_ACT_FUNC = """sigmoid tanh sigmoid_approx tanh_approx sin gauss relu identi
                    log expanded_log skewed_log1p log1p exp abs hat square cube square_wave
                    triangle_wave rectangular""".split()
 MULT_ACT_FUNC = """multiparam_relu multiparam_relu_softplus multiparam_elu weighted_lu
-                   clamped_tanh_step multiparam_sigmoid hat_gauss_rectangular
-                   scaled_expanded_log multiparam_log_inv scaled_log1p multiparam_tanh_log1p
-                   multiparam_pow wave multiparam_tanh_approx multiparam_sigmoid_approx
-                   multiparam_gauss bicentral bisigmoid""".split()
+                   clamped_tanh_step clamped_step clamped_log1p_step multiparam_sigmoid
+                   hat_gauss_rectangular scaled_expanded_log multiparam_log_inv scaled_log1p
+                   multiparam_tanh_log1p multiparam_pow wave multiparam_tanh_approx bicentral
+                   multiparam_sigmoid_approx multiparam_gauss fourth_square_abs""".split()
 
 def test_function_set():
     m = multiparameter.MultiParameterSet('activation')
@@ -1140,12 +1401,8 @@ def test_get_MPF():
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    assert config.genome_config.get_activation_MPF('multiparam_relu') is not None
-    assert config.genome_config.get_activation_MPF('multiparam_relu_softplus') is not None
-    assert config.genome_config.get_activation_MPF('multiparam_elu') is not None
-    assert config.genome_config.get_activation_MPF('weighted_lu') is not None
-    assert config.genome_config.get_activation_MPF('clamped_tanh_step') is not None
-    assert config.genome_config.get_activation_MPF('multiparam_sigmoid') is not None
+    for func in MULT_ACT_FUNC:
+        assert config.genome_config.get_activation_MPF(func) is not None
 
     try:
         ignored = config.genome_config.get_activation_MPF('foo')
@@ -1161,12 +1418,11 @@ def test_get_Evolved_MPF_simple():
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    assert config.genome_config.get_activation_Evolved_MPF('multiparam_relu') is not None
-    assert config.genome_config.get_activation_Evolved_MPF('multiparam_relu_softplus') is not None
-    assert config.genome_config.get_activation_Evolved_MPF('multiparam_elu') is not None
-    assert config.genome_config.get_activation_Evolved_MPF('weighted_lu') is not None
-    assert config.genome_config.get_activation_Evolved_MPF('clamped_tanh_step') is not None
-    assert config.genome_config.get_activation_Evolved_MPF('multiparam_sigmoid') is not None
+    param_namespace=Namespace()
+
+    for func in MULT_ACT_FUNC:
+        assert config.genome_config.get_activation_Evolved_MPF(func,
+                                                               param_namespace=param_namespace) is not None
 
     try:
         ignored = config.genome_config.get_activation_Evolved_MPF('foo')
@@ -1182,12 +1438,20 @@ def test_get_Evolved_MPF_complex():
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    assert config.genome_config.get_activation_Evolved_MPF('multiparam_relu(0.5)') is not None
-    assert config.genome_config.get_activation_Evolved_MPF('multiparam_relu_softplus(0.5,0.5)') is not None
-    assert config.genome_config.get_activation_Evolved_MPF('multiparam_elu(0.5,0.5)') is not None
-    assert config.genome_config.get_activation_Evolved_MPF('weighted_lu(0.5,0.5)') is not None
-    assert config.genome_config.get_activation_Evolved_MPF('clamped_tanh_step(0.5)') is not None
-    assert config.genome_config.get_activation_Evolved_MPF('multiparam_sigmoid(0.5)') is not None
+    param_namespace=Namespace()
+
+    assert config.genome_config.get_activation_Evolved_MPF('multiparam_relu(0.5)',
+                                                           param_namespace=param_namespace) is not None
+    assert config.genome_config.get_activation_Evolved_MPF('multiparam_relu_softplus(0.5,0.5)',
+                                                           param_namespace=param_namespace) is not None
+    assert config.genome_config.get_activation_Evolved_MPF('multiparam_elu(0.5,0.5)',
+                                                           param_namespace=param_namespace) is not None
+    assert config.genome_config.get_activation_Evolved_MPF('weighted_lu(0.5,0.5)',
+                                                           param_namespace=param_namespace) is not None
+    assert config.genome_config.get_activation_Evolved_MPF('clamped_tanh_step(0.5)',
+                                                           param_namespace=param_namespace) is not None
+    assert config.genome_config.get_activation_Evolved_MPF('multiparam_sigmoid(0.5)',
+                                                           param_namespace=param_namespace) is not None
 
     try:
         ignored = config.genome_config.get_activation_Evolved_MPF('foo(0.5)')
@@ -1203,8 +1467,10 @@ def test_get_Evolved_MPF_complex():
     else:
         raise Exception("Should have had a RuntimeError/derived for get_activation_Evolved_MPF 'multiparam_relu(0.5,0.5,0.5)'")
 
-    test_result = config.genome_config.get_activation_Evolved_MPF('multiparam_relu(0.5)')
-    assert str(test_result) == str(config.genome_config.get_activation_Evolved_MPF(str(test_result)))
+    test_result = config.genome_config.get_activation_Evolved_MPF('multiparam_relu(0.5)',
+                                                                  param_namespace=param_namespace)
+    assert str(test_result) == str(config.genome_config.get_activation_Evolved_MPF(str(test_result),
+                                                                                   param_namespace=param_namespace))
     partial_func = config.genome_config.multiparameterset.get_func(str(test_result), 'activation')
     assert partial_func is not None
     extracted = repr_util.repr_extract_function_name(partial_func, no_match=repr_util.ERR_IF_NO_MATCH)
@@ -1247,6 +1513,7 @@ if __name__ == '__main__':
     test_multiparam_relu_softplus()
     test_clamped_tanh_step()
     test_multiparam_sigmoid()
+    test_clamped_step()
     test_hat_gauss_rectangular()
     test_scaled_expanded_log()
     test_multiparam_log_inv()
@@ -1258,7 +1525,7 @@ if __name__ == '__main__':
     test_multiparam_sigmoid_approx()
     test_multiparam_gauss()
     test_bicentral()
-    test_bisigmoid()
+    test_fourth_square_abs()
     test_add_plus()
     test_add_multiparam_plus()
     test_function_set()

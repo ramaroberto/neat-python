@@ -1,6 +1,8 @@
 import os
 import warnings
 
+from argparse import Namespace
+
 import neat
 from neat import aggregations, multiparameter
 
@@ -132,13 +134,194 @@ def test_multiparam_tmean():
 
 
 def test_max_median_min():
-    assert aggregations.max_median_min_aggregation([0.0,1.0,2.0],1.0) == 2.0
-    assert aggregations.max_median_min_aggregation([0.0,-1.0,-2.0],1.0) == 0.0
-    assert aggregations.max_median_min_aggregation([0.0,1.0,2.0],0.0) == 1.0
-    assert aggregations.max_median_min_aggregation([-10.0,1.0,3.0,10.0],0.0) == 2.0
-    assert aggregations.max_median_min_aggregation([0.0,1.0,2.0],-1.0) == 0.0
-    assert aggregations.max_median_min_aggregation([0.0,-1.0,-2.0],-1.0) == -2.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], 0.25) == -0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.0, 1.0], 0.25) == -0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.5, 1.0], 0.25) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], 0.25) == 0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.0, 0.5], 0.25) == -0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.0, 1.0], 0.25) == -0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.5, 1.0], 0.25) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.375, 0.0, 0.5], 0.25) == -0.1875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.375, 0.0, 1.0], 0.25) == -0.1875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.25, 0.5, 1.0], 0.25) == 0.125
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.125, 0.0, 0.5], 0.25) == -0.0625
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.125, 0.0, 1.0], 0.25) == -0.0625
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.125, 0.5], 0.25) == 0.0625
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.25, 1.0], 0.25) == 0.125
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.375, 0.5], 0.25) == 0.1875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.75, 1.0], 0.25) == 0.375
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.25, 0.5, 1.0], 0.25) == 0.375
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.5, 0.625, 1.0], 0.25) == 0.5625
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.5, 0.875, 1.0], 0.25) == 0.6875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.25, 0.0, 0.5, 1.0], 0.25) == 0.25
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.125, 0.5, 1.0], 0.25) == 0.3125
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.375, 0.5, 1.0], 0.25) == 0.4375
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.5, 0.625, 1.0], 0.25) == 0.5625
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.5, 0.875, 1.0], 0.25) == 0.6875
+    assert aggregations.max_median_min_aggregation([-0.5, -0.375, 0.0, 0.5, 1.0], 0.25) == 0.25
+    assert aggregations.max_median_min_aggregation([-0.5, -0.125, 0.0, 0.5, 1.0], 0.25) == 0.25
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.125, 0.5, 1.0], 0.25) == 0.3125
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.375, 0.5, 1.0], 0.25) == 0.4375
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.5, 0.625, 1.0], 0.25) == 0.5625
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.5, 0.875, 1.0], 0.25) == 0.6875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], -0.25) == -0.6875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.0, 1.0], -0.25) == -0.6875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.5, 1.0], -0.25) == -0.6875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], -0.25) == -0.375
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.0, 0.5], -0.25) == -0.5625
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.0, 1.0], -0.25) == -0.5625
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.5, 1.0], -0.25) == -0.5625
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.375, 0.0, 0.5], -0.25) == -0.4375
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.375, 0.0, 1.0], -0.25) == -0.4375
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.25, 0.5, 1.0], -0.25) == -0.375
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.125, 0.0, 0.5], -0.25) == -0.3125
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.125, 0.0, 1.0], -0.25) == -0.3125
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.125, 0.5], -0.25) == -0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.25, 1.0], -0.25) == -0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.375, 0.5], -0.25) == -0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.75, 1.0], -0.25) == -0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.25, 0.5, 1.0], -0.25) == -0.125
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.5, 0.625, 1.0], -0.25) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.5, 0.875, 1.0], -0.25) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.25, 0.0, 0.5, 1.0], -0.25) == -0.125
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.125, 0.5, 1.0], -0.25) == 0.0625
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.375, 0.5, 1.0], -0.25) == 0.1875
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.5, 0.625, 1.0], -0.25) == 0.25
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.5, 0.875, 1.0], -0.25) == 0.25
+    assert aggregations.max_median_min_aggregation([-0.5, -0.375, 0.0, 0.5, 1.0], -0.25) == -0.1875
+    assert aggregations.max_median_min_aggregation([-0.5, -0.125, 0.0, 0.5, 1.0], -0.25) == -0.0625
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.125, 0.5, 1.0], -0.25) == 0.0625
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.375, 0.5, 1.0], -0.25) == 0.1875
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.5, 0.625, 1.0], -0.25) == 0.25
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.5, 0.875, 1.0], -0.25) == 0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], 0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.0, 1.0], 0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.5, 1.0], 0.5) == 0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], 0.5) == 0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.0, 0.5], 0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.0, 1.0], 0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.5, 1.0], 0.5) == 0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.375, 0.0, 0.5], 0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.375, 0.0, 1.0], 0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.25, 0.5, 1.0], 0.5) == 0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.125, 0.0, 0.5], 0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.125, 0.0, 1.0], 0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.125, 0.5], 0.5) == 0.125
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.25, 1.0], 0.5) == 0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.375, 0.5], 0.5) == 0.375
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.75, 1.0], 0.5) == 0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.25, 0.5, 1.0], 0.5) == 0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.5, 0.625, 1.0], 0.5) == 0.625
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.5, 0.875, 1.0], 0.5) == 0.875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.25, 0.0, 0.5, 1.0], 0.5) == 0.5
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.125, 0.5, 1.0], 0.5) == 0.5
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.375, 0.5, 1.0], 0.5) == 0.5
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.5, 0.625, 1.0], 0.5) == 0.625
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.5, 0.875, 1.0], 0.5) == 0.875
+    assert aggregations.max_median_min_aggregation([-0.5, -0.375, 0.0, 0.5, 1.0], 0.5) == 0.5
+    assert aggregations.max_median_min_aggregation([-0.5, -0.125, 0.0, 0.5, 1.0], 0.5) == 0.5
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.125, 0.5, 1.0], 0.5) == 0.5
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.375, 0.5, 1.0], 0.5) == 0.5
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.5, 0.625, 1.0], 0.5) == 0.625
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.5, 0.875, 1.0], 0.5) == 0.875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], -0.5) == -0.875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.0, 1.0], -0.5) == -0.875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.5, 1.0], -0.5) == -0.875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], -0.5) == -0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.0, 0.5], -0.5) == -0.625
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.0, 1.0], -0.5) == -0.625
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.5, 1.0], -0.5) == -0.625
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.375, 0.0, 0.5], -0.5) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.375, 0.0, 1.0], -0.5) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.25, 0.5, 1.0], -0.5) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.125, 0.0, 0.5], -0.5) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.125, 0.0, 1.0], -0.5) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.125, 0.5], -0.5) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.25, 1.0], -0.5) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.375, 0.5], -0.5) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.75, 1.0], -0.5) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.25, 0.5, 1.0], -0.5) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.5, 0.625, 1.0], -0.5) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.5, 0.875, 1.0], -0.5) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.25, 0.0, 0.5, 1.0], -0.5) == -0.25
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.125, 0.5, 1.0], -0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.375, 0.5, 1.0], -0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.5, 0.625, 1.0], -0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.5, 0.875, 1.0], -0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-0.5, -0.375, 0.0, 0.5, 1.0], -0.5) == -0.375
+    assert aggregations.max_median_min_aggregation([-0.5, -0.125, 0.0, 0.5, 1.0], -0.5) == -0.125
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.125, 0.5, 1.0], -0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.375, 0.5, 1.0], -0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.5, 0.625, 1.0], -0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.5, 0.875, 1.0], -0.5) == 0.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], 0.75) == 0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.0, 1.0], 0.75) == 0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.5, 1.0], 0.75) == 0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], 0.75) == 0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.0, 0.5], 0.75) == 0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.0, 1.0], 0.75) == 0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.5, 1.0], 0.75) == 0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.375, 0.0, 0.5], 0.75) == 0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.375, 0.0, 1.0], 0.75) == 0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.25, 0.5, 1.0], 0.75) == 0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.125, 0.0, 0.5], 0.75) == 0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.125, 0.0, 1.0], 0.75) == 0.5
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.125, 0.5], 0.75) == 0.3125
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.25, 1.0], 0.75) == 0.625
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.375, 0.5], 0.75) == 0.4375
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.75, 1.0], 0.75) == 0.875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.25, 0.5, 1.0], 0.75) == 0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.5, 0.625, 1.0], 0.75) == 0.8125
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.5, 0.875, 1.0], 0.75) == 0.9375
+    assert aggregations.max_median_min_aggregation([-1.0, -0.25, 0.0, 0.5, 1.0], 0.75) == 0.75
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.125, 0.5, 1.0], 0.75) == 0.75
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.375, 0.5, 1.0], 0.75) == 0.75
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.5, 0.625, 1.0], 0.75) == 0.8125
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.5, 0.875, 1.0], 0.75) == 0.9375
+    assert aggregations.max_median_min_aggregation([-0.5, -0.375, 0.0, 0.5, 1.0], 0.75) == 0.75
+    assert aggregations.max_median_min_aggregation([-0.5, -0.125, 0.0, 0.5, 1.0], 0.75) == 0.75
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.125, 0.5, 1.0], 0.75) == 0.75
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.375, 0.5, 1.0], 0.75) == 0.75
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.5, 0.625, 1.0], 0.75) == 0.8125
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.5, 0.875, 1.0], 0.75) == 0.9375
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], -0.75) == -0.9375
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.0, 1.0], -0.75) == -0.9375
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.5, 1.0], -0.75) == -0.9375
+    assert aggregations.max_median_min_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], -0.75) == -0.875
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.0, 0.5], -0.75) == -0.8125
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.0, 1.0], -0.75) == -0.8125
+    assert aggregations.max_median_min_aggregation([-1.0, -0.625, -0.5, 0.5, 1.0], -0.75) == -0.8125
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.375, 0.0, 0.5], -0.75) == -0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.375, 0.0, 1.0], -0.75) == -0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.25, 0.5, 1.0], -0.75) == -0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.125, 0.0, 0.5], -0.75) == -0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.125, 0.0, 1.0], -0.75) == -0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.125, 0.5], -0.75) == -0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.25, 1.0], -0.75) == -0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.375, 0.5], -0.75) == -0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.0, 0.75, 1.0], -0.75) == -0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.25, 0.5, 1.0], -0.75) == -0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.5, 0.625, 1.0], -0.75) == -0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, 0.5, 0.875, 1.0], -0.75) == -0.75
+    assert aggregations.max_median_min_aggregation([-1.0, -0.25, 0.0, 0.5, 1.0], -0.75) == -0.625
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.125, 0.5, 1.0], -0.75) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.375, 0.5, 1.0], -0.75) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.5, 0.625, 1.0], -0.75) == -0.5
+    assert aggregations.max_median_min_aggregation([-1.0, 0.0, 0.5, 0.875, 1.0], -0.75) == -0.5
+    assert aggregations.max_median_min_aggregation([-0.5, -0.375, 0.0, 0.5, 1.0], -0.75) == -0.4375
+    assert aggregations.max_median_min_aggregation([-0.5, -0.125, 0.0, 0.5, 1.0], -0.75) == -0.3125
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.125, 0.5, 1.0], -0.75) == -0.25
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.375, 0.5, 1.0], -0.75) == -0.25
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.5, 0.625, 1.0], -0.75) == -0.25
+    assert aggregations.max_median_min_aggregation([-0.5, 0.0, 0.5, 0.875, 1.0], -0.75) == -0.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], -1.0) == -1.0
+    assert aggregations.max_median_min_aggregation([-1.0, -0.875, -0.5, 0.0, 1.0], 1.0) == 1.0
+    assert aggregations.max_median_min_aggregation([-2.0, -1.0, -0.5, -0.5], -0.5) == -1.5
+    assert aggregations.max_median_min_aggregation([-2.0, -1.0, -0.5, -0.5], -1.0) == -2.0
+    assert aggregations.max_median_min_aggregation([-2.0, -0.5, -0.5, 0.0], -0.5) == -1.25
+    assert aggregations.max_median_min_aggregation([-1.0, -0.5, -0.5, 2.0], 0.5) == 2.0
 
+    
 def test_maxabs_mean():
     assert aggregations.maxabs_mean_aggregation([0.0,1.0,2.0],1.0) == 2.0
     assert aggregations.maxabs_mean_aggregation([0.0,-1.0,-2.0],1.0) == -2.0
@@ -146,83 +329,501 @@ def test_maxabs_mean():
     assert aggregations.maxabs_mean_aggregation([0.0,-1.0,-2.0],0.0) == -1.0
 
 def test_maxabs_tmean():
-    assert aggregations.maxabs_tmean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.0) == -1.0
-    assert aggregations.maxabs_tmean_aggregation([-2.0, -1.0, -0.5, -0.5], -1.0) == -0.75
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], 0.0) == -0.375
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], -1.0) == -0.5
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], 1.0) == -1.0
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], 0.5) == -0.6875
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.875, -0.5, 0.0, 1.0], 0.0) == -0.275
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.875, -0.5, 0.0, 1.0], 0.5) == -0.6375
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.875, -0.5, 0.5, 1.0], 0.0) == -0.175
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.875, -0.5, 0.5, 1.0], 0.5) == -0.5875
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], 0.0) == -0.05
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], -1.0) == 0.0
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], 0.5) == -0.525
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.625, -0.5, 0.0, 0.5], 0.0) == -0.325
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.625, -0.5, 0.0, 0.5], 0.5) == -0.6625
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.625, -0.5, 0.0, 0.5], -0.5) == -0.4375
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.625, -0.5, 0.0, 1.0], 0.0) == -0.225
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.625, -0.5, 0.0, 1.0], 0.5) == -0.6125
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.625, -0.5, 0.5, 1.0], 0.0) == -0.125
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.625, -0.5, 0.5, 1.0], 0.5) == -0.5625
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.5, -0.25, 0.5, 1.0], -1.0) == -0.25
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.0, 0.125, 0.5], -0.5) == -0.0625
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.0, 0.75, 1.0], 0.0) == 0.05
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.0, 0.75, 1.0], 0.5) == -0.475
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.25, 0.5, 1.0], -1.0) == 0.25
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.5, 0.625, 1.0], 0.0) == 0.125
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.5, 0.625, 1.0], -1.0) == 0.5
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.5, 0.875, 1.0], 0.0) == 0.175
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.5, 0.875, 1.0], 0.5) == -0.4125
+    assert aggregations.maxabs_tmean_aggregation([-1.0, 0.0, 0.375, 0.5, 1.0], -1.0) == 0.375
+    assert aggregations.maxabs_tmean_aggregation([-1.0, 0.0, 0.5, 0.625, 1.0], 0.0) == 0.225
+    assert aggregations.maxabs_tmean_aggregation([-1.0, 0.0, 0.5, 0.625, 1.0], 0.5) == -0.3875
+    assert aggregations.maxabs_tmean_aggregation([-1.0, 0.0, 0.5, 0.625, 1.0], -0.5) == 0.4375
+    assert aggregations.maxabs_tmean_aggregation([-1.0, 0.0, 0.5, 0.875, 1.0], 0.0) == 0.275
+    assert aggregations.maxabs_tmean_aggregation([-1.0, 0.0, 0.5, 0.875, 1.0], 0.5) == -0.3625
+    assert aggregations.maxabs_tmean_aggregation([-0.5, -0.375, 0.0, 0.5, 1.0], 1.0) == 1.0
+    assert aggregations.maxabs_tmean_aggregation([-0.5, -0.375, 0.0, 0.5, 1.0], 0.5) == 0.5625
+    assert aggregations.maxabs_tmean_aggregation([-0.5, -0.125, 0.0, 0.5, 1.0], 0.5) == 0.5875
+    assert aggregations.maxabs_tmean_aggregation([-0.5, -0.125, 0.0, 0.5, 1.0], -0.5) == 0.0625
+    assert aggregations.maxabs_tmean_aggregation([-0.5, 0.0, 0.125, 0.5, 1.0], 0.5) == 0.6125
+    assert aggregations.maxabs_tmean_aggregation([-0.5, 0.0, 0.375, 0.5, 1.0], 0.5) == 0.6375
+    assert aggregations.maxabs_tmean_aggregation([-0.5, 0.0, 0.5, 0.625, 1.0], 0.0) == 0.325
+    assert aggregations.maxabs_tmean_aggregation([-0.5, 0.0, 0.5, 0.625, 1.0], 0.5) == 0.6625
+    assert aggregations.maxabs_tmean_aggregation([-0.5, 0.0, 0.5, 0.875, 1.0], 0.5) == 0.6875
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -1.0, -1.0, -0.5, -0.5], 0.0) == -0.8
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -1.0, -1.0, -0.5, -0.5], 0.5) == -0.9
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -1.0, -1.0, -0.5, 0.5], 0.0) == -0.6
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -1.0, -1.0, 0.5, 0.5], 0.0) == -0.4
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -1.0, -1.0, 0.5, 0.5], 0.5) == -0.7
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -1.0, -1.0, 0.5, 0.5], -0.5) == -0.75
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -1.0, -0.5, 0.5, 1.0], 0.0) == -0.2
+    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.5, 1.0, 1.0], 0.0) == 0.2
+    assert aggregations.maxabs_tmean_aggregation([-1.0, 0.5, 0.5, 1.0, 1.0], 0.0) == 0.4
+    assert aggregations.maxabs_tmean_aggregation([-1.0, 0.5, 0.5, 1.0, 1.0], 0.5) == -0.3
+    assert aggregations.maxabs_tmean_aggregation([-0.5, -0.5, 0.0, 0.0, 0.0], 0.5) == -0.35
+    assert aggregations.maxabs_tmean_aggregation([-0.5, -0.5, 0.0, 1.0, 1.0], 0.5) == 0.6
+    assert aggregations.maxabs_tmean_aggregation([-0.5, -0.5, 1.0, 1.0, 1.0], 0.5) == 0.7
+    assert aggregations.maxabs_tmean_aggregation([-0.5, -0.5, 1.0, 1.0, 1.0], -0.5) == 0.75
+    assert aggregations.maxabs_tmean_aggregation([-0.5, 0.5, 1.0, 1.0, 1.0], 0.5) == 0.8
+    assert aggregations.maxabs_tmean_aggregation([0.0, 0.0, 0.0, 0.5, 0.5], 0.5) == 0.35
+    assert aggregations.maxabs_tmean_aggregation([0.5, 0.5, 1.0, 1.0, 1.0], 0.5) == 0.9
     assert aggregations.maxabs_tmean_aggregation([-2.0, -1.0, -0.5, -0.5], 1.0) == -2.0
     assert aggregations.maxabs_tmean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.5) == -1.5
     assert aggregations.maxabs_tmean_aggregation([-2.0, -1.0, -0.5, 0.5], 0.5) == -1.375
-    assert aggregations.maxabs_tmean_aggregation([-2.0, -1.0, 0.5, 0.5], 0.0) == -0.5
-    assert aggregations.maxabs_tmean_aggregation([-2.0, -1.0, 0.5, 0.5], -1.0) == -0.25
     assert aggregations.maxabs_tmean_aggregation([-2.0, -1.0, 0.5, 0.5], 0.5) == -1.25
-    assert aggregations.maxabs_tmean_aggregation([-2.0, -0.5, -0.5, 0.0], -1.0) == -0.5
-    assert aggregations.maxabs_tmean_aggregation([-2.0, -0.5, 0.5, 1.0], -1.0) == 0.0
     assert aggregations.maxabs_tmean_aggregation([-2.0, -0.5, 0.5, 1.0], 0.5) == -1.125
-    assert aggregations.maxabs_tmean_aggregation([-2.0, 0.0, 0.5, 0.5], -1.0) == 0.25
-    assert aggregations.maxabs_tmean_aggregation([-2.0, 0.5, 0.5, 1.0], -1.0) == 0.5
-    assert aggregations.maxabs_tmean_aggregation([-2.0, 0.5, 0.5, 1.0], 0.5) == -1.0
     assert aggregations.maxabs_tmean_aggregation([-1.0, -1.0, -0.5, -0.5], 0.5) == -0.875
     assert aggregations.maxabs_tmean_aggregation([-1.0, -1.0, 0.5, 0.5], 0.5) == -0.625
     assert aggregations.maxabs_tmean_aggregation([-1.0, -0.5, -0.5, 2.0], 1.0) == 2.0
-    assert aggregations.maxabs_tmean_aggregation([-1.0, -0.5, -0.5, 2.0], 0.5) == 1.0
     assert aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.5, 2.0], 0.5) == 1.125
-    assert aggregations.maxabs_tmean_aggregation([-1.0, 0.5, 0.5, 1.0], 0.5) == -0.375
     assert aggregations.maxabs_tmean_aggregation([-1.0, 0.5, 0.5, 2.0], 0.5) == 1.25
     assert aggregations.maxabs_tmean_aggregation([-0.5, -0.5, 1.0, 1.0], 0.5) == 0.625
-    assert aggregations.maxabs_tmean_aggregation([-0.5, 0.5, 1.0, 1.0], -1.0) == 0.75
     assert aggregations.maxabs_tmean_aggregation([-0.5, 0.5, 1.0, 2.0], 0.5) == 1.375
-    assert aggregations.maxabs_tmean_aggregation([0.0, 0.0, 0.5, 0.5], 0.5) == 0.375
     assert aggregations.maxabs_tmean_aggregation([0.5, 0.5, 1.0, 1.0], 0.5) == 0.875
     assert aggregations.maxabs_tmean_aggregation([0.5, 0.5, 1.0, 2.0], 0.5) == 1.5
+    assert_almost_equal(aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.0, 0.375, 0.5], -0.5),
+                        -1*aggregations.maxabs_tmean_aggregation([-0.5, -0.375, 0.0, 0.5, 1.0], -0.5))
+    assert_almost_equal(aggregations.maxabs_tmean_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], -0.5),
+                        -1*aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.0, 0.75, 1.0], -0.5))
+    assert_almost_equal(aggregations.maxabs_tmean_aggregation([-1.0, -1.0, 0.0, 0.5, 0.5], -0.5),
+                        -1*aggregations.maxabs_tmean_aggregation([-1.0, 0.0, 0.0, 0.5, 0.5], -0.5))
+    assert_almost_equal(aggregations.maxabs_tmean_aggregation([-1.0, -0.5, -0.25, 0.5, 1.0], -0.5),
+                        -1*aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.25, 0.5, 1.0], -0.5))
+    assert_almost_equal(aggregations.maxabs_tmean_aggregation([-1.0, -0.5, -0.375, 0.0, 0.5], -0.5),
+                        -1*aggregations.maxabs_tmean_aggregation([-1.0, 0.0, 0.375, 0.5, 1.0], -0.5))
+    assert_almost_equal(aggregations.maxabs_tmean_aggregation([-1.0, -0.625, -0.5, 0.5, 1.0], -0.5),
+                        -1*aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.5, 0.625, 1.0], -0.5))
+    assert_almost_equal(aggregations.maxabs_tmean_aggregation([-1.0, -0.875, -0.5, 0.5, 1.0], -0.5),
+                        -1*aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.5, 0.875, 1.0], -0.5))
+    assert_almost_equal(aggregations.maxabs_tmean_aggregation([-1.0, -1.0, -0.5, 0.5, 1.0], -0.5),
+                        -1*aggregations.maxabs_tmean_aggregation([-1.0, -0.5, 0.5, 1.0, 1.0], -0.5))
+    assert_almost_equal(aggregations.maxabs_tmean_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], -0.5),
+                        -1*aggregations.maxabs_tmean_aggregation([-1.0, 0.0, 0.5, 0.875, 1.0], -0.5))
+    assert_almost_equal(aggregations.maxabs_tmean_aggregation([-1.0, -1.0, -0.5, -0.5, 0.0], -0.5),
+                        -1*aggregations.maxabs_tmean_aggregation([-1.0, 0.5, 0.5, 1.0, 1.0], -0.5))
+    assert_almost_equal(aggregations.maxabs_tmean_aggregation([-1.0, -1.0, -1.0, -0.5, -0.5], -0.5),
+                        -1*aggregations.maxabs_tmean_aggregation([-0.5, 0.5, 1.0, 1.0, 1.0], -0.5))
+
 
 
 def test_sum_mean():
-    assert aggregations.sum_mean_aggregation([1.0,2.0,0.5], 1.0) == 3.5
-    assert aggregations.sum_mean_aggregation([1.0,-1.0,0.0], 1.0) == 0.0
-    assert aggregations.sum_mean_aggregation([0.0,1.0,2.0], 0.0) == 1.0
-    assert aggregations.sum_mean_aggregation([0.0,-1.0,-2.0], 0.0) == -1.0
-    assert aggregations.sum_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 1.0) == -4.0
-    assert aggregations.sum_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.75) == -3.25
     assert aggregations.sum_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.5) == -2.5
-    assert aggregations.sum_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.25) == -1.75
-    assert aggregations.sum_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.0) == -1.0
+    assert aggregations.sum_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.0) == -4.0
+    assert aggregations.sum_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 1.0) == -1.0
+    assert aggregations.sum_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.75) == -1.75
+    assert aggregations.sum_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.25) == -3.25
+    assert aggregations.sum_mean_aggregation([-2.0, -1.0, -0.5, 0.5], 0.5) == -1.875
+    assert aggregations.sum_mean_aggregation([-2.0, -1.0, -0.5, 0.5], 0.0) == -3.0
+    assert aggregations.sum_mean_aggregation([-2.0, -1.0, -0.5, 0.5], 1.0) == -0.75
+    assert aggregations.sum_mean_aggregation([-2.0, -1.0, -0.5, 0.5], 0.75) == -1.3125
+    assert aggregations.sum_mean_aggregation([-2.0, -1.0, -0.5, 0.5], 0.25) == -2.4375
+    assert aggregations.sum_mean_aggregation([-2.0, -1.0, 0.5, 0.5], 0.5) == -1.25
+    assert aggregations.sum_mean_aggregation([-2.0, -1.0, 0.5, 0.5], 0.0) == -2.0
+    assert aggregations.sum_mean_aggregation([-2.0, -1.0, 0.5, 0.5], 1.0) == -0.5
+    assert aggregations.sum_mean_aggregation([-2.0, -1.0, 0.5, 0.5], 0.75) == -0.875
+    assert aggregations.sum_mean_aggregation([-2.0, -1.0, 0.5, 0.5], 0.25) == -1.625
+    assert aggregations.sum_mean_aggregation([-2.0, -0.5, -0.5, 0.0], 0.5) == -1.875
+    assert aggregations.sum_mean_aggregation([-2.0, -0.5, -0.5, 1.0], 0.5) == -1.25
+    assert aggregations.sum_mean_aggregation([-2.0, -0.5, 0.0, 0.5], 0.5) == -1.25
+    assert aggregations.sum_mean_aggregation([-2.0, -0.5, 0.5, 1.0], 0.5) == -0.625
+    assert aggregations.sum_mean_aggregation([-2.0, -0.5, 0.5, 1.0], 1.0) == -0.25
+    assert aggregations.sum_mean_aggregation([-2.0, -0.5, 0.5, 1.0], 0.75) == -0.4375
+    assert aggregations.sum_mean_aggregation([-2.0, -0.5, 0.5, 1.0], 0.25) == -0.8125
+    assert aggregations.sum_mean_aggregation([-2.0, 0.0, 0.5, 0.5], 0.5) == -0.625
+    assert aggregations.sum_mean_aggregation([-2.0, 0.5, 0.5, 1.0], 0.5) == 0.0
+    assert aggregations.sum_mean_aggregation([-2.0, 0.5, 0.5, 1.0], 0.0) == 0.0
+    assert aggregations.sum_mean_aggregation([-1.0, -1.0, -0.5, -0.5], 0.5) == -1.875
+    assert aggregations.sum_mean_aggregation([-1.0, -1.0, -0.5, 0.5], 0.5) == -1.25
+    assert aggregations.sum_mean_aggregation([-1.0, -1.0, 0.5, 0.5], 0.5) == -0.625
+    assert aggregations.sum_mean_aggregation([-1.0, -0.5, -0.5, 0.0], 0.5) == -1.25
+    assert aggregations.sum_mean_aggregation([-1.0, -0.5, -0.5, 1.0], 0.5) == -0.625
+    assert aggregations.sum_mean_aggregation([-1.0, -0.5, 0.0, 0.5], 0.5) == -0.625
+    assert aggregations.sum_mean_aggregation([-1.0, -0.5, 0.5, 2.0], 0.5) == 0.625
+    assert aggregations.sum_mean_aggregation([-1.0, -0.5, 0.5, 2.0], 0.0) == 1.0
+    assert aggregations.sum_mean_aggregation([-1.0, -0.5, 0.5, 2.0], 1.0) == 0.25
+    assert aggregations.sum_mean_aggregation([-1.0, -0.5, 0.5, 2.0], 0.75) == 0.4375
+    assert aggregations.sum_mean_aggregation([-1.0, -0.5, 0.5, 2.0], 0.25) == 0.8125
+    assert aggregations.sum_mean_aggregation([-1.0, 0.5, 0.5, 1.0], 0.5) == 0.625
+    assert aggregations.sum_mean_aggregation([-1.0, 0.5, 0.5, 2.0], 0.5) == 1.25
+    assert aggregations.sum_mean_aggregation([-1.0, 0.5, 0.5, 2.0], 0.0) == 2.0
+    assert aggregations.sum_mean_aggregation([-1.0, 0.5, 0.5, 2.0], 1.0) == 0.5
+    assert aggregations.sum_mean_aggregation([-1.0, 0.5, 0.5, 2.0], 0.75) == 0.875
+    assert aggregations.sum_mean_aggregation([-1.0, 0.5, 0.5, 2.0], 0.25) == 1.625
+    assert aggregations.sum_mean_aggregation([-0.5, -0.5, 0.0, 0.0], 0.5) == -0.625
+    assert aggregations.sum_mean_aggregation([-0.5, -0.5, 0.0, 2.0], 0.5) == 0.625
+    assert aggregations.sum_mean_aggregation([-0.5, -0.5, 1.0, 1.0], 0.5) == 0.625
+    assert aggregations.sum_mean_aggregation([-0.5, -0.5, 1.0, 2.0], 0.5) == 1.25
+    assert aggregations.sum_mean_aggregation([-0.5, 0.0, 0.5, 1.0], 0.5) == 0.625
+    assert aggregations.sum_mean_aggregation([-0.5, 0.0, 0.5, 2.0], 0.5) == 1.25
+    assert aggregations.sum_mean_aggregation([-0.5, 0.5, 1.0, 1.0], 0.5) == 1.25
+    assert aggregations.sum_mean_aggregation([-0.5, 0.5, 1.0, 2.0], 0.5) == 1.875
+    assert aggregations.sum_mean_aggregation([-0.5, 0.5, 1.0, 2.0], 0.0) == 3.0
+    assert aggregations.sum_mean_aggregation([-0.5, 0.5, 1.0, 2.0], 1.0) == 0.75
+    assert aggregations.sum_mean_aggregation([-0.5, 0.5, 1.0, 2.0], 0.75) == 1.3125
+    assert aggregations.sum_mean_aggregation([-0.5, 0.5, 1.0, 2.0], 0.25) == 2.4375
+    assert aggregations.sum_mean_aggregation([0.0, 0.0, 0.5, 0.5], 0.5) == 0.625
+    assert aggregations.sum_mean_aggregation([0.0, 0.5, 0.5, 1.0], 0.5) == 1.25
+    assert aggregations.sum_mean_aggregation([0.0, 0.5, 0.5, 2.0], 0.5) == 1.875
+    assert aggregations.sum_mean_aggregation([0.5, 0.5, 1.0, 1.0], 0.5) == 1.875
+    assert aggregations.sum_mean_aggregation([0.5, 0.5, 1.0, 2.0], 0.5) == 2.5
+    assert aggregations.sum_mean_aggregation([0.5, 0.5, 1.0, 2.0], 0.0) == 4.0
+    assert aggregations.sum_mean_aggregation([0.5, 0.5, 1.0, 2.0], 0.75) == 1.75
+    assert aggregations.sum_mean_aggregation([0.5, 0.5, 1.0, 2.0], 0.25) == 3.25
 
 def test_product_mean():
-    assert aggregations.product_mean_aggregation([1.0,2.0,0.5], 1.0, True) == 1.0
-    assert aggregations.product_mean_aggregation([1.0,0.5,0.0], 1.0, True) == 0.0
-    assert aggregations.product_mean_aggregation([2.0,2.0], 0.0, False) == 2.0
-    assert aggregations.product_mean_aggregation([4.0,2.0,1.0], 0.0, False) == 2.0
-    assert aggregations.product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 1.0, False) == 0.5
-    assert aggregations.product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 1.0, True) == -0.5
-    assert aggregations.product_mean_aggregation([-1.0, -1.0, -0.5, -0.5], 1.0, False) == 0.25
-    assert aggregations.product_mean_aggregation([-1.0, -1.0, -0.5, -0.5], 1.0, True) == -0.25
+    assert aggregations.product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.0, False) == 0.5
+    assert aggregations.product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.0, True) == -0.5
     assert aggregations.product_mean_aggregation([-2.0, -0.5, 0.0, 0.5], 0.5, False) == 0.0
-
+    assert aggregations.product_mean_aggregation([-2.0, -0.5, 0.0, 0.5], 0.0, False) == 0.0
+    assert aggregations.product_mean_aggregation([-1.0, -1.0, -0.5, -0.5], 0.0, False) == 0.25
+    assert aggregations.product_mean_aggregation([-1.0, -1.0, -0.5, -0.5], 0.0, True) == -0.25
 
 def test_sum_product_mean():
-    assert aggregations.sum_product_mean_aggregation([1.0,2.0,0.5], 1.0, 1.0, True) == 3.5
-    assert aggregations.sum_product_mean_aggregation([1.0,-1.0,0.0], 1.0, 1.0, False) == 0.0
-    assert aggregations.sum_product_mean_aggregation([0.0,1.0,2.0], 0.0, 1.0, True) == 1.0
-    assert aggregations.sum_product_mean_aggregation([0.0,-1.0,-2.0], 0.0, 1.0, True) == -1.0
-    assert aggregations.sum_product_mean_aggregation([1.0,2.0,0.5], 1.0, 0.0, False) == 1.0
-    assert aggregations.sum_product_mean_aggregation([1.0,0.5,0.0], 1.0, 0.0, False) == 0.0
-    assert aggregations.sum_product_mean_aggregation([2.0,2.0], 0.0, 0.0, True) == 2.0
-    assert aggregations.sum_product_mean_aggregation([4.0,2.0,1.0], 0.0, 0.0, False) == 2.0
+    assert aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.5, 1.0, False) == -2.5
+    assert aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.0, 0.5, False) == -1.75
+    assert aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.0, 0.5, True) == -2.25
+    assert aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.0, 0.0, False) == 0.5
+    assert aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.0, 0.0, True) == -0.5
+    assert aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.0, 1.0, False) == -4.0
+    assert aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 1.0, 1.0, False) == -1.0
+    assert aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, 0.5], 0.5, 1.0, False) == -1.875
+    assert aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, 0.5], 0.0, 1.0, False) == -3.0
+    assert aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, 0.5], 1.0, 1.0, False) == -0.75
+    assert aggregations.sum_product_mean_aggregation([-2.0, -1.0, 0.5, 0.5], 0.5, 1.0, False) == -1.25
+    assert aggregations.sum_product_mean_aggregation([-2.0, -1.0, 0.5, 0.5], 0.0, 1.0, False) == -2.0
+    assert aggregations.sum_product_mean_aggregation([-2.0, -0.5, -0.5, 0.0], 0.5, 0.5, False) == -0.9375
+    assert aggregations.sum_product_mean_aggregation([-2.0, -0.5, -0.5, 0.0], 0.0, 0.5, False) == -1.5
+    assert aggregations.sum_product_mean_aggregation([-2.0, -0.5, -0.5, 0.0], 1.0, 0.5, False) == -0.375
+    assert aggregations.sum_product_mean_aggregation([-2.0, -0.5, 0.0, 0.5], 0.5, 0.5, False) == -0.625
+    assert aggregations.sum_product_mean_aggregation([-2.0, -0.5, 0.0, 0.5], 0.5, 0.0, False) == 0.0
+    assert aggregations.sum_product_mean_aggregation([-2.0, -0.5, 0.0, 0.5], 1.0, 0.5, False) == -0.25
+    assert aggregations.sum_product_mean_aggregation([-2.0, 0.0, 0.5, 0.5], 0.5, 0.5, False) == -0.3125
+    assert aggregations.sum_product_mean_aggregation([-2.0, 0.0, 0.5, 0.5], 1.0, 0.5, False) == -0.125
+    assert aggregations.sum_product_mean_aggregation([-2.0, 0.5, 0.5, 1.0], 0.0, 0.5, True) == 0.25
+    assert aggregations.sum_product_mean_aggregation([-1.0, -1.0, -0.5, -0.5], 0.0, 0.5, False) == -1.375
+    assert aggregations.sum_product_mean_aggregation([-1.0, -1.0, -0.5, -0.5], 0.0, 0.5, True) == -1.625
+    assert aggregations.sum_product_mean_aggregation([-1.0, -1.0, -0.5, 0.5], 0.0, 0.5, False) == -1.125
+    assert aggregations.sum_product_mean_aggregation([-1.0, -0.5, 0.5, 1.0], 0.0, 0.5, False) == 0.125
+    assert aggregations.sum_product_mean_aggregation([-1.0, -0.5, 0.5, 2.0], 0.5, 1.0, False) == 0.625
+    assert aggregations.sum_product_mean_aggregation([-1.0, -0.5, 0.5, 2.0], 0.0, 0.5, False) == 0.75
+    assert aggregations.sum_product_mean_aggregation([-1.0, -0.5, 0.5, 2.0], 0.0, 1.0, False) == 1.0
+    assert aggregations.sum_product_mean_aggregation([-1.0, 0.5, 0.5, 1.0], 0.0, 0.5, False) == 0.375
+    assert aggregations.sum_product_mean_aggregation([-1.0, 0.5, 0.5, 2.0], 0.5, 1.0, False) == 1.25
+    assert aggregations.sum_product_mean_aggregation([-1.0, 0.5, 0.5, 2.0], 0.0, 1.0, False) == 2.0
+    assert aggregations.sum_product_mean_aggregation([-0.5, -0.5, 0.0, 2.0], 0.5, 0.5, False) == 0.3125
+    assert aggregations.sum_product_mean_aggregation([-0.5, 0.5, 1.0, 1.0], 0.0, 0.5, False) == 0.875
+    assert aggregations.sum_product_mean_aggregation([-0.5, 0.5, 1.0, 1.0], 0.0, 0.5, True) == 1.125
+    assert aggregations.sum_product_mean_aggregation([-0.5, 0.5, 1.0, 2.0], 0.5, 1.0, False) == 1.875
+    assert aggregations.sum_product_mean_aggregation([-0.5, 0.5, 1.0, 2.0], 0.0, 0.5, True) == 1.75
+    assert aggregations.sum_product_mean_aggregation([-0.5, 0.5, 1.0, 2.0], 0.0, 1.0, False) == 3.0
+    assert aggregations.sum_product_mean_aggregation([0.0, 0.5, 0.5, 2.0], 0.5, 0.5, False) == 0.9375
+    assert aggregations.sum_product_mean_aggregation([0.0, 0.5, 0.5, 2.0], 0.0, 0.5, False) == 1.5
+    assert aggregations.sum_product_mean_aggregation([0.5, 0.5, 1.0, 1.0], 0.0, 0.5, False) == 1.625
+    assert aggregations.sum_product_mean_aggregation([0.5, 0.5, 1.0, 2.0], 0.5, 1.0, False) == 2.5
+    assert aggregations.sum_product_mean_aggregation([0.5, 0.5, 1.0, 2.0], 0.0, 0.5, False) == 2.25
+    assert aggregations.sum_product_mean_aggregation([0.5, 0.5, 1.0, 2.0], 0.0, 1.0, False) == 4.0
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-1.0, -1.0, 0.5, 0.5], 0.5, 0.5, False),
+                        -1*aggregations.sum_product_mean_aggregation([-1.0, 0.5, 0.5, 1.0], 0.5, 0.5, False))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-2.0, -1.0, 0.5, 0.5], 1.0, 0.5, False),
+                        -1*aggregations.sum_product_mean_aggregation([-1.0, 0.5, 0.5, 2.0], 1.0, 0.5, False))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-1.0, -1.0, 0.5, 0.5], 1.0, 0.5, False),
+                        -1*aggregations.sum_product_mean_aggregation([-1.0, 0.5, 0.5, 1.0], 1.0, 0.5, False))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-2.0, -1.0, 0.5, 0.5], 0.5, 0.5, False),
+                        -1*aggregations.sum_product_mean_aggregation([-1.0, 0.5, 0.5, 2.0], 0.5, 0.5, False))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-2.0, 0.5, 0.5, 1.0], 0.5, 0.5, False),
+                        -1*aggregations.sum_product_mean_aggregation([-2.0, 0.5, 0.5, 1.0], 0.5, 0.5, True))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-2.0, 0.5, 0.5, 1.0], 1.0, 0.5, False),
+                        -1*aggregations.sum_product_mean_aggregation([-2.0, 0.5, 0.5, 1.0], 1.0, 0.5, True))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-1.0, -1.0, 0.5, 0.5], 1.0, 0.5, True),
+                        -1*aggregations.sum_product_mean_aggregation([-1.0, 0.5, 0.5, 1.0], 1.0, 0.5, True))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-1.0, -1.0, 0.5, 0.5], 0.5, 0.5, True),
+                        -1*aggregations.sum_product_mean_aggregation([-1.0, 0.5, 0.5, 1.0], 0.5, 0.5, True))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-1.0, -1.0, -0.5, 0.5], 1.0, 0.5, False),
+                        -1*aggregations.sum_product_mean_aggregation([-0.5, 0.5, 1.0, 1.0], 1.0, 0.5, True))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.5, 0.0, False),
+                        -1*aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.5, 0.0, True))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-2.0, -1.0, 0.5, 0.5], 1.0, 0.5, True),
+                        -1*aggregations.sum_product_mean_aggregation([-1.0, 0.5, 0.5, 2.0], 1.0, 0.5, True))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-1.0, -1.0, -0.5, -0.5], 1.0, 0.0, False),
+                        -1*aggregations.sum_product_mean_aggregation([-1.0, -1.0, -0.5, -0.5], 1.0, 0.0, True))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-1.0, -1.0, -0.5, -0.5], 1.0, 0.5, True),
+                        -1*aggregations.sum_product_mean_aggregation([0.5, 0.5, 1.0, 1.0], 1.0, 0.5, False))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, 0.5], 1.0, 0.5, False),
+                        -1*aggregations.sum_product_mean_aggregation([-0.5, 0.5, 1.0, 2.0], 1.0, 0.5, True))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-1.0, -1.0, -0.5, 0.5], 0.5, 0.5, False),
+                        -1*aggregations.sum_product_mean_aggregation([-0.5, 0.5, 1.0, 1.0], 0.5, 0.5, True))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 1.0, 0.0, False),
+                        -1*aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 1.0, 0.0, True))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 1.0, 0.5, True),
+                        -1*aggregations.sum_product_mean_aggregation([0.5, 0.5, 1.0, 2.0], 1.0, 0.5, False))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-2.0, -1.0, 0.5, 0.5], 0.5, 0.5, True),
+                        -1*aggregations.sum_product_mean_aggregation([-1.0, 0.5, 0.5, 2.0], 0.5, 0.5, True))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-1.0, -1.0, -0.5, -0.5], 0.5, 0.5, True),
+                        -1*aggregations.sum_product_mean_aggregation([0.5, 0.5, 1.0, 1.0], 0.5, 0.5, False))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, 0.5], 0.5, 0.5, False),
+                        -1*aggregations.sum_product_mean_aggregation([-0.5, 0.5, 1.0, 2.0], 0.5, 0.5, True))
+    assert_almost_equal(aggregations.sum_product_mean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.5, 0.5, True),
+                        -1*aggregations.sum_product_mean_aggregation([0.5, 0.5, 1.0, 2.0], 0.5, 0.5, False))
+
+
 
 def test_sum_product():
-    assert aggregations.sum_product_aggregation([1.0,2.0,0.5], 1.0) == 3.5
-    assert aggregations.sum_product_aggregation([1.0,0.5,0.0], 1.0) == 1.5
-    assert aggregations.sum_product_aggregation([1.0,-1.0,0.0], 1.0) == 0.0
-    assert aggregations.sum_product_aggregation([1.0,2.0,0.5], 0.0) == 1.0
-    assert aggregations.sum_product_aggregation([1.0,0.5,0.0], 0.0) == 0.0
-    assert aggregations.sum_product_aggregation([4.0,2.0,-1.0], 0.0) == -8.0
-    assert aggregations.sum_product_aggregation([-2.0, -1.0, -0.5, -0.5], 1.0) == -4.0
-    assert aggregations.sum_product_aggregation([-2.0, -1.0, -0.5, -0.5], 0.75) == -2.875
+    assert aggregations.sum_product_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], 0.5) == -0.9375
+    assert aggregations.sum_product_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], 1.0) == -1.875
+    assert aggregations.sum_product_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], 0.75) == -1.40625
+    assert aggregations.sum_product_aggregation([-1.0, -0.875, -0.5, 0.0, 0.5], 0.25) == -0.46875
+    assert aggregations.sum_product_aggregation([-1.0, -0.875, -0.5, 0.0, 1.0], 0.5) == -0.6875
+    assert aggregations.sum_product_aggregation([-1.0, -0.875, -0.5, 0.0, 1.0], 1.0) == -1.375
+    assert aggregations.sum_product_aggregation([-1.0, -0.875, -0.5, 0.0, 1.0], 0.75) == -1.03125
+    assert aggregations.sum_product_aggregation([-1.0, -0.875, -0.5, 0.0, 1.0], 0.25) == -0.34375
+    assert aggregations.sum_product_aggregation([-1.0, -0.875, -0.5, 0.5, 1.0], 0.5) == -0.546875
+    assert aggregations.sum_product_aggregation([-1.0, -0.875, -0.5, 0.5, 1.0], 0.0) == -0.21875
+    assert aggregations.sum_product_aggregation([-1.0, -0.875, -0.5, 0.5, 1.0], 1.0) == -0.875
+    assert aggregations.sum_product_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], 0.5) == -0.125
+    assert aggregations.sum_product_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], 0.0) == 0.0
+    assert aggregations.sum_product_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], 1.0) == -0.25
+    assert aggregations.sum_product_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], 0.75) == -0.1875
+    assert aggregations.sum_product_aggregation([-1.0, -0.75, 0.0, 0.5, 1.0], 0.25) == -0.0625
+    assert aggregations.sum_product_aggregation([-1.0, -0.625, -0.5, 0.0, 0.5], 0.5) == -0.8125
+    assert aggregations.sum_product_aggregation([-1.0, -0.625, -0.5, 0.0, 0.5], 1.0) == -1.625
+    assert aggregations.sum_product_aggregation([-1.0, -0.625, -0.5, 0.0, 0.5], 0.75) == -1.21875
+    assert aggregations.sum_product_aggregation([-1.0, -0.625, -0.5, 0.0, 0.5], 0.25) == -0.40625
+    assert aggregations.sum_product_aggregation([-1.0, -0.625, -0.5, 0.0, 1.0], 0.5) == -0.5625
+    assert aggregations.sum_product_aggregation([-1.0, -0.625, -0.5, 0.0, 1.0], 1.0) == -1.125
+    assert aggregations.sum_product_aggregation([-1.0, -0.625, -0.5, 0.0, 1.0], 0.75) == -0.84375
+    assert aggregations.sum_product_aggregation([-1.0, -0.625, -0.5, 0.0, 1.0], 0.25) == -0.28125
+    assert aggregations.sum_product_aggregation([-1.0, -0.625, -0.5, 0.5, 1.0], 0.5) == -0.390625
+    assert aggregations.sum_product_aggregation([-1.0, -0.625, -0.5, 0.5, 1.0], 0.0) == -0.15625
+    assert aggregations.sum_product_aggregation([-1.0, -0.625, -0.5, 0.5, 1.0], 1.0) == -0.625
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, -0.375, 0.0, 1.0], 0.5) == -0.4375
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, -0.375, 0.0, 1.0], 0.75) == -0.65625
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, -0.25, 0.5, 1.0], 0.75) == -0.203125
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, -0.25, 0.5, 1.0], 0.25) == -0.109375
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, -0.125, 0.0, 1.0], 0.5) == -0.3125
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, 0.0, 0.75, 1.0], 0.5) == 0.125
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, 0.0, 0.75, 1.0], 1.0) == 0.25
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, 0.0, 0.75, 1.0], 0.75) == 0.1875
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, 0.0, 0.75, 1.0], 0.25) == 0.0625
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, 0.25, 0.5, 1.0], 0.5) == 0.15625
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, 0.25, 0.5, 1.0], 0.75) == 0.203125
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, 0.25, 0.5, 1.0], 0.25) == 0.109375
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, 0.5, 0.625, 1.0], 0.5) == 0.390625
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, 0.5, 0.625, 1.0], 1.0) == 0.625
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, 0.5, 0.875, 1.0], 0.5) == 0.546875
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, 0.5, 0.875, 1.0], 0.0) == 0.21875
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, 0.5, 0.875, 1.0], 1.0) == 0.875
+    assert aggregations.sum_product_aggregation([-1.0, 0.0, 0.125, 0.5, 1.0], 0.5) == 0.3125
+    assert aggregations.sum_product_aggregation([-1.0, 0.0, 0.125, 0.5, 1.0], 0.75) == 0.46875
+    assert aggregations.sum_product_aggregation([-1.0, 0.0, 0.375, 0.5, 1.0], 0.5) == 0.4375
+    assert aggregations.sum_product_aggregation([-1.0, 0.0, 0.375, 0.5, 1.0], 0.75) == 0.65625
+    assert aggregations.sum_product_aggregation([-1.0, 0.0, 0.5, 0.625, 1.0], 0.5) == 0.5625
+    assert aggregations.sum_product_aggregation([-1.0, 0.0, 0.5, 0.625, 1.0], 1.0) == 1.125
+    assert aggregations.sum_product_aggregation([-1.0, 0.0, 0.5, 0.625, 1.0], 0.75) == 0.84375
+    assert aggregations.sum_product_aggregation([-1.0, 0.0, 0.5, 0.625, 1.0], 0.25) == 0.28125
+    assert aggregations.sum_product_aggregation([-1.0, 0.0, 0.5, 0.875, 1.0], 0.5) == 0.6875
+    assert aggregations.sum_product_aggregation([-1.0, 0.0, 0.5, 0.875, 1.0], 1.0) == 1.375
+    assert aggregations.sum_product_aggregation([-1.0, 0.0, 0.5, 0.875, 1.0], 0.75) == 1.03125
+    assert aggregations.sum_product_aggregation([-1.0, 0.0, 0.5, 0.875, 1.0], 0.25) == 0.34375
+    assert aggregations.sum_product_aggregation([-0.5, 0.0, 0.5, 0.625, 1.0], 0.5) == 0.8125
+    assert aggregations.sum_product_aggregation([-0.5, 0.0, 0.5, 0.625, 1.0], 1.0) == 1.625
+    assert aggregations.sum_product_aggregation([-0.5, 0.0, 0.5, 0.625, 1.0], 0.75) == 1.21875
+    assert aggregations.sum_product_aggregation([-0.5, 0.0, 0.5, 0.625, 1.0], 0.25) == 0.40625
+    assert aggregations.sum_product_aggregation([-0.5, 0.0, 0.5, 0.875, 1.0], 0.5) == 0.9375
+    assert aggregations.sum_product_aggregation([-0.5, 0.0, 0.5, 0.875, 1.0], 1.0) == 1.875
+    assert aggregations.sum_product_aggregation([-0.5, 0.0, 0.5, 0.875, 1.0], 0.75) == 1.40625
+    assert aggregations.sum_product_aggregation([-1.0, -1.0, -1.0, -0.5, -0.5], 0.5) == -2.125
+    assert aggregations.sum_product_aggregation([-1.0, -1.0, -1.0, -0.5, -0.5], 1.0) == -4.0
+    assert aggregations.sum_product_aggregation([-1.0, -1.0, -1.0, -0.5, -0.5], 0.75) == -3.0625
+    assert aggregations.sum_product_aggregation([-1.0, -1.0, -1.0, -0.5, -0.5], 0.25) == -1.1875
+    assert aggregations.sum_product_aggregation([-1.0, -1.0, -1.0, -0.5, 0.5], 1.0) == -3.0
+    assert aggregations.sum_product_aggregation([-1.0, -1.0, -1.0, -0.5, 0.5], 0.75) == -2.1875
+    assert aggregations.sum_product_aggregation([-1.0, -1.0, -1.0, 0.5, 0.5], 1.0) == -2.0
+    assert aggregations.sum_product_aggregation([-1.0, -1.0, -1.0, 0.5, 0.5], 0.75) == -1.5625
+    assert aggregations.sum_product_aggregation([-1.0, -1.0, -0.5, -0.5, 0.0], 0.5) == -1.5
+    assert aggregations.sum_product_aggregation([-1.0, -1.0, -0.5, -0.5, 0.0], 0.75) == -2.25
+    assert aggregations.sum_product_aggregation([-1.0, -1.0, -0.5, -0.5, 0.0], 0.25) == -0.75
+    assert aggregations.sum_product_aggregation([-1.0, -1.0, -0.5, -0.5, 1.0], 0.75) == -1.4375
+    assert aggregations.sum_product_aggregation([-1.0, -1.0, -0.5, 0.0, 0.5], 0.5) == -1.0
+    assert aggregations.sum_product_aggregation([-1.0, -1.0, -0.5, 0.0, 0.5], 0.25) == -0.5
+    assert aggregations.sum_product_aggregation([-1.0, -0.5, 0.5, 1.0, 1.0], 1.0) == 1.0
+    assert aggregations.sum_product_aggregation([-1.0, 0.0, 0.5, 0.5, 1.0], 0.5) == 0.5
+    assert aggregations.sum_product_aggregation([-1.0, 0.0, 0.5, 0.5, 1.0], 0.75) == 0.75
+    assert aggregations.sum_product_aggregation([-1.0, 0.5, 0.5, 1.0, 1.0], 1.0) == 2.0
+    assert aggregations.sum_product_aggregation([-1.0, 0.5, 0.5, 1.0, 1.0], 0.75) == 1.4375
+    assert aggregations.sum_product_aggregation([-0.5, -0.5, 1.0, 1.0, 1.0], 0.75) == 1.5625
+    assert aggregations.sum_product_aggregation([-0.5, 0.0, 0.5, 1.0, 1.0], 0.75) == 1.5
+    assert aggregations.sum_product_aggregation([-0.5, 0.5, 1.0, 1.0, 1.0], 1.0) == 3.0
+    assert aggregations.sum_product_aggregation([-0.5, 0.5, 1.0, 1.0, 1.0], 0.75) == 2.1875
+    assert aggregations.sum_product_aggregation([0.0, 0.5, 0.5, 1.0, 1.0], 0.75) == 2.25
+    assert aggregations.sum_product_aggregation([0.5, 0.5, 1.0, 1.0, 1.0], 0.5) == 2.125
+    assert aggregations.sum_product_aggregation([0.5, 0.5, 1.0, 1.0, 1.0], 1.0) == 4.0
+    assert aggregations.sum_product_aggregation([0.5, 0.5, 1.0, 1.0, 1.0], 0.75) == 3.0625
+    assert aggregations.sum_product_aggregation([0.5, 0.5, 1.0, 1.0, 1.0], 0.25) == 1.1875
     assert aggregations.sum_product_aggregation([-2.0, -1.0, -0.5, -0.5], 0.5) == -1.75
-    assert aggregations.sum_product_aggregation([-2.0, -1.0, -0.5, -0.5], 0.25) == -0.625
-    assert aggregations.sum_product_aggregation([-2.0, -1.0, -0.5, -0.5], 0.0) == 0.5
-    assert aggregations.sum_product_aggregation([-1.0, -1.0, -0.5, -0.5], 0.75) == -2.1875
-    assert aggregations.sum_product_aggregation([-1.0, -1.0, -0.5, -0.5], 0.25) == -0.5625
-    assert aggregations.sum_product_aggregation([-1.0, -1.0, -0.5, -0.5], 0.0) == 0.25
+    assert aggregations.sum_product_aggregation([-2.0, -1.0, -0.5, -0.5], 0.75) == -2.875
+    assert aggregations.sum_product_aggregation([-2.0, -1.0, -0.5, 0.5], 0.5) == -1.75
+    assert aggregations.sum_product_aggregation([-2.0, -1.0, -0.5, 0.5], 0.75) == -2.375
+    assert aggregations.sum_product_aggregation([-2.0, -0.5, -0.5, 1.0], 0.5) == -1.25
+    assert aggregations.sum_product_aggregation([-2.0, 0.5, 0.5, 1.0], 0.25) == -0.375
+    assert aggregations.sum_product_aggregation([-1.0, 0.5, 0.5, 1.0], 0.5) == 0.375
+    assert aggregations.sum_product_aggregation([-0.5, -0.5, 1.0, 2.0], 0.5) == 1.25
+    assert aggregations.sum_product_aggregation([-0.5, 0.5, 1.0, 2.0], 0.5) == 1.25
+    assert aggregations.sum_product_aggregation([-0.5, 0.5, 1.0, 2.0], 0.25) == 0.375
+    assert aggregations.sum_product_aggregation([0.5, 0.5, 1.0, 1.0], 0.75) == 2.3125
+    assert aggregations.sum_product_aggregation([0.5, 0.5, 1.0, 2.0], 0.75) == 3.125
+    assert_almost_equal(aggregations.sum_product_aggregation([-1.0, -0.625, -0.5, 0.5, 1.0], 0.25),
+                        -1*aggregations.sum_product_aggregation([-1.0, -0.5, 0.5, 0.625, 1.0], 0.25))
+    assert_almost_equal(aggregations.sum_product_aggregation([-1.0, -0.875, -0.5, 0.5, 1.0], 0.25),
+                        -1*aggregations.sum_product_aggregation([-1.0, -0.5, 0.5, 0.875, 1.0], 0.25))
+    assert_almost_equal(aggregations.sum_product_aggregation([-1.0, -0.625, -0.5, 0.5, 1.0], 0.75),
+                        -1*aggregations.sum_product_aggregation([-1.0, -0.5, 0.5, 0.625, 1.0], 0.75))
+    assert_almost_equal(aggregations.sum_product_aggregation([-1.0, -0.875, -0.5, 0.5, 1.0], 0.75),
+                        -1*aggregations.sum_product_aggregation([-1.0, -0.5, 0.5, 0.875, 1.0], 0.75))
+
+def test_sum_maxabs_tmean():
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.5, 0.0) == -2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.5, -1.0) == -1.875
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.5, 1.0) == -5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.0, 0.0) == -4.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.0, -1.0) == -3.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, -0.5, -0.5], 0.0, 1.0) == -8.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, -0.5, -0.5], 1.0, 0.0) == -1.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, -0.5, -0.5], 1.0, -1.0) == -0.75
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, -0.5, -0.5], 1.0, 1.0) == -2.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, -0.5, 0.5], 0.5, 0.0) == -1.875
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, -0.5, 0.5], 0.5, -1.0) == -1.875
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, -0.5, 0.5], 0.5, 1.0) == -5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, 0.5, 0.5], 0.5, 0.0) == -1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, 0.5, 0.5], 0.5, -1.0) == -0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, 0.5, 0.5], 0.5, 1.0) == -5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, 0.5, 0.5], 1.0, 0.0) == -0.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -1.0, 0.5, 0.5], 1.0, -1.0) == -0.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -0.5, -0.5, 0.0], 0.5, 0.0) == -1.875
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -0.5, -0.5, 0.0], 0.5, -1.0) == -1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -0.5, -0.5, 0.0], 0.5, 1.0) == -5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -0.5, -0.5, 1.0], 0.5, 0.0) == -1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -0.5, -0.5, 1.0], 0.5, -1.0) == -1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -0.5, -0.5, 1.0], 0.5, 1.0) == -5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -0.5, 0.0, 0.5], 0.5, 0.0) == -1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -0.5, 0.0, 0.5], 0.5, -1.0) == -0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -0.5, 0.0, 0.5], 0.5, 1.0) == -5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -0.5, 0.5, 1.0], 0.5, 0.0) == -0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -0.5, 0.5, 1.0], 0.5, -1.0) == 0.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -0.5, 0.5, 1.0], 0.5, 1.0) == -5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, -0.5, 0.5, 1.0], 0.0, -1.0) == 0.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, 0.0, 0.5, 0.5], 0.5, 0.0) == -0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, 0.0, 0.5, 0.5], 0.5, -1.0) == 0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, 0.0, 0.5, 0.5], 0.5, 1.0) == -5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, 0.0, 0.5, 0.5], 0.0, -1.0) == 1.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, 0.0, 0.5, 0.5], 1.0, -1.0) == 0.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, 0.5, 0.5, 1.0], 0.5, 0.0) == 0.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, 0.5, 0.5, 1.0], 0.5, -1.0) == 1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, 0.5, 0.5, 1.0], 0.5, 1.0) == -5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, 0.5, 0.5, 1.0], 0.0, -1.0) == 2.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-2.0, 0.5, 0.5, 1.0], 1.0, -1.0) == 0.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -1.0, -0.5, -0.5], 0.5, 0.0) == -1.875
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -1.0, -0.5, -0.5], 0.5, -1.0) == -1.875
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -1.0, -0.5, -0.5], 0.5, 1.0) == -2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -1.0, -0.5, 0.5], 0.5, 0.0) == -1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -1.0, -0.5, 0.5], 0.5, -1.0) == -1.875
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -1.0, -0.5, 0.5], 0.5, 1.0) == -2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -1.0, 0.5, 0.5], 0.5, 0.0) == -0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -1.0, 0.5, 0.5], 0.5, -1.0) == -0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -1.0, 0.5, 0.5], 0.5, 1.0) == -2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, -0.5, 0.0], 0.5, 0.0) == -1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, -0.5, 0.0], 0.5, -1.0) == -1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, -0.5, 0.0], 0.5, 1.0) == -2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, -0.5, 1.0], 0.5, 0.0) == -0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, -0.5, 1.0], 0.5, -1.0) == -1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, -0.5, 1.0], 0.5, 1.0) == -2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, -0.5, 2.0], 0.5, 0.0) == 0.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, -0.5, 2.0], 0.5, -1.0) == -1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, -0.5, 2.0], 0.5, 1.0) == 5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, -0.5, 2.0], 0.0, 1.0) == 8.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, 0.0, 0.5], 0.5, 0.0) == -0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, 0.0, 0.5], 0.5, -1.0) == -0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, 0.0, 0.5], 0.5, 1.0) == -2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, 0.5, 1.0], 0.5, 0.0) == 0.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, 0.5, 1.0], 0.5, 1.0) == -2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, 0.5, 2.0], 0.5, 0.0) == 0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, -0.5, 0.5, 2.0], 0.5, 1.0) == 5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, 0.0, 0.5, 0.5], 0.5, 0.0) == 0.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, 0.0, 0.5, 0.5], 0.5, -1.0) == 0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, 0.0, 0.5, 0.5], 0.5, 1.0) == -2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, 0.5, 0.5, 1.0], 0.5, 0.0) == 0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, 0.5, 0.5, 1.0], 0.5, -1.0) == 1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, 0.5, 0.5, 1.0], 0.5, 1.0) == -2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, 0.5, 0.5, 2.0], 0.5, 0.0) == 1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, 0.5, 0.5, 2.0], 0.5, -1.0) == 1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-1.0, 0.5, 0.5, 2.0], 0.5, 1.0) == 5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 0.0, 0.0], 0.5, 0.0) == -0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 0.0, 0.0], 0.5, -1.0) == -0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 0.0, 0.0], 0.5, 1.0) == -1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 0.0, 1.0], 0.5, 0.0) == 0.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 0.0, 1.0], 0.5, -1.0) == -0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 0.0, 1.0], 0.5, 1.0) == 2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 0.0, 1.0], 0.0, 1.0) == 4.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 0.0, 2.0], 0.5, 0.0) == 0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 0.0, 2.0], 0.5, -1.0) == -0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 0.0, 2.0], 0.5, 1.0) == 5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 1.0, 1.0], 0.5, 0.0) == 0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 1.0, 1.0], 0.5, -1.0) == 0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 1.0, 1.0], 0.5, 1.0) == 2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 1.0, 2.0], 0.5, 0.0) == 1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 1.0, 2.0], 0.5, -1.0) == 0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, -0.5, 1.0, 2.0], 0.5, 1.0) == 5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.0, 0.0, 0.5], 0.5, 0.0) == 0.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.0, 0.0, 0.5], 0.5, 1.0) == -1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.0, 0.5, 1.0], 0.5, 0.0) == 0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.0, 0.5, 1.0], 0.5, -1.0) == 0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.0, 0.5, 1.0], 0.5, 1.0) == 2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.0, 0.5, 2.0], 0.5, 0.0) == 1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.0, 0.5, 2.0], 0.5, -1.0) == 0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.0, 0.5, 2.0], 0.5, 1.0) == 5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.5, 1.0, 1.0], 0.5, 0.0) == 1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.5, 1.0, 1.0], 0.5, -1.0) == 1.875
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.5, 1.0, 1.0], 0.5, 1.0) == 2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.5, 1.0, 1.0], 0.0, -1.0) == 3.0
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.5, 1.0, 1.0], 1.0, -1.0) == 0.75
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.5, 1.0, 2.0], 0.5, 0.0) == 1.875
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.5, 1.0, 2.0], 0.5, -1.0) == 1.875
+    assert aggregations.sum_maxabs_tmean_aggregation([-0.5, 0.5, 1.0, 2.0], 0.5, 1.0) == 5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([0.0, 0.0, 0.5, 0.5], 0.5, 0.0) == 0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([0.0, 0.0, 0.5, 0.5], 0.5, -1.0) == 0.625
+    assert aggregations.sum_maxabs_tmean_aggregation([0.0, 0.0, 0.5, 0.5], 0.5, 1.0) == 1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([0.0, 0.5, 0.5, 1.0], 0.5, 0.0) == 1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([0.0, 0.5, 0.5, 1.0], 0.5, -1.0) == 1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([0.0, 0.5, 0.5, 1.0], 0.5, 1.0) == 2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([0.0, 0.5, 0.5, 2.0], 0.5, 0.0) == 1.875
+    assert aggregations.sum_maxabs_tmean_aggregation([0.0, 0.5, 0.5, 2.0], 0.5, -1.0) == 1.25
+    assert aggregations.sum_maxabs_tmean_aggregation([0.0, 0.5, 0.5, 2.0], 0.5, 1.0) == 5.0
+    assert aggregations.sum_maxabs_tmean_aggregation([0.5, 0.5, 1.0, 1.0], 0.5, 0.0) == 1.875
+    assert aggregations.sum_maxabs_tmean_aggregation([0.5, 0.5, 1.0, 1.0], 0.5, -1.0) == 1.875
+    assert aggregations.sum_maxabs_tmean_aggregation([0.5, 0.5, 1.0, 1.0], 0.5, 1.0) == 2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([0.5, 0.5, 1.0, 2.0], 0.5, 0.0) == 2.5
+    assert aggregations.sum_maxabs_tmean_aggregation([0.5, 0.5, 1.0, 2.0], 0.5, -1.0) == 1.875
+    assert aggregations.sum_maxabs_tmean_aggregation([0.5, 0.5, 1.0, 2.0], 0.5, 1.0) == 5.0
 
 
 def minabs_aggregation(x):
@@ -356,12 +957,20 @@ def test_get_Evolved_MPF_simple():
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    assert config.genome_config.get_aggregation_Evolved_MPF('max_median_min') is not None
-    assert config.genome_config.get_aggregation_Evolved_MPF('maxabs_mean') is not None
-    assert config.genome_config.get_aggregation_Evolved_MPF('sum_mean') is not None
-    assert config.genome_config.get_aggregation_Evolved_MPF('product_mean') is not None
-    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product_mean') is not None
-    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product') is not None
+    param_namespace = Namespace()
+
+    assert config.genome_config.get_aggregation_Evolved_MPF('max_median_min',
+                                                            param_namespace=param_namespace) is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('maxabs_mean',
+                                                            param_namespace=param_namespace) is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('sum_mean',
+                                                            param_namespace=param_namespace) is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('product_mean',
+                                                            param_namespace=param_namespace) is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product_mean',
+                                                            param_namespace=param_namespace) is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product',
+                                                            param_namespace=param_namespace) is not None
 
     try:
         ignored = config.genome_config.get_aggregation_Evolved_MPF('foo')
@@ -378,13 +987,22 @@ def test_get_Evolved_MPF_complex():
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    assert config.genome_config.get_aggregation_Evolved_MPF('max_median_min(0.5)') is not None
-    assert config.genome_config.get_aggregation_Evolved_MPF('maxabs_mean(0.5)') is not None
-    assert config.genome_config.get_aggregation_Evolved_MPF('sum_mean(0.5)') is not None
-    assert config.genome_config.get_aggregation_Evolved_MPF('product_mean(0.5,True)') is not None
-    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product_mean(0.5,0.5,True)') is not None
-    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product(0.5)') is not None
-    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product(1)') is not None
+    param_namespace = Namespace()
+
+    assert config.genome_config.get_aggregation_Evolved_MPF('max_median_min(0.5)',
+                                                            param_namespace=param_namespace) is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('maxabs_mean(0.5)',
+                                                            param_namespace=param_namespace) is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('sum_mean(0.5)',
+                                                            param_namespace=param_namespace) is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('product_mean(0.5,True)',
+                                                            param_namespace=param_namespace) is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product_mean(0.5,0.5,True)',
+                                                            param_namespace=param_namespace) is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product(0.5)',
+                                                            param_namespace=param_namespace) is not None
+    assert config.genome_config.get_aggregation_Evolved_MPF('sum_product(1)',
+                                                            param_namespace=param_namespace) is not None
 
     try:
         ignored = config.genome_config.get_aggregation_Evolved_MPF('foo(0.5)')
@@ -402,8 +1020,10 @@ def test_get_Evolved_MPF_complex():
         raise Exception(
             "Should have had a RuntimeError/derived for get_aggregation_Evolved_MPF('maxabs_mean(0.5,0.5,0.5)')")
 
-    test_result = config.genome_config.get_aggregation_Evolved_MPF('product_mean(0.5,True)')
-    assert str(test_result) == str(config.genome_config.get_aggregation_Evolved_MPF(str(test_result)))
+    test_result = config.genome_config.get_aggregation_Evolved_MPF('product_mean(0.5,True)',
+                                                                   param_namespace=param_namespace)
+    assert str(test_result) == str(config.genome_config.get_aggregation_Evolved_MPF(str(test_result),
+                                                                                    param_namespace=param_namespace))
     assert config.genome_config.multiparameterset.get_func(str(test_result), 'aggregation') is not None
 
 if __name__ == '__main__':

@@ -4,6 +4,7 @@ from neat.six_util import itervalues, iteritems
 
 
 class RecurrentNetwork(object):
+    """A recurrent (but otherwise straightforward) neural network."""
     def __init__(self, inputs, outputs, node_evals):
         self.input_nodes = inputs
         self.output_nodes = outputs
@@ -14,7 +15,7 @@ class RecurrentNetwork(object):
             for k in inputs + outputs:
                 v[k] = 0.0
 
-            for node, ignored_activ,ignored_aggr,ignored_bias,ignored_resp, links in self.node_evals:
+            for node, ignored_act,ignored_agr,ignored_bias,ignored_resp, links in self.node_evals:
                 v[node] = 0.0
                 for i, ignored_w in links:
                     v[i] = 0.0

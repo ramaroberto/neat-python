@@ -1,5 +1,6 @@
 from __future__ import print_function
 #import os
+import sys
 import warnings
 
 import neat
@@ -46,6 +47,25 @@ def test_random_proportional_selection():
     assert neat.math_util.random_proportional_selection([0.0,0.0,2.0]) == 2
     assert neat.math_util.random_proportional_selection([0.0,0.0001,0.0]) == 1
     assert 0 < neat.math_util.random_proportional_selection([0.0,1.0,1.0]) <= 2
+
+    saw_01 = False
+    saw_2 = False
+    likelihood = 1.0
+    times_tried = 0
+    while not (saw_01 and saw_2):
+        times_tried += 1
+        result = neat.math_util.random_proportional_selection([0.5,0.5,1.0])
+        if result == 2:
+            saw_2 = True
+        elif 0 <= result <= 1:
+            saw_01 = True
+        else:
+            raise AssertionError("Saw bad result {0!r}".format(result))
+        likelihood *= 0.5
+        if likelihood >= sys.float_info.epsilon:
+            raise AssertionError(
+                "Tried for both results {0:n} times (saw_01 {1} saw_2 {2}".format(
+                    times_tried, saw_01, saw_2))
 
 if __name__ == '__main__':
     test_softmax()

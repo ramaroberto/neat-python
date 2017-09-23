@@ -14,9 +14,9 @@ activation_mutate_rate  = 0.0
 activation_options      = multiparam_sigmoid
 
 # node aggregation options
-aggregation_default     = sum_product_mean
+aggregation_default     = max_median_min
 aggregation_mutate_rate = 0.0
-aggregation_options     = sum_product_mean
+aggregation_options     = max_median_min
 
 # node bias options
 bias_init_mean          = 0.0

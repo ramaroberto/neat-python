@@ -23,7 +23,16 @@ DO_PRINT_FOR_TESTING = True
 PRINT_LONG_NUMS_FOR_TESTING = False
 PRINT_CHOOSING_AMONG = False
 
-DO_ONLY = ("multiparam_tanh_approx","multiparam_sigmoid_approx")
+DO_ONLY = ("clamped_log1p_step")
+
+CPPN_MAYBE_GROUP = ['hat_gauss_rectangular', 'multiparam_gauss',
+                    'bicentral']
+
+CPPN_DEFINITE_GROUP = ['fourth_square_abs',
+                       'multiparam_log_inv',
+                       'scaled_expanded_log',
+                       'wave']
+CPPN_NO_GROUP = CPPN_MAYBE_GROUP[:]
 
 HIGH_NORM_EPSILON = round(math.ceil(NORM_EPSILON*(10**6))*(10**-6),6)
 
@@ -35,6 +44,7 @@ strings_done = set([])
 def print_for_testing(string, result, data):
     if not DO_PRINT_FOR_TESTING:
         return
+    global strings_done, save_to_print, save_exact_to_print, save_to_print_abs
     if string in strings_done:
         return
     else:
@@ -58,7 +68,7 @@ def print_for_testing(string, result, data):
           < 1e-06) and (abs(result-round(result,0))
                         > NORM_EPSILON) and (abs(result-round(result,2))
                                              > math.sqrt(sys.float_info.epsilon)):
-        save_result = round(result,sys.float_info.dig)
+        save_result = round(result,min(8,sys.float_info.dig))
         if (abs(result-save_result) >= 1e-07):
             raise RuntimeError(
                 "Result {0!r} vs save_result {1!r} (diff {2:n}, dig {3:n})".format(
@@ -225,6 +235,18 @@ def do_prints():
             did_print_result_abs.add(abs_rounded)
     save_exact_to_print = {}
 
+def trim_image(tmpname, realname):
+    img = Image.open(tmpname)
+    bg = Image.new(img.mode, img.size, img.getpixel((0,0)))
+    diff = ImageChops.difference(img, bg)
+    bbox = diff.getbbox()
+    if bbox:
+        new_img = img.crop(bbox)
+        new_img.save(realname)
+    else:
+        img.save(realname)
+    os.unlink(tmpname)
+
 num_subfigures = 5 # ODD NUMBERS ONLY!
 
 x = np.linspace(-2.5, 2.5, 5000)
@@ -248,69 +270,85 @@ for n in sorted(iterkeys(mps.norm_func_dict['activation'])):
         print_for_testing("{0}_activation({1!s})".format(n,i),f(i),[i])
     do_prints()
 
+def get_other_vars(mpf,name1,name2):
+    if len(mpf.evolved_param_names) == 2:
+        return {}
+    to_return_dict = {}
+    for name in [name3 for name3 in mpf.evolved_param_names if ((name3 != name1) and
+                                                                (name3 != name2))]:
+        dict3 = mpf.param_dicts[name].param_dict
+        min_value_use = dict3.get('min_init_value', dict3['min_value'])
+        max_value_use = dict3.get('max_init_value', dict3['max_value'])
+        to_return_dict[name] = dict3.get('init_mean', ((min_value_use+max_value_use)/2.0))
+    return to_return_dict
+
+def format_dict(mpf,var_dict):
+    to_join = []
+    for n in mpf.evolved_param_names:
+        if n in var_dict:
+            to_join.append("{0}={1!r}".format(n, var_dict[n]))
+        else:
+            to_join.append(n)
+    return ",".join(to_join)
+
 for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
     if (DO_ONLY is not None) and (n not in DO_ONLY):
         continue
+    if (n not in CPPN_MAYBE_GROUP) and (n not in CPPN_DEFINITE_GROUP):
+        CPPN_NO_GROUP.append(n)
     mpf = mps.multiparam_func_dict['activation'][n]
     f = mpf.user_func
-    param_name = mpf.evolved_param_names[0]
-    print("{0} dict for {1}: {2!r}".format(
-        n, param_name, mpf.evolved_param_dicts[param_name]))
-    if len(mpf.evolved_param_names) > 2: # NOTE: EVENTUALLY ALSO NEED TO CHECK FOR NON-FLOAT!
-        print("Cannot currently handle 3+ evolved parameters (function {0!s}: {1!r})".format(n,f))
-        continue
-    elif len(mpf.evolved_param_names) > 1:
-        param2_name = mpf.evolved_param_names[1]
-        swap=[False,True]
-        print("{0} dict for {1}: {2!r}".format(
-            n, param2_name, mpf.evolved_param_dicts[param2_name]))
+    if len(mpf.evolved_param_names) == 1:
+        name_nums = [tuple([0,0])]
     else:
-        param2_name = None
-        swap=[False]
-    for do_swap in swap:
+        name_nums = []
+        for i in range(len(mpf.evolved_param_names)-1):
+            for j in range((i+1),len(mpf.evolved_param_names)):
+                name_nums.append(tuple([i,j]))
+                name_nums.append(tuple([j,i]))
+    for name_num1, name_num2 in name_nums:
+        param_name = mpf.evolved_param_names[name_num1]
+        print("{0} dict for {1}: {2!r}".format(
+            n, param_name, mpf.param_dicts[param_name].param_dict))
+        if name_num1 != name_num2:
+            param2_name = mpf.evolved_param_names[name_num2]
+            print("{0} dict for {1}: {2!r}".format(
+                n, param2_name, mpf.param_dicts[param2_name].param_dict))
+        else:
+            param2_name = None
         if param2_name is not None:
             fig = plt.figure(figsize=((5*num_subfigures),4))
         else:
             fig = plt.figure(figsize=((4*num_subfigures),4))
         plt.delaxes()
+        other_vars = {}
         if param2_name is not None:
-            fig.suptitle("{0}(x,{1},{2})".format(n,param_name,param2_name))
-        else:
-            fig.suptitle("{0}(x,{1})".format(n, param_name))
-        dict1 = mpf.evolved_param_dicts[param_name]
+            other_vars = get_other_vars(mpf,param_name,param2_name)
+        fig.suptitle("{0}(x,{1})".format(n, format_dict(mpf,other_vars)))
+        dict1 = mpf.param_dicts[param_name].param_dict
         min_value = dict1.get('min_init_value', dict1['min_value'])
         max_value = dict1.get('max_init_value', dict1['max_value'])
         init_type = dict1.get('init_type', 'uniform')
+        middle_param_value = dict1.get('init_mean', ((min_value+max_value)/2.0))
         if param2_name is not None:
-            dict2 = mpf.evolved_param_dicts[param2_name]
+            dict2 = mpf.param_dicts[param2_name].param_dict
             min_value2 = dict2.get('min_init_value', dict2['min_value'])
             max_value2 = dict2.get('max_init_value', dict2['max_value'])
             init_type2 = dict2.get('init_type', 'uniform')
-        if do_swap:
-            param_use = param2_name
-            param2_use = param_name
-            max_value_use = max_value2
-            min_value_use = min_value2
-            max_value2_use = max_value
-            min_value2_use = min_value
-            init_use = init_type2
-            init2_use = init_type
-        else:
-            param_use = param_name
-            param2_use = param2_name
-            max_value_use = max_value
-            min_value_use = min_value
-            init_use = init_type
-            if param2_name is not None:
-                max_value2_use = max_value2
-                min_value2_use = min_value2
-                init2_use = init_type2
+        param_use = param_name
+        param2_use = param2_name
+        max_value_use = max_value
+        min_value_use = min_value
+        init_use = init_type
+        if param2_name is not None:
+            max_value2_use = max_value2
+            min_value2_use = min_value2
+            init2_use = init_type2
         param_value_list = [round(a,3) for a in list(np.linspace(max_value_use, min_value_use, num_subfigures))]
-        middle_param_value = median2(param_value_list)
         if init_use.lower() in 'uniform':
             important_nums = (min_value_use,middle_param_value,max_value_use)
         elif init_use.lower() in ('gaussian', 'normal'):
-            tmp_param_value_list = sorted(param_value_list, key=lambda x: abs(x-middle_param_value))
+            tmp_param_value_list = sorted(param_value_list, key=lambda tmp: abs(tmp-middle_param_value))
             important_nums = (middle_param_value, tmp_param_value_list[1], tmp_param_value_list[2])
         else:
             raise ValueError(
@@ -333,22 +371,15 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
                         "{0}: Unknown init_type {1!r} for param2_use '{2}'".format(
                             n, init2_use, param2_use))
                 for b, color in zip(param2_value_list, colors_use):
-                    if do_swap:
-                        plt.plot(x, [f(i,b,a) for i in x], color, label="{0}={1}".format(param2_use,b))
-                        if (color in important_colors) and (a in important_nums):
-                            for i in (-1.0,-0.5,0.0,0.5,1.0):
-                                print_for_testing("{0}_activation({1!s},{2!r},{3!r})".format(n,i,b,a),f(i,b,a),[i,b,a])
-                        elif (color in important_colors) or (a in important_nums):
-                            for i in (-1.0,0.0,1.0):
-                                print_for_testing("{0}_activation({1!s},{2!r},{3!r})".format(n,i,b,a),f(i,b,a),[i,b,a])
-                    else:
-                        plt.plot(x, [f(i,a,b) for i in x], color, label="{0}={1}".format(param2_use,b))
-                        if (color in important_colors) and (a in important_nums):
-                            for i in (-1.0,-0.5,0.0,0.5,1.0):
-                                print_for_testing("{0}_activation({1!s},{2!r},{3!r})".format(n,i,a,b),f(i,a,b),[i,a,b])
-                        elif (color in important_colors) or (a in important_nums):
-                            for i in (-1.0,0.0,1.0):
-                                print_for_testing("{0}_activation({1!s},{2!r},{3!r})".format(n,i,a,b),f(i,a,b),[i,a,b])
+                    other_vars.update({param_use:a, param2_use:b})
+                    all_nums = [other_vars[name4] for name4 in mpf.evolved_param_names]
+                    plt.plot(x, [f(i,**other_vars) for i in x], color, label="{0}={1}".format(param2_use,b))
+                    if (color in important_colors) and (a in important_nums):
+                        for i in (-1.0,-0.5,0.0,0.5,1.0):
+                            print_for_testing("{0}_activation({1!s},{2!s})".format(n,i,format_dict(mpf,other_vars)),f(i,**other_vars),[i]+all_nums)
+                    elif (color in important_colors) or (a in important_nums):
+                        for i in (-1.0,0.0,1.0):
+                            print_for_testing("{0}_activation({1!s},{2!s})".format(n,i,format_dict(mpf,other_vars)),f(i,**other_vars),[i]+all_nums)
             else:
                 plt.plot(x, [f(i,a) for i in x])
                 if a == middle_param_value:
@@ -362,9 +393,12 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
             plt.xlim(-2.0, 2.0)
             plt.ylim(-2.0, 2.0)
             if param2_name is not None:
-                plt.legend()
+                plt.legend(loc='best')
                 plt.gca().set_aspect(1)
-        if do_swap:
+        if len(mpf.evolved_param_names) > 2:
+            tmpname = "activation-tmp-{0}-{1}-{2}.png".format(n,param_name,param2_name)
+            realname = "activation-{0}-{1}-{2}.png".format(n,param_name,param2_name)
+        elif name_num1 > name_num2:
             tmpname = "activation-tmp-swap-{0}.png".format(n)
             realname = "activation-swap-{0}.png".format(n)
         else:
@@ -372,15 +406,82 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
             realname = "activation-{0}.png".format(n)
         plt.savefig(tmpname)
         plt.close()
-        img = Image.open(tmpname)
-        bg = Image.new(img.mode, img.size, img.getpixel((0,0)))
-        diff = ImageChops.difference(img, bg)
-        bbox = diff.getbbox()
-        if bbox:
-            new_img = img.crop(bbox)
-            new_img.save(realname)
-        else:
-            img.save(realname)
-        os.unlink(tmpname)
-        if not do_swap:
-            do_prints()
+        trim_image(tmpname, realname)
+    do_prints()
+
+def do_funcs_for_name(funcs, name, group_name):
+    y_size = min((5*num_subfigures),(4+math.floor(len(funcs)/3.0)))
+    fig = plt.figure(figsize=((5*num_subfigures),y_size))
+    plt.delaxes()
+    fig.suptitle("{0} activation functions using {1}".format(group_name,name))
+    dict1 = mps.shared_names['activation'][name].param_dict
+    min_value = dict1.get('min_init_value', dict1['min_value'])
+    max_value = dict1.get('max_init_value', dict1['max_value'])
+    param_value_list = [round(a,3) for a in list(np.linspace(max_value, min_value, num_subfigures))]
+    subplot_num = 0
+    for a in param_value_list:
+        subplot_num += 1
+        fig.add_subplot(1,num_subfigures,subplot_num)
+
+        for n in funcs:
+            mpf = mps.multiparam_func_dict['activation'][n]
+            all_vars = {name:a}
+            for name2 in [name3 for name3 in mpf.evolved_param_names if (name3 != name)]:
+                dict2 = mpf.param_dicts[name2].param_dict
+                min_value_use = dict2.get('min_init_value', dict2['min_value'])
+                max_value_use = dict2.get('max_init_value', dict2['max_value'])
+                all_vars[name2] = dict2.get('init_mean', ((min_value+max_value)/2.0))
+            f = mpf.user_func
+            plt.plot(x, [f(i, **all_vars) for i in x], label=n)
+        plt.title("{0}={1}".format(name, a))
+        plt.grid()
+        plt.xlim(-2.0, 2.0)
+        plt.ylim(math.ceil(y_size*-0.5), 2.0)
+        plt.legend(loc='best')
+    tmpname = "shared-tmp-{0}-{1}.png".format(name,group_name)
+    realname = "shared-{0}-{1}.png".format(name,group_name)
+    plt.savefig(tmpname)
+    plt.close()
+    trim_image(tmpname, realname)
+
+skipped_names = {}
+
+for group in (CPPN_NO_GROUP, CPPN_MAYBE_GROUP, CPPN_DEFINITE_GROUP):
+    shared_param_dict = {}
+    if group == CPPN_NO_GROUP:
+        group_name = 'Non-CPPN'
+    elif group == CPPN_MAYBE_GROUP:
+        group_name = 'Maybe-CPPN'
+    else:
+        group_name = 'CPPN'
+    for n in group:
+        mpf = mps.multiparam_func_dict['activation'][n]
+        for name in mpf.evolved_param_names:
+            if name in mps.shared_names['activation']:
+                if name in shared_param_dict:
+                    shared_param_dict[name].append(n)
+                else:
+                    shared_param_dict[name] = [n]
+    for name in sorted(iterkeys(shared_param_dict)):
+        funcs = shared_param_dict[name]
+        if len(funcs) < 2:
+            print("{0}: Only {1:n} func ({2!r}) for '{3}'".format(
+                group_name,
+                len(funcs),
+                funcs,
+                name))
+            if name in skipped_names:
+                skipped_names[name].add(funcs[0])
+            else:
+                skipped_names[name] = set(funcs)
+            continue
+        do_funcs_for_name(funcs, name, group_name)
+
+for name in sorted(iterkeys(skipped_names)):
+    funcs = skipped_names[name]
+    if len(funcs) >= 2:
+        do_funcs_for_name(funcs, name, 'Skipped')
+    else:
+        print("Only {0:n} func ({1!r}) for '{2}'".format(len(funcs),
+                                                         funcs,
+                                                         name))

@@ -15,7 +15,7 @@ from neat.config import ConfigParameter, write_pretty_params
 from neat.genes import DefaultConnectionGene, DefaultNodeGene
 from neat.graphs import creates_cycle
 from neat.multiparameter import MultiParameterSet
-from neat.six_util import iteritems, iterkeys
+from neat.six_util import iteritems, iterkeys, itervalues
 
 
 class DefaultGenomeConfig(object):
@@ -119,11 +119,13 @@ class DefaultGenomeConfig(object):
     def get_aggregation_MPF(self, name):
         return self.multiparameterset.get_MPF(name, 'aggregation')
 
-    def get_activation_Evolved_MPF(self, name):
-        return self.multiparameterset.get_Evolved_MPF(name, 'activation')
+    def get_activation_Evolved_MPF(self, name, param_namespace=None):
+        return self.multiparameterset.get_Evolved_MPF(name, 'activation',
+                                                      param_namespace=param_namespace)
 
-    def get_aggregation_Evolved_MPF(self, name):
-        return self.multiparameterset.get_Evolved_MPF(name, 'aggregation')
+    def get_aggregation_Evolved_MPF(self, name, param_namespace=None):
+        return self.multiparameterset.get_Evolved_MPF(name, 'aggregation',
+                                                      param_namespace=param_namespace)
 
     def save(self, f):
         if 'partial' in self.initial_connection:
@@ -356,8 +358,8 @@ class DefaultGenome(object):
         """ Mutates this genome. """
 
         if config.single_structural_mutation:
-            div = max(1,(config.node_add_prob + config.node_delete_prob +
-                         config.conn_add_prob + config.conn_delete_prob))
+            div = max(1.0,(config.node_add_prob + config.node_delete_prob +
+                           config.conn_add_prob + config.conn_delete_prob))
             r = random()
             if r < (config.node_add_prob/div):
                 self.mutate_add_node(config)
@@ -383,11 +385,11 @@ class DefaultGenome(object):
                 self.mutate_delete_connection(config)
 
         # Mutate connection genes.
-        for cg in self.connections.values():
+        for cg in itervalues(self.connections):
             cg.mutate(config)
 
         # Mutate node genes (bias, response, etc.).
-        for ng in self.nodes.values():
+        for ng in itervalues(self.nodes):
             ng.mutate(config)
 
     def mutate_add_node(self, config):
@@ -472,7 +474,7 @@ class DefaultGenome(object):
         del_key = choice(available_nodes)
 
         connections_to_delete = set()
-        for k in iterkeys(self.connections):
+        for k in iterkeys(self.connections): # replace with node having dicts of connections
             if del_key in k:
                 connections_to_delete.add(k)
                 if k[0]==del_key:
@@ -571,7 +573,7 @@ class DefaultGenome(object):
         node.init_attributes(config)
         return node
 
-    @staticmethod
+    @staticmethod # if add conn dicts to nodes, no longer staticmethod
     def create_connection(config, input_id, output_id):
         connection = config.connection_gene_type((input_id, output_id))
         connection.init_attributes(config)

@@ -108,7 +108,9 @@ def repr_extract_function_name(function,
                                                    no_match=no_match,
                                                    with_module=with_module)
             if (poss_name is not None) and as_partial:
-                return partial_extract_function_args(function, poss_name=poss_name, no_match=no_match)
+                return partial_extract_function_args(function,
+                                                     poss_name=poss_name,
+                                                     no_match=no_match)
             return poss_name
         else:
             poss_name = extract_function_name(repr_result, start_only=True, no_match=no_match)

@@ -11,7 +11,7 @@ import warnings
 
 from pprint import saferepr
 
-from neat.math_util import NORM_EPSILON
+from neat.math_util import NORM_EPSILON, check_value_range
 from neat.multiparameter import MultiParameterSet
 from neat.multiparameter import BadFunctionError as InvalidActivationFunction # pylint: disable=unused-import
 
@@ -204,18 +204,25 @@ def multiparam_elu_activation(z, tilt, lower):
 ##    return multiparam_lu_activation(z, a, b, 0.0)
 
 def _check_value_range(a, min_val, max_val, caller, var_name):
-    if not min_val <= a <= max_val:
-        raise ValueError(
-            "{0} for {1}_activation must be between {2:n} and {3:n}, not {4!s}".format(
-                var_name, caller, min_val, max_val, saferepr(a)))
+    check_value_range(var=a,
+                      min_val=min_val,
+                      max_val=max_val,
+                      caller=caller,
+                      var_name=var_name,
+                      add_name="activation")
 
 def weighted_lu_activation(z, curve, tilt):
     _check_value_range(curve, 0.0, 1.0, 'weighted_lu', 'curve')
 
+    if curve == 0.0:
+        return multiparam_relu_activation(z, tilt)
+    if curve == 1.0:
+        return _multiparam_elu_activation_inner(z, tilt, 0.0)
+
     return (((1.0-curve)*multiparam_relu_activation(z, tilt))+
             (curve*_multiparam_elu_activation_inner(z, tilt, 0.0)))
 
-def multiparam_softplus_activation(z, curve):
+def _multiparam_softplus_activation_inner(z, curve):
     a = 1.0 - (2.5*curve)
     try:
         to_return = math.log1p(math.exp(5.0*z*math.exp(a)))*0.2*math.exp(-a)
@@ -228,6 +235,17 @@ def multiparam_softplus_activation(z, curve):
     else:
         return to_return
 
+def multiparam_softplus_activation(z, curve):
+    if curve >= 0.5:
+        return _multiparam_softplus_activation_inner(z, curve)
+    elif curve == 0.0:
+        return relu_activation(z)
+
+    weight_relu = ((0.5-curve)*2.0)**4
+
+    return (((1.0-weight_relu)*_multiparam_softplus_activation_inner(z, curve))+
+            (weight_relu*relu_activation(z)))
+
 def multiparam_relu_softplus_activation(z, tilt, curve):
     _check_value_range(tilt, -1.0, 1.0, 'multiparam_relu_softplus', 'tilt')
     _check_value_range(curve, 0.0, 1.0, 'multiparam_relu_softplus', 'curve')
@@ -235,11 +253,13 @@ def multiparam_relu_softplus_activation(z, tilt, curve):
     weight_softplus = (1.0-abs(tilt)+curve)/2.0
     if weight_softplus < NORM_EPSILON:
         return multiparam_relu_activation(z, tilt)
-    
+    if weight_softplus == 1.0:
+        return _multiparam_softplus_activation_inner(z, curve)
+
 ##    lower_sub = abs(tilt)*1.0
 ##    lower_use = (lower*(1.0+lower_sub)) - lower_sub
 
-    return ((weight_softplus*multiparam_softplus_activation(z, curve))
+    return ((weight_softplus*_multiparam_softplus_activation_inner(z, curve))
             + ((1.0-weight_softplus)*multiparam_relu_activation(z, tilt)))
 
 ##    a = (1.0-tilt)/2.0
@@ -255,9 +275,13 @@ def clamped_tanh_step_activation(z, tilt):
     tanh_weight = 1.0-abs(tilt)
 
     if tilt > 0.0:
+        if tilt == 1.0:
+            return clamped_activation(z)
         to_return = (((1.0-tanh_weight)*clamped_activation(z)) +
                      (tanh_weight*tanh_activation(z)))
     elif tilt < 0.0:
+        if tilt == -1.0:
+            return step_activation(z)
         to_return = (((1.0-tanh_weight)*step_activation(z)) +
                      (tanh_weight*tanh_activation(z)))
     else:
@@ -268,6 +292,32 @@ def clamped_tanh_step_activation(z, tilt):
 def multiparam_sigmoid_activation(z, tilt):
     """Conversion of clamped_tanh_step_activation to a 0-1 output range"""
     return max(0.0,min(1.0,((clamped_tanh_step_activation(z, tilt)+1.0)/2.0)))
+
+def clamped_step_activation(z, tilt):
+    _check_value_range(tilt, -1.0, 1.0, 'clamped_tanh_step', 'tilt')
+
+    if tilt == 1.0:
+        return clamped_activation(z)
+    if tilt == -1.0:
+        return step_activation(z)
+    if z == 0.0:
+        return 0.0
+
+    a=(1.0+tilt)/2.0
+    if abs(z) >= a:
+        return step_activation(z)
+    return z/a
+
+def _extended_clamped_step_activation(z, tilt2):
+    if tilt2 <= -1.0:
+        return step_activation(z)
+    if z == 0.0:
+        return 0.0
+
+    a=(1.0+tilt2)/2.0
+    if abs(z) >= a:
+        return step_activation(z)
+    return z/a
 
 _ABS_GAUSS_EPSILON = math.exp(-5.0 * NORM_EPSILON)
 
@@ -307,11 +357,15 @@ def hat_gauss_rectangular_activation(z, width, curve):
     to_return = 0.0
 
     if hat_weight > 0.0:
+        if hat_weight == 1.0:
+            return hat_activation(z)
         to_return += hat_weight*hat_activation(z)
+    if rectangular_weight > 0.0:
+        if rectangular_weight == 1.0:
+            return rectangular_activation(z)
+        to_return += rectangular_weight*rectangular_activation(z)
     if curve > 0.0:
         to_return += curve*multiparam_gauss_activation(z, width, 0.5)
-    if rectangular_weight > 0.0:
-        to_return += rectangular_weight*rectangular_activation(z)
 
     return max(-1.0,min(1.0,to_return))
 
@@ -324,8 +378,10 @@ def scaled_expanded_log_activation(z, tilt): # mostly intended for CPPNs
 
 def multiparam_log_inv_activation(z, tilt): # mostly intended for CPPNs
     _check_value_range(tilt, -1.0, 1.0, 'multiparam_log_inv', 'tilt')
-    if tilt >= 0:
+    if tilt >= 0.0:
         return scaled_expanded_log_activation(z,tilt)
+    if tilt == -1.0:
+        return inv_activation(-1*z)
     return ((abs(tilt)*inv_activation(-1*z))
             +((1.0-abs(tilt))*scaled_expanded_log_activation(z,0.0)))
 
@@ -334,11 +390,41 @@ def scaled_log1p_activation(z, tilt):
     a = min(sys.float_info.max_10_exp, max(sys.float_info.min_10_exp, a))
     return math.copysign(math.exp(0.5-a),z)*math.log1p(abs(z*math.exp(a)))
 
+def clamped_log1p_step_activation(z, curve, tilt):
+    _check_value_range(curve, 0.0, 1.0, 'clamped_log1p_step', 'curve')
+    _check_value_range(tilt, -1.0, 1.0, 'clamped_log1p_step', 'tilt')
+
+    tilt2 = ((tilt+1.0)*1.5)-1.0
+
+    clamped_step_part = (1.0-curve)*_extended_clamped_step_activation(z, tilt2)
+    if curve == 0.0:
+        return clamped_step_part
+
+    other_part = curve*scaled_log1p_activation(z, tilt)
+    return clamped_step_part+other_part
+
+##    if tilt >= 0.32220367278798001:
+##        clamped_step_slope = (0.023736915154962276*tilt) + 0.76726263248551119
+##    elif tilt <= -0.27545909849749584:
+##        clamped_step_slope = (0.15249138843483784*tilt) + 0.75685312690039497
+##    else:
+##        prop_high = (tilt + 0.27545909849749584)/(0.32220367278798001 + 0.27545909849749584)
+##        high_slope = (0.023736915154962276*tilt) + 0.76726263248551119
+##        low_slope = (0.15249138843483784*tilt) + 0.75685312690039497
+##        clamped_step_slope = (prop_high*high_slope)+((1.0-prop_high)*low_slope)
+##    tilt_for_scaled_log1p = (clamped_step_slope - 0.85883776552031577)/0.49708835912756039
+##    other_part = scaled_log1p_activation(z, tilt_for_scaled_log1p)
+##    if curve == 1.0:
+##        return other_part
+##    return clamped_step_part+(curve*other_part)
+
 def multiparam_tanh_log1p_activation(z, curve, tilt):
     _check_value_range(curve, 0.0, 1.0, 'multiparam_tanh_log1p', 'curve')
     _check_value_range(tilt, -1.0, 1.0, 'multiparam_tanh_log1p', 'tilt')
 
     tanh_part = (1.0-curve)*clamped_tanh_step_activation(z, tilt)
+    if curve == 0.0:
+        return tanh_part
 
     if tilt > 0.0:
         other_part = curve*((tilt*z)+
@@ -372,16 +458,20 @@ def wave_activation(z, width):
     sin_wgt = 1.0-abs(a)
 
     if a > 0.0:
+        if a == 1.0:
+            return triangle_wave_activation(z)
         to_return = ((a*triangle_wave_activation(z))
                      +(sin_wgt*sin_activation(z)))
     elif a < 0.0:
+        if a == -1.0:
+            return square_wave_activation(z)
         to_return = (((1-sin_wgt)*square_wave_activation(z))
                      +(sin_wgt*sin_activation(z)))
     else:
         to_return = sin_activation(z)
 
     return min(1.0,max(-1.0,to_return))
-        
+
 def multiparam_tanh_approx_activation(z, g_curve, tilt):
     _check_value_range(tilt, -1.0, 1.0, 'multiparam_tanh_approx', 'tilt')
 
@@ -415,22 +505,50 @@ def multiparam_sigmoid_approx_activation(z, g_curve):
     return min(1.0,max(0.0,((1.0+multiparam_tanh_approx_activation(
         (1.1054759*z), g_curve, 0.0))/2.0)))
 
-def bisigmoid_activation(z, tilt, width):
-    a = 5.0*tilt
-    part1 = math.exp(a)*(z + width)
-    part2 = math.exp(-a)*(z - width)
+##def bisigmoid_activation(z, tilt, width):
+##    a = 5.0*tilt
+##    part1 = math.exp(a)*(z + width)
+##    part2 = math.exp(-a)*(z - width)
 
-    return sigmoid_approx_activation(part1)*(1.0-sigmoid_approx_activation(part2))
+##    return sigmoid_approx_activation(part1)*(1.0-sigmoid_approx_activation(part2))
 
-def bicentral_activation(z, lower, tilt):
+##def bicentral_activation(z, lower, tilt):
+##    a = ((lower*-2.0)+1.0)*3.0
+##    b = tilt*3.0
+##    a = min((sys.float_info.max_10_exp/2.0), max((sys.float_info.min_10_exp/2.0), a))
+##    b = min((sys.float_info.max_10_exp/2.0), max((sys.float_info.min_10_exp/2.0), b))
+##    part1 = math.exp(a+b)*(z + 0.5)
+##    part2 = math.exp(a-b)*(z - 0.5)
+
+##    return sigmoid_approx_activation(part1)*(1.0-sigmoid_approx_activation(part2))
+
+def bicentral_activation(z, lower, tilt, width):
     a = ((lower*-2.0)+1.0)*3.0
     b = tilt*3.0
     a = min((sys.float_info.max_10_exp/2.0), max((sys.float_info.min_10_exp/2.0), a))
     b = min((sys.float_info.max_10_exp/2.0), max((sys.float_info.min_10_exp/2.0), b))
-    part1 = math.exp(a+b)*(z + 0.5)
-    part2 = math.exp(a-b)*(z - 0.5)
+    part1 = math.exp(a+b)*(z + width)
+    part2 = math.exp(a-b)*(z - width)
 
-    return sigmoid_approx_activation(part1)*(1.0-sigmoid_approx_activation(part2))
+    height_mult = min(1.0,max(abs(tilt),(1.5-lower)))
+
+    return height_mult*sigmoid_approx_activation(part1)*(1.0-sigmoid_approx_activation(part2))
+
+def fourth_square_abs_activation(z, width):
+    _check_value_range(width, 0.0, 1.0, 'fourth_square_abs', 'width')
+    a = (width*2.0)-1.0
+
+    weight_square = 1.0-abs(a)
+
+    if a > 0.0:
+        if a == 1.0:
+            return z**4
+        return ((1.0-weight_square)*(z**4))+(weight_square*(z**2))
+    if a < 0.0:
+        if a == -1.0:
+            return abs(z)
+        return ((1.0-weight_square)*abs(z))+(weight_square*(z**2))
+    return z**2
 
 class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""
@@ -465,14 +583,30 @@ class ActivationFunctionSet(object):
         self.add('square_wave', square_wave_activation)
         self.add('triangle_wave', triangle_wave_activation)
         self.add('rectangular', rectangular_activation)
-        self.add('multiparam_relu', multiparam_relu_activation,
-                 tilt={'min_value':-1.0, 'max_value':1.0})
+
+        self.add_shared_name('tilt',
+                             **{'min_value':-1.0,
+                                'max_value':1.0})
+        self.add_shared_name('lower',
+                             **{'min_value':0.0,
+                                'max_value':1.0})
+        self.add_shared_name('curve',
+                             **{'min_value':0.0,
+                                'max_value':1.0})
+        self.add_shared_name('width',
+                             **{'min_value':0.0,
+                                'max_value':1.0})
+        self.add_shared_name('g_curve',
+                             **{'init_mean':-0.239897,
+                                'init_stdev':0.8660254037844387,
+                                'min_value':-12.0, 'max_value':12.0,
+                                'init_type':'gaussian'})
+
+        self.add('multiparam_relu', multiparam_relu_activation) # + tilt
 ##        self.add('multiparam_elu', multiparam_elu_activation_inner,
 ##                 a={'min_value':-1.0, 'max_value':1.0},
 ##                 b={'min_value':-1.0, 'max_value':1.0})
-        self.add('multiparam_elu', multiparam_elu_activation,
-                 tilt={'min_value':-1.0, 'max_value':1.0},
-                 lower={'min_value':0.0, 'max_value':1.0})
+        self.add('multiparam_elu', multiparam_elu_activation) # + tilt, lower
 ##        self.add('multiparam_elu_variant', multiparam_elu_variant_activation,
 ##                 a={'min_value':-1.0, 'max_value':1.0},
 ##                 b={'min_value':-1.0, 'max_value':1.0})
@@ -483,63 +617,41 @@ class ActivationFunctionSet(object):
 ##        self.add('multiparam_lu_partial', multiparam_lu_partial_activation,
 ##                 a={'min_value':-1.0, 'max_value':1.0},
 ##                 b={'min_value':-1.0, 'max_value':1.0})
-        self.add('weighted_lu', weighted_lu_activation,
-                 curve={'min_value':0.0, 'max_value':1.0},
-                 tilt={'min_value':-1.0, 'max_value':1.0})
-        self.add('multiparam_relu_softplus', multiparam_relu_softplus_activation,
-                 tilt={'min_value':-1.0, 'max_value':1.0},
-                 curve={'min_value':0.0, 'max_value':1.0})
-        self.add('clamped_tanh_step', clamped_tanh_step_activation,
-                 tilt={'min_value':-1.0, 'max_value':1.0})
-        self.add('multiparam_sigmoid', multiparam_sigmoid_activation,
-                 tilt={'min_value':-1.0, 'max_value':1.0})
-        self.add('hat_gauss_rectangular', hat_gauss_rectangular_activation,
-                 width={'min_value':0.0, 'max_value':1.0},
-                 curve={'min_value':0.0, 'max_value':1.0})
-        self.add('scaled_expanded_log', scaled_expanded_log_activation,
-                 tilt={'min_value':-1.0, 'max_value':1.0})
-        self.add('multiparam_log_inv', multiparam_log_inv_activation,
-                 tilt={'min_value':-1.0, 'max_value':1.0})
-        self.add('scaled_log1p', scaled_log1p_activation,
-                 tilt={'min_value':-1.0, 'max_value':1.0})
-        self.add('multiparam_tanh_log1p', multiparam_tanh_log1p_activation,
-                 curve={'min_value':0.0, 'max_value':1.0},
-                 tilt={'min_value':-1.0, 'max_value':1.0})
-        self.add('multiparam_pow', multiparam_pow_activation,
-                 tilt={'min_value':-1.0, 'max_value':1.0})
+        self.add('weighted_lu', weighted_lu_activation) # + tilt, curve
+        self.add('multiparam_relu_softplus', multiparam_relu_softplus_activation) # + tilt, curve
+        self.add('clamped_tanh_step', clamped_tanh_step_activation) # + tilt
+        self.add('clamped_step', clamped_step_activation) # + tilt
+##        self.add('extended_clamped_step', extended_clamped_step_activation,
+##                 tilt2={'min_value':-1.0, 'max_value': 1.5})
+        self.add('multiparam_sigmoid', multiparam_sigmoid_activation) # + tilt
+        self.add('hat_gauss_rectangular', hat_gauss_rectangular_activation) # + curve, width
+        self.add('scaled_expanded_log', scaled_expanded_log_activation) # + tilt
+        self.add('multiparam_log_inv', multiparam_log_inv_activation) # + tilt
+        self.add('scaled_log1p', scaled_log1p_activation) # + tilt
+        self.add('multiparam_tanh_log1p', multiparam_tanh_log1p_activation) # + tilt, curve
+        self.add('clamped_log1p_step', clamped_log1p_step_activation) # + tilt, curve
+        self.add('multiparam_pow', multiparam_pow_activation) # + tilt
 ##                 a={'min_init_value':-1.0, 'max_init_value':4.0,
 ##                    'min_value':-3.0, 'max_value':16.0,
 ##                    'init_type':'gaussian'})
 ##        self.add('multiparam_exp', multiparam_exp_activation,
 ##                 a={'min_value':0.0, 'max_value':1.0})
-        self.add('wave', wave_activation,
-                 width={'min_value':0.0, 'max_value': 1.0})
-        self.add('multiparam_tanh_approx', multiparam_tanh_approx_activation,
-                 g_curve={'init_mean':-0.239897,
-                          'init_stdev':0.8660254037844387,
-                          'min_value':-12.0, 'max_value':12.0,
-                          'init_type':'gaussian'},
-                 tilt={'min_value':-1.0, 'max_value':1.0})
-        self.add('multiparam_sigmoid_approx', multiparam_sigmoid_approx_activation,
-                 g_curve={'init_mean':-0.239897,
-                          'init_stdev':0.8660254037844387,
-                          'min_value':-12.0, 'max_value':12.0,
-                          'init_type':'gaussian'})
-        self.add('multiparam_gauss', multiparam_gauss_activation,
-                 width={'min_value':0.0, 'max_value':1.0},
-                 lower={'min_value':0.0, 'max_value':1.0})
-        self.add('bisigmoid', bisigmoid_activation,
-                 tilt={'min_value':-1.0, 'max_value':1.0},
-                 width={'min_value':0.0, 'max_value':1.0})
-        self.add('bicentral', bicentral_activation,
-                 lower={'min_value':0.0, 'max_value':1.0},
-                 tilt={'min_value':-1.0, 'max_value':1.0})
-        self.add('multiparam_softplus', multiparam_softplus_activation,
-                 curve={'min_value':0.0, 'max_value':1.0})
+        self.add('wave', wave_activation) # + width
+        self.add('multiparam_tanh_approx', multiparam_tanh_approx_activation) # + tilt, g_curve
+        self.add('multiparam_sigmoid_approx', multiparam_sigmoid_approx_activation) # + g_curve
+        self.add('multiparam_gauss', multiparam_gauss_activation) # + lower, width
+##        self.add('bisigmoid', bisigmoid_activation) # + tilt, width
+##        self.add('bicentral', bicentral_activation) # + tilt, lower
+        self.add('bicentral', bicentral_activation) # + tilt, lower, width
+        self.add('multiparam_softplus', multiparam_softplus_activation) # + curve
+        self.add('fourth_square_abs', fourth_square_abs_activation) # + width
 
 
     def add(self, name, function, **kwargs):
         self.multiparameterset.add_func(name, function, 'activation', **kwargs)
+
+    def add_shared_name(self, name, **kwargs):
+        self.multiparameterset.add_shared_name(name, 'activation', **kwargs)
 
     def get(self, name):
         return self.multiparameterset.get_func(name, 'activation')

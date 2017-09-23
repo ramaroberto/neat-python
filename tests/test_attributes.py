@@ -136,14 +136,14 @@ def test_multiparam_repro(config_file='test_configuration6'):
     g1.configure_new(config.genome_config)
     g1.fitness = 1.0
 
-    a1_dict = g1.nodes[0].activation.get_values(None)
+    a1_dict = g1.nodes[0].activation.get_values()
 
     ignored_net = neat.nn.FeedForwardNetwork.create(g1, config)
 
     g2 = neat.DefaultGenome(gid+1)
     g2.configure_crossover(g1, g1, config.genome_config)
 
-    a2_dict = g2.nodes[0].activation.get_values(None)
+    a2_dict = g2.nodes[0].activation.get_values()
 
     ignored_net = neat.nn.FeedForwardNetwork.create(g2, config)
 

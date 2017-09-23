@@ -146,6 +146,9 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3.5', None)}
 html_theme_options = {
   'page_width': 'auto', # getting cutoff of included source code
   'show_related': True,
+  # below is to try to avoid goudy old style ITALIC use on some Windoze machines;
+  # tried custom.css with font-style: 'normal', but font-family seems to override.
+  'font_family': "'minion pro', 'bell mt', Georgia, 'goudy old style', 'Hiragino Mincho Pro', serif",
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

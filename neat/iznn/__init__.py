@@ -10,7 +10,7 @@ http://www.izhikevich.org/publications/spikes.pdf
 """
 
 from neat.attributes import FloatAttribute
-from neat.genes import BaseGene, DefaultConnectionGene
+from neat.genes import DefaultNodeGene, DefaultConnectionGene
 from neat.genome import DefaultGenomeConfig, DefaultGenome
 from neat.graphs import required_for_output
 from neat.six_util import itervalues
@@ -34,7 +34,7 @@ LOW_THRESHOLD_SPIKING_PARAMS  = {'a': 0.02, 'b': 0.25, 'c': -65.0, 'd': 2.00}
 # TODO: Add mechanisms analogous to axon & dendrite propagation delay.
 
 
-class IZNodeGene(BaseGene):
+class IZNodeGene(DefaultNodeGene):
     """Contains attributes for the iznn node genes and determines genomic distances."""
 
     _gene_attributes = [FloatAttribute('bias'),
@@ -187,6 +187,8 @@ class IZNN(object):
                 continue
 
             i, o = cg.key
+            # if o is not in required, why include?
+            # if i is neither in required nor an input key, why include?
             if o not in required and i not in required:
                 continue
 
