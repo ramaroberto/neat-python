@@ -20,8 +20,10 @@ class Species(object):
         self.created = generation
         self.representative = None
         self.members = {}
+        self.at_bottom = False # for relative fitnesses
         self.reproduction_namespace = Namespace()
         self.reproduction_namespace.adjusted_fitness = None
+        self.reproduction_namespace.orig_fitness = None
         self.stagnation_namespace = Namespace()
         self.stagnation_namespace.fitness = None
         self.stagnation_namespace.last_improved = generation
@@ -121,7 +123,6 @@ class Species(object):
     def get_fitnesses(self):
         return [m.fitness for m in itervalues(self.members)]
 
-
 class GenomeDistanceCache(object):
     def __init__(self, config):
         self.distances = {}
@@ -145,7 +146,8 @@ class GenomeDistanceCache(object):
         return d
 
 class DefaultSpeciesSet(DefaultClassConfig):
-    """ Encapsulates the default speciation scheme. """
+    """Encapsulates the default speciation scheme."""
+    __desired_species_num_cache = {}
 
     def __init__(self, config, reporters, reproduction=None):
         # pylint: disable=super-init-not-called
@@ -157,10 +159,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
         self.genome_to_species = {}
         self.orig_compatibility_threshold = config.compatibility_threshold
 
-        if config.desired_species_num_max < config.desired_species_num_min:
-            raise ValueError(
-                "Desired_species_num_max {0:n} but num_min {1:n}".format(
-                    config.desired_species_num_max, config.desired_species_num_min))
+        self.check_species_size_config(config)
 
         if ((config.compatibility_threshold_adjust.lower() != 'fixed') or
             (reproduction is not None)):
@@ -169,14 +168,14 @@ class DefaultSpeciesSet(DefaultClassConfig):
             if reproduction is None: # pragma: no cover
                 raise RuntimeError(
                     "Need reproduction instance for species info (threshold_adjust {0!s})".format(
-                        self.compatibility_threshold_adjust))
+                        config.compatibility_threshold_adjust))
             self.threshold_adjust_dict = reproduction.get_species_size_info()
             if ((config.compatibility_threshold_adjust.lower() != 'fixed') or
                 (self.threshold_adjust_dict['genome_config'] is not None)):
                 if self.threshold_adjust_dict['genome_config'] is None: # pragma: no cover
                     raise RuntimeError(
                         "Need genome_config for species info (threshold_adjust {0!s})".format(
-                            self.compatibility_threshold_adjust))
+                            config.compatibility_threshold_adjust))
                 self.threshold_adjust_dict.update(
                     self.threshold_adjust_dict['genome_config'].get_compatibility_info())
                 # below is based on configuration values from Stanley's website as
@@ -185,9 +184,23 @@ class DefaultSpeciesSet(DefaultClassConfig):
                     self.threshold_adjust_dict['weight_coefficient'],
                     (self.threshold_adjust_dict['disjoint_coefficient']/2),
                     (self.orig_compatibility_threshold/6))
-            # for max_stagnation
-            self.threshold_adjust_dict.update(
-                self.threshold_adjust_dict['stagnation'].get_stagnation_info())
+            if config.compatibility_threshold_adjust.lower() == 'number':
+                # for max_stagnation
+                self.threshold_adjust_dict.update(
+                    self.threshold_adjust_dict['stagnation'].get_stagnation_info())
+
+    @staticmethod
+    def check_species_size_config(config):
+        if config.desired_species_num_max < config.desired_species_num_min:
+            raise ValueError(
+                "Desired_species_num_max {0:n} but num_min {1:n}".format(
+                    config.desired_species_num_max, config.desired_species_num_min))
+
+        if config.compatibility_threshold_adjust.lower() == 'choices':
+            if not (0.0 <= config.desired_poss_species_pow <= 1.0):
+                raise ValueError(
+                    "Desired_poss_species_pow {0:n} invalid - must be between 0.0 and 1.0".format(
+                        config.desired_poss_species_pow))
 
     @classmethod
     def parse_config(cls, param_dict):
@@ -198,12 +211,62 @@ class DefaultSpeciesSet(DefaultClassConfig):
                                    ConfigParameter('desired_species_num_max',
                                                    int, 0, default_ok=True),
                                    ConfigParameter('desired_species_num_min',
-                                                   int, 0, default_ok=True)])
+                                                   int, 0, default_ok=True),
+                                   ConfigParameter('desired_poss_species_pow',
+                                                   float, 0.5, default_ok=True),
+                                   ConfigParameter('spread_poss_species_range',
+                                                   bool, False, default_ok=True)])
+
+    def refresh_species_size_config(self, pop_size=None, reproduction=None, # DOCUMENT!
+                                    genome_config=None, stagnation=None):
+        config = self.species_set_config
+        self.check_species_size_config(config)
+
+        if config.compatibility_threshold_adjust.lower() != 'fixed':
+            self.__desired_species_num_cache = {}
+            if pop_size is not None:
+                self.min_pop_seen = self.max_pop_seen = pop_size
+            if reproduction is not None:
+                self.reproduction = reproduction
+            if self.reproduction is not None:
+                self.threshold_adjust_dict = reproduction.get_species_size_info()
+            else: # pragma: no cover
+                raise RuntimeError("Need reproduction instance for species info")
+            if genome_config is not None:
+                self.threshold_adjust_dict['genome_config'] = genome_config
+            if self.threshold_adjust_dict['genome_config'] is not None:
+                self.threshold_adjust_dict.update(
+                    self.threshold_adjust_dict['genome_config'].get_compatibility_info())
+                # below is based on configuration values from Stanley's website as
+                # compared to advised adjustment size.
+                self.base_threshold_adjust = 0.3*max(
+                    self.threshold_adjust_dict['weight_coefficient'],
+                    (self.threshold_adjust_dict['disjoint_coefficient']/2.0),
+                    (self.orig_compatibility_threshold/6.0))
+            else: # pragma: no cover
+                raise RuntimeError("Need genome_config for species info")
+            if stagnation is not None:
+                self.threshold_adjust_dict['stagnation'] = stagnation
+            if self.threshold_adjust_dict['stagnation'] is not None:
+                self.threshold_adjust_dict.update(
+                    self.threshold_adjust_dict['stagnation'].get_stagnation_info())
+            elif config.compatibility_threshold_adjust.lower() == 'number': # pragma: no cover
+                raise RuntimeError("Need stagnation for species info")
+        else:
+            warnings.warn(
+                "Calling refresh_species_size_config with" +
+                " compatibility_threshold_adjust {0!r}".format(
+                    config.compatibility_threshold_adjust) +
+                " does not make sense")
+
 
     def _find_desired_num_species(self, pop_size_high, pop_size_low): # DOCUMENT!
+        for_cache = tuple([pop_size_high,pop_size_low])
+        if for_cache in self.__desired_species_num_cache:
+            return self.__desired_species_num_cache[for_cache]
         config = self.species_set_config
-        max_num_usable = math.ceil(pop_size_high/self.threshold_adjust_dict['min_size'])
-        if max_num_usable < 2:
+        max_num_usable = math.floor(pop_size_high/self.threshold_adjust_dict['min_size'])
+        if max_num_usable < 3:
             raise ValueError(
                 "Pop_size {0:n} is too low for effective min species size {1:n}".format(
                     pop_size_high, self.threshold_adjust_dict['min_size']))
@@ -227,14 +290,15 @@ class DefaultSpeciesSet(DefaultClassConfig):
                     config.desired_species_num_min))
             config.desired_species_num_min = 0
 
-        if config.desired_species_num_max > 2:
+        if config.desired_species_num_max > 3:
             if config.desired_species_num_max > max_num_usable: # NEED TEST!
                 warnings.warn(
                     "Desired_species_num_max {0:n} is too high for pop_size {1:n};".format(
                         config.desired_species_num_max,pop_size_high)
                     + " adjusting to max {0:n}".format(max_num_usable))
                 config.desired_species_num_max = max_num_usable
-        elif config.desired_species_num_max != 0: # NEED TEST!
+        elif ((config.desired_species_num_max != 0)
+              and (config.desired_species_num_max != 3)): # NEED TEST!
             warnings.warn(
                 "Desired_species_num_max of {0:n} not valid; treating as 0 (autoconfigure)".format(
                     config.desired_species_num_max))
@@ -244,8 +308,9 @@ class DefaultSpeciesSet(DefaultClassConfig):
         if config.desired_species_num_min:
             to_return_low = config.desired_species_num_min
         else:
-            to_return_low = max(2,math.floor(pop_size_low/
-                                             self.threshold_adjust_dict['min_good_size']))
+            to_return_low = max(2,min((poss_num_high-1),
+                                      math.ceil(pop_size_low/
+                                                self.threshold_adjust_dict['min_good_size'])))
 
         if config.desired_species_num_max > to_return_low:
             to_return_high = config.desired_species_num_max
@@ -256,14 +321,15 @@ class DefaultSpeciesSet(DefaultClassConfig):
                     + " adjusting to min+1 {0:n}".format(to_return_low+1))
             config.desired_species_num_max = to_return_low+1
             to_return_high = to_return_low+1
-        elif poss_num_high < 2:
+        elif poss_num_high < 3:
             raise ValueError(
-                "Pop_size {0:n} is too low to determine desired num species;".format(pop_size_high)
-                + " need minimum of {0:n} given min_OK_size {1:n}".format(
-                    (2*self.threshold_adjust_dict['min_OK_size']),
+                "Pop_size {0:n} is too low to determine desired num species".format(pop_size_high)
+                + " given min_OK_size {1:n}".format(
                     self.threshold_adjust_dict['min_OK_size']))
         else:
             to_return_high = min(max_num_usable,max(poss_num_high,(to_return_low+1)))
+
+        self.__desired_species_num_cache[for_cache] = (to_return_high, to_return_low)
 
         return (to_return_high,to_return_low)
 
@@ -273,24 +339,22 @@ class DefaultSpeciesSet(DefaultClassConfig):
         if increase:
             mult_threshold = 1.05*old_threshold
             add_threshold = old_threshold + self.base_threshold_adjust
-            if old_threshold >= self.orig_compatibility_threshold:
+            if old_threshold >= self.orig_compatibility_threshold: # cautious increase
                 new_threshold = min(mult_threshold,add_threshold)
-            else:
+            else: # currently below original, can increase faster
                 new_threshold = max(min(mult_threshold,add_threshold),
                                     min(self.orig_compatibility_threshold,
                                         max(mult_threshold,add_threshold)))
-            if (curr_tmean
-                < self.orig_compatibility_threshold) and (new_threshold
-                                                          < curr_tmean):
+            if (new_threshold < curr_tmean < self.orig_compatibility_threshold):
                 new_threshold = min(curr_tmean,((new_threshold
                                                  + self.orig_compatibility_threshold)/2))
             which = 'increased'
         else:
             div_threshold = old_threshold/1.05
             sub_threshold = old_threshold - self.base_threshold_adjust
-            if old_threshold <= self.orig_compatibility_threshold:
+            if old_threshold <= self.orig_compatibility_threshold: # cautious decrease
                 new_threshold = max(div_threshold,sub_threshold)
-            else:
+            else: # currently above original, can decrease faster
                 new_threshold = min(max(div_threshold,sub_threshold),
                                     max(self.orig_compatibility_threshold,
                                         min(div_threshold,sub_threshold)))
@@ -304,9 +368,148 @@ class DefaultSpeciesSet(DefaultClassConfig):
             "Compatibility threshold (orig {0:n}) {1!s} by {2:n} to {3:n} (from {4:n})".format(
                 self.orig_compatibility_threshold,
                 which,
-                abs(self.species_set_config.compatibility_threshold-old_threshold),
-                self.species_set_config.compatibility_threshold,
+                abs(new_threshold-old_threshold),
+                new_threshold,
                 old_threshold))
+
+    def choose_species(self, config, genome, gid, distances, candidates):
+        """
+        Decide which species a genome should be in, out of those sufficiently genetically similar.
+
+        This method is meant to be replaced by classes subclassing DefaultSpeciesSet,
+        such as to additionally consider behavioral distances. This default version
+        simply chooses the minimum genetic distance.
+        """
+        ignored_sdist, sid, ignored_rep = min(candidates, key=lambda x: x[0])
+        return sid
+
+    def decide_on_threshold(self, num_species,
+                            desired_num_species_high,
+                            desired_num_species_low,
+                            gdtmean,
+                            max_rep_dist,
+                            generation,
+                            num_choices):
+        """Replaceable speciation threshold-determination methods."""
+        if self.species_set_config.compatibility_threshold_adjust.lower() == 'number':
+            if num_species < desired_num_species_low:
+                self.reporters.info(
+                    "Species num {0:n} below desired minimum {1:n}".format(
+                        num_species, desired_num_species_low))
+                self._adjust_compatibility_threshold(increase=False,
+                                                     curr_tmean=gdtmean,
+                                                     max_rep_dist=max_rep_dist)
+            elif num_species > desired_num_species_high:
+                self.reporters.info(
+                        "Species num {0:n} above desired maximum {1:n}".format(
+                        num_species, desired_num_species_high))
+                if (('max_stagnation' not in self.threshold_adjust_dict)
+                    or (generation >= self.threshold_adjust_dict['max_stagnation'])
+                    or (self.species_set_config.compatibility_threshold <
+                        self.orig_compatibility_threshold)):
+                    self._adjust_compatibility_threshold(increase=True,
+                                                         curr_tmean=gdtmean,
+                                                         max_rep_dist=max_rep_dist)
+        elif self.species_set_config.compatibility_threshold_adjust.lower() == 'choices':
+
+            mean_desired_num_species = (desired_num_species_high+desired_num_species_low)/2.0
+            base_min_desired_choices = max(2,math.floor(
+                math.pow(mean_desired_num_species,
+                         self.species_set_config.desired_poss_species_pow)))
+            base_max_desired_choices = min((desired_num_species_high-1),math.ceil(
+                math.pow(mean_desired_num_species,
+                         self.species_set_config.desired_poss_species_pow)))
+            if self.species_set_config.spread_poss_species_range:
+                min_desired_choices = max(2,math.floor(
+                    math.pow(desired_num_species_low,
+                             self.species_set_config.desired_poss_species_pow)))
+                if num_species > desired_num_species_high:
+                    min_desired_choices *= num_species/desired_species_num_high
+                    min_desired_choices = min(base_min_desired_choices,
+                                              math.ceil(min_desired_choices))
+                max_desired_choices = min((desired_num_species_high-1),math.ceil(
+                    math.pow(desired_num_species_high,
+                             self.species_set_config.desired_poss_species_pow)))
+                if num_species < desired_num_species_low:
+                    max_desired_choices *= num_species/desired_num_species_low
+                    max_desired_choices = max(base_max_desired_choices,
+                                              math.floor(max_desired_choices))
+            else:
+                min_desired_choices = base_min_desired_choices
+                max_desired_choices = base_max_desired_choices
+            if min_desired_choices > max_desired_choices: # pragma: no cover
+                tmp_min = max(2,(max_desired_choices-1))
+                tmp_max = min((desired_num_species_high-1),(max(tmp_min,min_desired_choices)+1))
+                if tmp_min > tmp_max:
+                    raise ValueError(
+                        "Getting min_desired_choices {0:n}, tmp_min {1:n},".format(
+                            min_desired_choices, tmp_min) +
+                        " max_desired_choices {0:n}, tmp_max {1:n}".format(
+                            max_desired_choices, tmp_max))
+                min_desired_choices = tmp_min
+                max_desired_choices = tmp_max
+
+            num_low_choices = sum([1 for x in num_choices if x < min_desired_choices])
+            num_high_choices = sum([1 for x in num_choices if x > max_desired_choices])
+            num_ok_choices = len(num_choices) - num_low_choices - num_high_choices
+            if ((num_species > desired_num_species_low) and
+                (num_low_choices > max(num_high_choices, num_ok_choices))):
+                # may increase threshold (eventually decreases the total # of species)
+                do_increase = False
+                if num_species >= desired_num_species_high:
+                    do_increase = True
+                elif num_species >= math.ceil(mean_desired_num_species):
+                    diff1 = desired_num_species_high - math.ceil(mean_desired_num_species)
+                    diff2 = num_species - math.ceil(mean_desired_num_species)
+                    threshold = 0.5 - ((0.5-(1/3))*(diff2/max(1.0,diff1)))
+                    if num_low_choices >= (len(num_choices)*threshold):
+                        do_increase = True
+                elif num_low_choices > (len(num_choices)*0.5):
+                    diff1 = math.floor(mean_desired_num_species) - (desired_num_species_low+1)
+                    diff2 = num_species - (desired_num_species_low+1)
+                    threshold2 = 2.0 - (diff2/max(1.0,diff1))
+                    if num_low_choices >= (num_high_choices*threshold2):
+                        do_increase = True
+                if do_increase:
+                    self.reporters.info(
+                        "Species num {0:n} above desired minimum {1:n}".format(
+                            num_species, desired_num_species_low) +
+                        " and too many ({0:n}) with species choices below {1:n}".format(
+                            num_low_choices, min_desired_choices))
+                    self._adjust_compatibility_threshold(increase=True,
+                                                         curr_tmean=gdtmean,
+                                                         max_rep_dist=max_rep_dist)
+            elif ((num_species < desired_num_species_high) and
+                  (num_high_choices > max(num_low_choices, num_ok_choices))):
+                # may decrease threshold (eventually increases the total # of species)
+                do_decrease = False
+                if num_species <= desired_num_species_low:
+                    do_decrease = True
+                elif num_species <= math.floor(mean_desired_num_species):
+                    diff1 = math.floor(mean_desired_num_species) - desired_num_species_low
+                    diff2 = num_species - desired_num_species_low
+                    threshold = 0.5 - ((0.5-(1/3))*(diff2/max(1.0,diff1)))
+                    if num_high_choices >= (len(num_choices)*threshold):
+                        do_increase = True
+                elif num_high_choices > (len(num_choices)*0.5):
+                    diff1 = (desired_num_species_high-1) - math.ceil(mean_desired_num_species)
+                    diff2 = (desired_num_species_high-1) - num_species
+                    threshold2 = 2.0 - (diff2/max(1.0,diff1))
+                    if num_high_choices >= (num_low_choices*threshold2):
+                        do_decrease = True
+                if do_decrease:
+                    self.reporters.info(
+                        "Species num {0:n} below desired maximum {1:n}".format(
+                            num_species, desired_num_species_high) +
+                        " and too many ({0:n}) with species choices above {1:n}".format(
+                            num_high_choices, max_desired_choices))
+                    self._adjust_compatibility_threshold(increase=False,
+                                                         curr_tmean=gdtmean,
+                                                         max_rep_dist=max_rep_dist)
+        elif self.species_set_config.compatibility_threshold_adjust.lower() != 'fixed':
+            raise ValueError(
+                "Unknown compatibility_threshold_adjust {!r}".format(
+                    self.species_set_config.compatibility_threshold_adjust))
 
     def speciate(self, config, population, generation):
         """
@@ -362,6 +565,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
         # Putting most distant from any others first, to serve as clustering seeds
         unspeciated_list.sort(reverse=True, key=lambda x: gid_min_dist[x])
 
+        num_choices = []
         # Partition population into species based on genetic similarity.
         for gid in unspeciated_list:
             g = population[gid]
@@ -372,10 +576,11 @@ class DefaultSpeciesSet(DefaultClassConfig):
                 rep = population[rid]
                 d = distances(rep, g)
                 if d < self.species_set_config.compatibility_threshold:
-                    candidates.append((d, sid))
+                    candidates.append((d, sid, rep))
 
+            num_choices.append(len(candidates))
             if candidates:
-                ignored_sdist, sid = min(candidates, key=lambda x: x[0])
+                sid = self.choose_species(config, gid, g, distances, candidates)
                 new_members[sid].append(gid)
             else:
                 # No species is similar enough, create a new species, using
@@ -406,46 +611,35 @@ class DefaultSpeciesSet(DefaultClassConfig):
             'Mean genetic distance {0:n}, 50% trimmed mean {1:n}, standard deviation {2:n}'.format(
                 gdmean, gdtmean, gdstdev))
 
-        if self.species_set_config.compatibility_threshold_adjust.lower() == 'number':
+        if self.species_set_config.compatibility_threshold_adjust.lower() != 'fixed':
             if generation < 1:
                 self.reporters.info(
                     "Min_size is {0:n}, min_OK_size is {1:n}, min_good_size is {2:n}".format(
                         self.threshold_adjust_dict['min_size'],
                         self.threshold_adjust_dict['min_OK_size'],
                         self.threshold_adjust_dict['min_good_size']))
-            self.min_pop_seen = min(self.min_pop_seen,len(population))
-            self.max_pop_seen = max(self.max_pop_seen,len(population))
+            if ((self.min_pop_seen <= self.max_pop_seen) and
+                ((self.min_pop_seen > (len(population)*2)) or
+                 (self.max_pop_seen < (len(population)/2.0)))): # pragma: no cover
+                self.min_pop_seen = self.max_pop_seen = len(population)
+            else:
+                self.min_pop_seen = min(self.min_pop_seen,len(population))
+                self.max_pop_seen = max(self.max_pop_seen,len(population))
             desired_num_species_high, desired_num_species_low = self._find_desired_num_species(
                 self.max_pop_seen, self.min_pop_seen)
-            if len(self.species) < desired_num_species_low:
-                self.reporters.info(
-                    "Species num {0:n} below desired minimum {1:n}".format(
-                        len(self.species), desired_num_species_low))
-                self._adjust_compatibility_threshold(increase=False,
-                                                     curr_tmean=gdtmean,
-                                                     max_rep_dist=max_rep_dist)
-            elif len(self.species) > desired_num_species_high:
-                self.reporters.info(
-                    "Species num {0:n} above desired maximum {1:n}".format(
-                        len(self.species), desired_num_species_high))
-                if (('max_stagnation' not in self.threshold_adjust_dict)
-                    or (generation >= self.threshold_adjust_dict['max_stagnation'])
-                    or (self.species_set_config.compatibility_threshold <
-                        self.orig_compatibility_threshold)
-                    or (self.species_set_config.compatibility_threshold <=
-                        max_rep_dist)):
-                    self._adjust_compatibility_threshold(increase=True,
-                                                         curr_tmean=gdtmean,
-                                                         max_rep_dist=max_rep_dist)
-            elif ((self.species_set_config.compatibility_threshold <= max_rep_dist)
-                  and (len(self.species) > desired_num_species_low)):
+            if ((self.species_set_config.compatibility_threshold <= max_rep_dist)
+                and (len(self.species) > desired_num_species_low)): # pragma: no cover
                 self._adjust_compatibility_threshold(increase=True,
                                                      curr_tmean=gdtmean,
                                                      max_rep_dist=max_rep_dist)
-        elif self.species_set_config.compatibility_threshold_adjust.lower() != 'fixed':
-            raise ValueError(
-                "Unknown compatibility_threshold_adjust {!r}".format(
-                    self.species_set_config.compatibility_threshold_adjust))
+            else:
+                self.decide_on_threshold(num_species=len(self.species),
+                                         desired_num_species_high=desired_num_species_high,
+                                         desired_num_species_low=desired_num_species_low,
+                                         gdtmean=gdtmean,
+                                         max_rep_dist=max_rep_dist,
+                                         generation=generation,
+                                         num_choices=num_choices)
 
     def get_species_id(self, individual_id):
         return self.genome_to_species[individual_id]

@@ -48,7 +48,8 @@ class DefaultGenomeConfig(object):
                                         str, 'default', default_ok=True),
                         ConfigParameter('initial_connection', str, 'unconnected'),
                         ConfigParameter('fitter_enabled_transfer', bool, False),
-                        ConfigParameter('identical_mutations_keys', int, 0)]
+                        ConfigParameter('identical_mutations_keys', int, 0),
+                        ConfigParameter('scale_multiplier_distances', bool, False)]
 
         # Gather configuration data from the gene classes.
         self.node_gene_type = params['node_gene_type']

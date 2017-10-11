@@ -1,5 +1,6 @@
 """Handles genes coding for node and connection attributes."""
 import copy
+import math
 import warnings
 
 from argparse import Namespace
@@ -125,6 +126,20 @@ class BaseGene(object):
                 new_value.set_param_namespace(new_gene.param_namespace)
         return new_gene
 
+def multiplier_distance(mult1, mult2, config):
+    if config.scale_multiplier_distances:
+        if abs(mult1) > 1.0:
+            mult1_use = math.copysign((1.0+math.log(abs(mult1))),mult1)
+        else:
+            mult1_use = mult1
+        if abs(mult2) > 1.0:
+            mult2_use = math.copysign((1.0+math.log(abs(mult2))),mult2)
+        else:
+            mult2_use = mult2
+    else:
+        mult1_use = mult1
+        mult2_use = mult2
+    return abs(mult1_use - mult2_use)
 
 # TODO: Should these be in the nn module?  iznn and ctrnn can have additional attributes.
 # OTOH, can base iznn, others off of DefaultNodeGene instead of BaseGene - helpful for
@@ -144,7 +159,9 @@ class DefaultNodeGene(BaseGene):
 
     def distance(self, other, config):
         """Returns the genetic distance between two node genes."""
-        d = abs(self.bias - other.bias) + abs(self.response - other.response)
+        d = abs(self.bias - other.bias) + multiplier_distance(self.response,
+                                                              other.response,
+                                                              config)
         if hasattr(self.activation, 'distance'):
             d += self.activation.distance(other.activation)
         elif self.activation != other.activation:
@@ -175,7 +192,7 @@ class DefaultConnectionGene(BaseGene):
 
     def distance(self, other, config):
         """Returns the genetic distance between two connection genes."""
-        d = abs(self.weight - other.weight)
+        d = multiplier_distance(self.weight, other.weight, config)
         if self.enabled != other.enabled:
             d += 1.0
         return d * config.compatibility_weight_coefficient

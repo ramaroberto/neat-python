@@ -22,7 +22,7 @@ except ImportError:
                                  Hashable)
 
 from neat.attributes import FloatAttribute, BoolAttribute
-from neat.math_util import NORM_EPSILON, tmean
+from neat.math_util import NORM_EPSILON, tmean, mean
 from neat.repr_util import repr_extract_function_name
 from neat.six_util import iteritems, iterkeys
 
@@ -359,20 +359,43 @@ class EvolvedMultiParameterFunction(object):
         return "EvolvedMultiParameterFunction({0!r}, {1!r})".format(
             self.name, self.multi_param_func)
 
-    def distance(self, other): # need to take into account shared names!
-        """Determine distance between two activation or aggregation functions."""
+    def distance(self, other, split=False):
+        """Determine distances between two activation or aggregation functions."""
+        categorical, continuous = self._distance_inner(other)
+        if split:
+            return [0.0,categorical,continuous] # structural, categorical, continuous
+        else:
+            return categorical+continuous
+
+    def _distance_inner(self, other):
         if not isinstance(other, EvolvedMultiParameterFunction):
-            return 1.0
+            if ((other in self.name) or
+                (self.name in other) or
+                ((self.name == 'wave') and (other == 'sin'))): # approximate! XXX
+                total_diff = 0.5 + len(self.evolved_param_names)
+                return [total_diff/(1+len(self.evolved_param_names)), 0.0]
+            return [1.0,0.0]
 
-        if self.name != other.name: # should not if have shared names...
-            return 1.0
-        if self.instance_name == other.instance_name:
-            return 0.0
+        if (self.name == other.name) and (self.instance_name == other.instance_name):
+            return [0.0,0.0]
 
-        diffs = []
+        diffs_cat = []
+        diffs_cont = []
+
+        if self.name != other.name:
+            diffs_cat.append(1.0)
+        else:
+            diffs_cat.append(0.0)
+        diffs_cont.append(0.0)
+
         for n in self.evolved_param_names:
+            if n not in other.evolved_param_names:
+                diffs_cat.append(1.0)
+                diffs_cont.append(0.0)
+                continue
             param_dict = self.param_dicts[n].param_dict
             if param_dict['param_type'] in ('float', 'int'):
+                diffs_cat.append(0.0)
                 diff = abs(self.current_param_values[n] -
                            other.current_param_values[n])
                 if diff:
@@ -383,18 +406,25 @@ class EvolvedMultiParameterFunction(object):
                         raise RuntimeError(
                             "{0} for {1}: This_diff {2:n} > 1.0 (diff {3:n}, div_by {4:n})".format(
                                 self.name, n, this_diff, diff, div_by))
-                    diffs.append(this_diff)
+                    diffs_cont.append(this_diff)
                 else:
-                    diffs.append(0.0)
+                    diffs_cont.append(0.0)
             elif param_dict['param_type'] == 'bool':
                 if self.current_param_values[n] != other.current_param_values[n]:
-                    diffs.append(1.0)
+                    diffs_cont.append(0.5)
+                    diffs_cat.append(0.5)
                 else:
-                    diffs.append(0.0)
+                    diffs_cont.append(0.0)
+                    diffs_cat.append(0.0)
             else:
                 raise ValueError("Unknown what to do with param_type {0!s} for {1!s}".format(
                     saferepr(param_dict['param_type']), self.name))
-        return tmean(diffs)
+        if self.name != other.name: # to make symmetrical
+            for n in other.evolved_param_names:
+                if n not in self.evolved_param_names:
+                    diffs_cat.append(1.0)
+                    diffs_cont.append(0.0)
+        return [mean(diffs_cat),mean(diffs_cont)]
 
     def copy(self):
         return copy.copy(self)

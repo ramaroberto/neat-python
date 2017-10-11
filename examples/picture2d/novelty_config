@@ -3,7 +3,7 @@
 [NEAT]
 fitness_criterion     = max
 fitness_threshold     = 1e38
-pop_size              = 150
+pop_size              = 100
 reset_on_extinction   = False
 no_fitness_termination = True
 
@@ -19,11 +19,11 @@ conn_add_prob           = 0.25
 conn_delete_prob        = 0.2
 node_add_prob           = 0.25
 node_delete_prob        = 0.2
-identical_mutations_keys = 38
-activation_default      = clamped_tanh_step
-activation_options      = clamped_tanh_step multiparam_relu_softplus multiparam_sigmoid multiparam_sigmoid_approx multiparam_log_inv hat_gauss_rectangular multiparam_gauss multiparam_pow wave exp bicentral
-activation_mutate_rate  = 0.05
-aggregation_default     = sum_product_mean
+identical_mutations_keys = 380
+activation_default      = random
+activation_options      = multiparam_tanh_log1p multiparam_relu_softplus multiparam_log_inv hat_gauss_rectangular multiparam_gauss multiparam_pow wave bicentral
+activation_mutate_rate  = 0.1
+aggregation_default     = random
 aggregation_options     = sum_product_mean sum_maxabs_tmean max_median_min
 aggregation_mutate_rate = 0.05
 bias_init_mean          = 0.0
@@ -56,12 +56,13 @@ enabled_rate_to_true_add = 0.05
 fitter_enabled_transfer = True
 
 [DefaultSpeciesSet]
-compatibility_threshold = 3.6
+compatibility_threshold = 4
 
 [DefaultStagnation]
 species_fitness_func = max
 max_stagnation       = 20
 species_elitism = 2
+stagnation_use_relative_fitness = True
 
 [DefaultReproduction]
 elitism            = 0

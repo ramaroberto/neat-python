@@ -22,7 +22,7 @@ MIN_P_VALUE = min(sys.float_info.epsilon, math.sqrt(sys.float_info.min))
 
 FULL_TEST = True
 
-DO_ONLY = ("multiparam_tanh_approx", "multiparam_sigmoid_approx", "clamped_step")
+DO_ONLY = ("mexican_hat", "rational_quadratic")
 
 x_set = set(list(np.linspace(-2, -1, 100)) + list(np.linspace(-1, 1, 300)) + list(np.linspace(1, 2, 100)))
 x = sorted(x_set)

@@ -1312,6 +1312,165 @@ def test_fourth_square_abs():
     assert activations.fourth_square_abs_activation(-0.5,0.0) == 0.5
     assert activations.fourth_square_abs_activation(0.5,0.0) == 0.5
 
+def test_mexican_hat():
+    for lower in [0.0, 0.25, 0.5, 0.75, 1.0]:
+        for width in [0.0, 0.25, 0.5, 0.75, 1.0]:
+            assert activations.mexican_hat_activation(0.0,
+                                                      lower=lower,
+                                                      width=width) == 1.0
+    assert activations.mexican_hat_activation(-1.0,lower=0.0,width=0.0) == 0.0
+    assert activations.mexican_hat_activation(-1.0,lower=0.0,width=0.25) == 0.0
+    assert activations.mexican_hat_activation(-1.0,lower=0.0,width=0.5) == 0.0
+    assert activations.mexican_hat_activation(-1.0,lower=0.0,width=0.75) == 0.0
+    assert activations.mexican_hat_activation(-1.0,lower=0.0,width=1.0) == 0.0
+    assert activations.mexican_hat_activation(-1.0,lower=0.25,width=0.0) == 0.0
+    assert activations.mexican_hat_activation(-1.0,lower=0.25,width=0.5) == 0.0
+    assert activations.mexican_hat_activation(-1.0,lower=0.25,width=1.0) == -0.15625
+    assert activations.mexican_hat_activation(-1.0,lower=0.5,width=0.0) == 0.0
+    assert activations.mexican_hat_activation(-1.0,lower=0.5,width=0.25) == 0.0
+    assert activations.mexican_hat_activation(-1.0,lower=0.5,width=0.5) == -0.1875
+    assert activations.mexican_hat_activation(-1.0,lower=0.5,width=0.75) == -0.1875
+    assert activations.mexican_hat_activation(-1.0,lower=0.5,width=1.0) == -0.1875
+    assert activations.mexican_hat_activation(-1.0,lower=0.75,width=0.0) == 0.0
+    assert activations.mexican_hat_activation(-1.0,lower=0.75,width=0.5) == -0.21875
+    assert activations.mexican_hat_activation(-1.0,lower=0.75,width=1.0) == -0.21875
+    assert activations.mexican_hat_activation(-1.0,lower=1.0,width=0.0) == 0.0
+    assert activations.mexican_hat_activation(-1.0,lower=1.0,width=0.25) == -0.25
+    assert activations.mexican_hat_activation(-1.0,lower=1.0,width=0.5) == -0.25
+    assert activations.mexican_hat_activation(-1.0,lower=1.0,width=0.75) == -0.25
+    assert activations.mexican_hat_activation(-1.0,lower=1.0,width=1.0) == -0.25
+    assert activations.mexican_hat_activation(-0.5,lower=0.0,width=0.0) == 0.0
+    assert activations.mexican_hat_activation(-0.5,lower=0.0,width=0.5) == 0.875
+    assert activations.mexican_hat_activation(-0.5,lower=0.0,width=1.0) == 1.0
+    assert activations.mexican_hat_activation(-0.5,lower=0.5,width=0.0) == -0.1875
+    assert activations.mexican_hat_activation(-0.5,lower=0.5,width=0.5) == 0.8125
+    assert activations.mexican_hat_activation(-0.5,lower=0.5,width=1.0) == 1.0
+    assert activations.mexican_hat_activation(-0.5,lower=1.0,width=0.0) == -0.25
+    assert activations.mexican_hat_activation(-0.5,lower=1.0,width=0.5) == 0.75
+    assert activations.mexican_hat_activation(-0.5,lower=1.0,width=1.0) == 1.0
+    assert activations.mexican_hat_activation(0.5,lower=0.0,width=0.0) == 0.0
+    assert activations.mexican_hat_activation(0.5,lower=0.0,width=0.5) == 0.875
+    assert activations.mexican_hat_activation(0.5,lower=0.0,width=1.0) == 1.0
+    assert activations.mexican_hat_activation(0.5,lower=0.5,width=0.0) == -0.1875
+    assert activations.mexican_hat_activation(0.5,lower=0.5,width=0.5) == 0.8125
+    assert activations.mexican_hat_activation(0.5,lower=0.5,width=1.0) == 1.0
+    assert activations.mexican_hat_activation(0.5,lower=1.0,width=0.0) == -0.25
+    assert activations.mexican_hat_activation(0.5,lower=1.0,width=0.5) == 0.75
+    assert activations.mexican_hat_activation(0.5,lower=1.0,width=1.0) == 1.0
+    assert activations.mexican_hat_activation(1.0,lower=0.0,width=0.0) == 0.0
+    assert activations.mexican_hat_activation(1.0,lower=0.0,width=0.25) == 0.0
+    assert activations.mexican_hat_activation(1.0,lower=0.0,width=0.5) == 0.0
+    assert activations.mexican_hat_activation(1.0,lower=0.0,width=0.75) == 0.0
+    assert activations.mexican_hat_activation(1.0,lower=0.0,width=1.0) == 0.0
+    assert activations.mexican_hat_activation(1.0,lower=0.25,width=0.0) == 0.0
+    assert activations.mexican_hat_activation(1.0,lower=0.25,width=0.5) == 0.0
+    assert activations.mexican_hat_activation(1.0,lower=0.25,width=1.0) == -0.15625
+    assert activations.mexican_hat_activation(1.0,lower=0.5,width=0.0) == 0.0
+    assert activations.mexican_hat_activation(1.0,lower=0.5,width=0.25) == 0.0
+    assert activations.mexican_hat_activation(1.0,lower=0.5,width=0.5) == -0.1875
+    assert activations.mexican_hat_activation(1.0,lower=0.5,width=0.75) == -0.1875
+    assert activations.mexican_hat_activation(1.0,lower=0.5,width=1.0) == -0.1875
+    assert activations.mexican_hat_activation(1.0,lower=0.75,width=0.0) == 0.0
+    assert activations.mexican_hat_activation(1.0,lower=0.75,width=0.5) == -0.21875
+    assert activations.mexican_hat_activation(1.0,lower=0.75,width=1.0) == -0.21875
+    assert activations.mexican_hat_activation(1.0,lower=1.0,width=0.0) == 0.0
+    assert activations.mexican_hat_activation(1.0,lower=1.0,width=0.25) == -0.25
+    assert activations.mexican_hat_activation(1.0,lower=1.0,width=0.5) == -0.25
+    assert activations.mexican_hat_activation(1.0,lower=1.0,width=0.75) == -0.25
+    assert activations.mexican_hat_activation(1.0,lower=1.0,width=1.0) == -0.25
+
+def test_rational_quadratic():
+    for lower in [0.0, 0.25, 0.5, 0.75, 1.0]:
+        for width in [0.0, 0.25, 0.5, 0.75, 1.0]:
+            assert activations.rational_quadratic_activation(0.0,
+                                                             lower=lower,
+                                                             width=width) == 1.0
+    assert 0.0 <= activations.rational_quadratic_activation(-0.5,lower=0.5,width=0.0) <= 0.000123
+    assert 0.0 <= activations.rational_quadratic_activation(-1.0,lower=0.5,width=0.0) <= 0.000123
+    assert 0.0 <= activations.rational_quadratic_activation(-1.0,lower=0.75,width=0.5) <= 0.000123
+    assert 0.0 <= activations.rational_quadratic_activation(-1.0,lower=1.0,width=0.75) <= 0.000123
+    assert 0.0 <= activations.rational_quadratic_activation(0.5,lower=0.5,width=0.0) <= 0.000123
+    assert 0.0 <= activations.rational_quadratic_activation(1.0,lower=0.5,width=0.0) <= 0.000123
+    assert 0.0 <= activations.rational_quadratic_activation(1.0,lower=0.75,width=0.5) <= 0.000123
+    assert 0.0 <= activations.rational_quadratic_activation(1.0,lower=1.0,width=0.75) <= 0.000123
+    assert activations.rational_quadratic_activation(-0.5,lower=0.5,width=1.0) == 0.8
+    assert activations.rational_quadratic_activation(-1.0,lower=0.5,width=1.0) == 0.5
+    assert activations.rational_quadratic_activation(0.5,lower=0.5,width=1.0) == 0.8
+    assert activations.rational_quadratic_activation(1.0,lower=0.5,width=1.0) == 0.5
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.5,width=0.25),
+                        activations.rational_quadratic_activation(1.0,lower=0.5,width=0.25))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.5,width=0.5),
+                        activations.rational_quadratic_activation(1.0,lower=0.5,width=0.5))
+    assert_almost_equal(activations.rational_quadratic_activation(-0.5,lower=0.5,width=0.5),
+                        activations.rational_quadratic_activation(0.5,lower=0.5,width=0.5))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.5,width=0.75),
+                        activations.rational_quadratic_activation(1.0,lower=0.5,width=0.75))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.25,width=0.0),
+                        activations.rational_quadratic_activation(1.0,lower=0.25,width=0.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.25,width=0.5),
+                        activations.rational_quadratic_activation(1.0,lower=0.25,width=0.5))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=1.0,width=1.0),
+                        activations.rational_quadratic_activation(1.0,lower=1.0,width=1.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.75,width=1.0),
+                        activations.rational_quadratic_activation(1.0,lower=0.75,width=1.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.0,width=0.0),
+                        activations.rational_quadratic_activation(1.0,lower=0.0,width=0.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-0.5,lower=0.0,width=0.0),
+                        activations.rational_quadratic_activation(0.5,lower=0.0,width=0.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.0,width=0.25),
+                        activations.rational_quadratic_activation(1.0,lower=0.0,width=0.25))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.0,width=0.5),
+                        activations.rational_quadratic_activation(1.0,lower=0.0,width=0.5))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.25,width=1.0),
+                        activations.rational_quadratic_activation(1.0,lower=0.25,width=1.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-0.5,lower=0.0,width=0.5),
+                        activations.rational_quadratic_activation(0.5,lower=0.0,width=0.5))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.0,width=0.75),
+                        activations.rational_quadratic_activation(1.0,lower=0.0,width=0.75))
+    assert_almost_equal(activations.rational_quadratic_activation(-0.5,lower=1.0,width=1.0),
+                        activations.rational_quadratic_activation(0.5,lower=1.0,width=1.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.0,width=1.0),
+                        activations.rational_quadratic_activation(1.0,lower=0.0,width=1.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-0.5,lower=0.0,width=1.0),
+                        activations.rational_quadratic_activation(0.5,lower=0.0,width=1.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.5,width=0.25),
+                        activations.rational_quadratic_activation(1.0,lower=0.5,width=0.25))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.5,width=0.5),
+                        activations.rational_quadratic_activation(1.0,lower=0.5,width=0.5))
+    assert_almost_equal(activations.rational_quadratic_activation(-0.5,lower=0.5,width=0.5),
+                        activations.rational_quadratic_activation(0.5,lower=0.5,width=0.5))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.5,width=0.75),
+                        activations.rational_quadratic_activation(1.0,lower=0.5,width=0.75))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.25,width=0.0),
+                        activations.rational_quadratic_activation(1.0,lower=0.25,width=0.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.25,width=0.5),
+                        activations.rational_quadratic_activation(1.0,lower=0.25,width=0.5))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=1.0,width=1.0),
+                        activations.rational_quadratic_activation(1.0,lower=1.0,width=1.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.75,width=1.0),
+                        activations.rational_quadratic_activation(1.0,lower=0.75,width=1.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.0,width=0.0),
+                        activations.rational_quadratic_activation(1.0,lower=0.0,width=0.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-0.5,lower=0.0,width=0.0),
+                        activations.rational_quadratic_activation(0.5,lower=0.0,width=0.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.0,width=0.25),
+                        activations.rational_quadratic_activation(1.0,lower=0.0,width=0.25))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.0,width=0.5),
+                        activations.rational_quadratic_activation(1.0,lower=0.0,width=0.5))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.25,width=1.0),
+                        activations.rational_quadratic_activation(1.0,lower=0.25,width=1.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-0.5,lower=0.0,width=0.5),
+                        activations.rational_quadratic_activation(0.5,lower=0.0,width=0.5))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.0,width=0.75),
+                        activations.rational_quadratic_activation(1.0,lower=0.0,width=0.75))
+    assert_almost_equal(activations.rational_quadratic_activation(-0.5,lower=1.0,width=1.0),
+                        activations.rational_quadratic_activation(0.5,lower=1.0,width=1.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-1.0,lower=0.0,width=1.0),
+                        activations.rational_quadratic_activation(1.0,lower=0.0,width=1.0))
+    assert_almost_equal(activations.rational_quadratic_activation(-0.5,lower=0.0,width=1.0),
+                        activations.rational_quadratic_activation(0.5,lower=0.0,width=1.0))
+
+
 def plus_activation(x):
     """ Not useful - just a check. """
     return abs(x+1)
@@ -1349,7 +1508,8 @@ MULT_ACT_FUNC = """multiparam_relu multiparam_relu_softplus multiparam_elu weigh
                    clamped_tanh_step clamped_step clamped_log1p_step multiparam_sigmoid
                    hat_gauss_rectangular scaled_expanded_log multiparam_log_inv scaled_log1p
                    multiparam_tanh_log1p multiparam_pow wave multiparam_tanh_approx bicentral
-                   multiparam_sigmoid_approx multiparam_gauss fourth_square_abs""".split()
+                   multiparam_sigmoid_approx multiparam_gauss fourth_square_abs
+                   mexican_hat rational_quadratic""".split()
 
 def test_function_set():
     m = multiparameter.MultiParameterSet('activation')
@@ -1526,6 +1686,7 @@ if __name__ == '__main__':
     test_multiparam_gauss()
     test_bicentral()
     test_fourth_square_abs()
+    test_mexican_hat()
     test_add_plus()
     test_add_multiparam_plus()
     test_function_set()

@@ -33,7 +33,8 @@ class DefaultReproduction(DefaultClassConfig):
                                    ConfigParameter('survival_threshold', float, 0.2),
                                    ConfigParameter('min_species_size', int, 2),
                                    ConfigParameter('fitness_min_divisor', float, 1.0),
-                                   ConfigParameter('double_mutate_clones', bool, False)])
+                                   ConfigParameter('double_mutate_clones', bool, False),
+                                   ConfigParameter('wipe_past_fitness', bool, False)])
 
     def __init__(self, config, reporters, stagnation):
         # pylint: disable=super-init-not-called
@@ -98,12 +99,13 @@ class DefaultReproduction(DefaultClassConfig):
         num_try = max(2,to_return_dict['min_size'])
         to_return_dict['min_OK_size'] = to_return_dict['min_good_size'] = int(
             math.ceil(num_try/self.reproduction_config.survival_threshold))
-        while ((num_try*(num_try-1)/2) # number of possible parent combinations
-               < (to_return_dict['min_good_size']-num_try)) and (to_return_dict['min_good_size']
-                                                                 < 50): # half of min pop size 100
+        while (((num_try*(num_try-1))/2) # number of possible parent combinations
+               < (to_return_dict['min_good_size']-num_try)):
             num_try += 1
-            to_return_dict['min_good_size'] = int(
-                math.ceil(num_try/self.reproduction_config.survival_threshold))
+            tmp_size = int(math.ceil(num_try/self.reproduction_config.survival_threshold))
+            if tmp_size > 50: # half of 100, min pop size used in examples
+                break
+            to_return_dict['min_good_size'] = tmp_size
         # below - for info about weight, disjoint coefficients
         to_return_dict['genome_config'] = self.genome_config
         # for max_stagnation
@@ -147,7 +149,7 @@ class DefaultReproduction(DefaultClassConfig):
         Handles creation of genomes, either from scratch or by sexual or
         asexual reproduction from parents.
         """
-        # TODO: I don't like this modification of the species and stagnation objects,
+        # TODO: I don't like this modification of the species objects,
         # because it requires internal knowledge of the objects.
 
         if pop_size < (2*max(self.reproduction_config.elitism,
@@ -176,6 +178,8 @@ class DefaultReproduction(DefaultClassConfig):
         for stag_sid, stag_s, stagnant in self.stagnation.update(species, generation):
             if stagnant:
                 self.reporters.species_stagnant(stag_sid, stag_s)
+                for gid in iterkeys(stag_s.members):
+                    del(self.ancestors[gid])
                 del(species.species[stag_sid]) # for non-ref-tracking garbage collection
             else:
                 all_fitnesses.extend(stag_s.get_fitnesses())
@@ -202,10 +206,14 @@ class DefaultReproduction(DefaultClassConfig):
             msf = mean([m.fitness for m in itervalues(afs.members)])
             af = (msf - min_fitness) / fitness_range
             afs.reproduction_namespace.adjusted_fitness = af
+            afs.reproduction_namespace.orig_fitness = msf
 
         adjusted_fitnesses = [s.reproduction_namespace.adjusted_fitness for s in remaining_species]
         avg_adjusted_fitness = mean(adjusted_fitnesses) # type: float
-        self.reporters.info("Average adjusted fitness: {:.3f}".format(avg_adjusted_fitness))
+        min_adjusted_fitness = min(adjusted_fitnesses) # not necessarily 0.0!
+        max_adjusted_fitness = max(adjusted_fitnesses) # not necessarily 1.0!
+        self.reporters.info("Min/mean/max adjusted fitness: {0:.3f}/{1:.3f}/{2:.3f}".format(
+            min_adjusted_fitness,avg_adjusted_fitness,max_adjusted_fitness))
 
         # Compute the number of new members for each species in the new generation.
         previous_sizes = [len(s.members) for s in remaining_species]
@@ -220,8 +228,17 @@ class DefaultReproduction(DefaultClassConfig):
         new_population = {}
         species.species = {}
         for spawn, s in zip(spawn_amounts, remaining_species):
+            if s.reproduction_namespace.adjusted_fitness >= max_adjusted_fitness:
+                s.at_bottom = False
+            elif s.reproduction_namespace.adjusted_fitness <= min_adjusted_fitness:
+                s.at_bottom = True
+            elif spawn <= min_species_size:
+                s.at_bottom = True
+            else:
+                s.at_bottom = False
             # If elitism is enabled, each species always at least gets to retain its elites.
-            spawn = max(spawn, self.reproduction_config.elitism)
+            # Now taken care of by above for min_species_size
+            #spawn = max(spawn, self.reproduction_config.elitism)
 
             assert spawn > 0
 
@@ -236,6 +253,8 @@ class DefaultReproduction(DefaultClassConfig):
             # Transfer elites to new generation.
             if self.reproduction_config.elitism > 0:
                 for i, m in old_members[:self.reproduction_config.elitism]:
+                    if self.reproduction_config.wipe_past_fitness:
+                        m.fitness = None
                     new_population[i] = m
                     spawn -= 1
 

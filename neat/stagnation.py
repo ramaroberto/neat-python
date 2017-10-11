@@ -14,7 +14,8 @@ class DefaultStagnation(DefaultClassConfig):
         return DefaultClassConfig(param_dict,
                                   [ConfigParameter('species_fitness_func', str, 'mean'),
                                    ConfigParameter('max_stagnation', int, 15),
-                                   ConfigParameter('species_elitism', int, 0)])
+                                   ConfigParameter('species_elitism', int, 0),
+                                   ConfigParameter('stagnation_use_relative_fitness', bool, False)])
 
     def __init__(self, config, reporters):
         # pylint: disable=super-init-not-called
@@ -42,16 +43,23 @@ class DefaultStagnation(DefaultClassConfig):
         """
         species_data = []
         for sid, s in iteritems(species_set.species):
-            if s.stagnation_namespace.fitness_history:
-                prev_fitness = max(s.stagnation_namespace.fitness_history)
+            if self.stagnation_config.stagnation_use_relative_fitness: # DOCUMENT!
+                if not s.at_bottom:
+                    s.stagnation_namespace.last_improved = generation
+                    s.stagnation_namespace.fitness = max(s.get_fitnesses())
+                else:
+                    s.stagnation_namespace.fitness = self.species_fitness_func(s.get_fitnesses())
             else:
-                prev_fitness = None
+                if s.stagnation_namespace.fitness_history:
+                    prev_fitness = max(s.stagnation_namespace.fitness_history)
+                else:
+                    prev_fitness = None
 
-            s.stagnation_namespace.fitness = self.species_fitness_func(s.get_fitnesses())
-            s.stagnation_namespace.fitness_history.append(s.stagnation_namespace.fitness)
-            #s.adjusted_fitness = None # ???
-            if prev_fitness is None or s.stagnation_namespace.fitness > prev_fitness:
-                s.stagnation_namespace.last_improved = generation
+                s.stagnation_namespace.fitness = self.species_fitness_func(s.get_fitnesses())
+                s.stagnation_namespace.fitness_history.append(s.stagnation_namespace.fitness)
+                #s.adjusted_fitness = None # ???
+                if prev_fitness is None or s.stagnation_namespace.fitness > prev_fitness:
+                    s.stagnation_namespace.last_improved = generation
 
             species_data.append((sid, s))
 
@@ -59,9 +67,9 @@ class DefaultStagnation(DefaultClassConfig):
         species_data.sort(key=lambda x: x[1].stagnation_namespace.fitness)
 
         result = []
-        species_fitnesses = []
+        #species_fitnesses = []
         num_non_stagnant = len(species_data)
-        for idx, (sid, s) in enumerate(species_data):
+        for ignored_idx, (sid, s) in enumerate(species_data):
             # Override stagnant state if marking this species as stagnant would
             # result in the total number of species dropping below the limit.
             # Because species are in ascending fitness order, less fit species
@@ -71,13 +79,10 @@ class DefaultStagnation(DefaultClassConfig):
             if num_non_stagnant > self.stagnation_config.species_elitism:
                 is_stagnant = bool(stagnant_time >= self.stagnation_config.max_stagnation)
 
-            if (len(species_data) - idx) <= self.stagnation_config.species_elitism:
-                is_stagnant = False
-
             if is_stagnant:
                 num_non_stagnant -= 1
 
             result.append((sid, s, is_stagnant))
-            species_fitnesses.append(s.stagnation_namespace.fitness)
+            #species_fitnesses.append(s.stagnation_namespace.fitness)
 
         return result

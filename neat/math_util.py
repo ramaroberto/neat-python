@@ -92,10 +92,27 @@ def softmax(values):
     Compute the softmax of the given value set, v_i = exp(v_i) / s,
     where s = sum(exp(v_0), exp(v_1), ..).
     """
-    e_values = list(map(math.exp, values))
-    s = sum(e_values)
-    inv_s = 1.0 / s
-    return [ev * inv_s for ev in e_values]
+    values = list(values)
+    if len(values) < 2:
+        return [1.0]
+    try:
+        e_values = [math.exp(x) for x in values]
+        s = math.fsum(e_values)
+        inv_s = 1.0 / s
+        return [ev * inv_s for ev in e_values]
+    except ArithmeticError:
+        max_value = max(values)
+        if (max_value*len(values)) > float_info.max_10_exp: # avoid overflow
+            e_values = [math.exp(x-max_value) for x in values]
+        else:
+            min_value = min(values)
+            if abs(min_value) > abs(max_value):
+                e_values = [math.exp(x+min_value) for x in values]
+            else:
+                e_values = [math.exp(x-max_value) for x in values]
+            s = math.fsum(e_values)
+        inv_s = 1.0 / s
+        return [ev * inv_s for ev in e_values]
 
 def check_value_range(var, min_val, max_val, caller, var_name, add_name=None): # DOCUMENT!
     if not min_val <= var <= max_val:
@@ -113,7 +130,7 @@ def random_proportional_selection(freqs, max_freq=None):
     if n == 1:
         return 0
 
-    if any([1 for x in freqs if x <= 0.0]):
+    if any([True for x in freqs if x <= 0.0]):
         raise ValueError(
             "Freqs may not be 0 or negative ({})".format(saferepr(freqs)))
 

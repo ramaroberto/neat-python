@@ -377,7 +377,7 @@ def scaled_expanded_log_activation(z, tilt): # mostly intended for CPPNs
     return math.copysign(math.pow(2.0,(1.0-a)),z)*math.log(abs(z*math.pow(2.0,abs(a))),2)
 
 def multiparam_log_inv_activation(z, tilt): # mostly intended for CPPNs
-    _check_value_range(tilt, -1.0, 1.0, 'multiparam_log_inv', 'tilt')
+    #_check_value_range(tilt, -1.0, 1.0, 'multiparam_log_inv', 'tilt')
     if tilt >= 0.0:
         return scaled_expanded_log_activation(z,tilt)
     if tilt == -1.0:
@@ -391,8 +391,8 @@ def scaled_log1p_activation(z, tilt):
     return math.copysign(math.exp(0.5-a),z)*math.log1p(abs(z*math.exp(a)))
 
 def clamped_log1p_step_activation(z, curve, tilt):
-    _check_value_range(curve, 0.0, 1.0, 'clamped_log1p_step', 'curve')
-    _check_value_range(tilt, -1.0, 1.0, 'clamped_log1p_step', 'tilt')
+    #_check_value_range(curve, 0.0, 1.0, 'clamped_log1p_step', 'curve')
+    #_check_value_range(tilt, -1.0, 1.0, 'clamped_log1p_step', 'tilt')
 
     tilt2 = ((tilt+1.0)*1.5)-1.0
 
@@ -419,8 +419,8 @@ def clamped_log1p_step_activation(z, curve, tilt):
 ##    return clamped_step_part+(curve*other_part)
 
 def multiparam_tanh_log1p_activation(z, curve, tilt):
-    _check_value_range(curve, 0.0, 1.0, 'multiparam_tanh_log1p', 'curve')
-    _check_value_range(tilt, -1.0, 1.0, 'multiparam_tanh_log1p', 'tilt')
+    #_check_value_range(curve, 0.0, 1.0, 'multiparam_tanh_log1p', 'curve')
+    #_check_value_range(tilt, -1.0, 1.0, 'multiparam_tanh_log1p', 'tilt')
 
     tanh_part = (1.0-curve)*clamped_tanh_step_activation(z, tilt)
     if curve == 0.0:
@@ -453,7 +453,7 @@ def multiparam_pow_activation(z, tilt):
 ##    return -1.0*math.exp(math.log(a)-z)
 
 def wave_activation(z, width):
-    _check_value_range(width, 0.0, 1.0, 'wave', 'width')
+    #_check_value_range(width, 0.0, 1.0, 'wave', 'width')
     a = 1.0-(2*width)
     sin_wgt = 1.0-abs(a)
 
@@ -473,7 +473,7 @@ def wave_activation(z, width):
     return min(1.0,max(-1.0,to_return))
 
 def multiparam_tanh_approx_activation(z, g_curve, tilt):
-    _check_value_range(tilt, -1.0, 1.0, 'multiparam_tanh_approx', 'tilt')
+    #_check_value_range(tilt, -1.0, 1.0, 'multiparam_tanh_approx', 'tilt')
 
     b = 1.0-tilt
     if b > 1.0:
@@ -535,20 +535,78 @@ def bicentral_activation(z, lower, tilt, width):
     return height_mult*sigmoid_approx_activation(part1)*(1.0-sigmoid_approx_activation(part2))
 
 def fourth_square_abs_activation(z, width):
-    _check_value_range(width, 0.0, 1.0, 'fourth_square_abs', 'width')
+    #_check_value_range(width, 0.0, 1.0, 'fourth_square_abs', 'width')
     a = (width*2.0)-1.0
 
     weight_square = 1.0-abs(a)
 
     if a > 0.0:
-        if a == 1.0:
+        if a >= 1.0:
             return z**4
         return ((1.0-weight_square)*(z**4))+(weight_square*(z**2))
     if a < 0.0:
-        if a == -1.0:
+        if a <= -1.0:
             return abs(z)
         return ((1.0-weight_square)*abs(z))+(weight_square*(z**2))
     return z**2
+
+def rational_quadratic_activation(z, lower, width):
+    a = (lower*2.0) - 1.0
+    b = width - 1.0
+    alpha = math.exp(3.0*a)
+    length_scale = math.exp(6.0*b)
+
+    try:
+        to_return = math.pow((1.0+
+                              (math.pow((math.sqrt(2.0)*z),2.0)/
+                               (2.0*alpha*math.pow(length_scale,2.0)))),
+                             -1.0*alpha)
+    except ArithmeticError: # pragma: no cover
+        if (abs(a) > 4.0) or (abs(b) > 2.0):
+            return rational_quadratic_activation(z, min(2.5,max(-1.5,lower)),
+                                                 min(3.0,max(-1.0,width)))
+        elif abs(z) > NORM_EPSILON:
+            return 0.0
+        return 1.0
+    else:
+        return to_return
+
+def mexican_hat_activation(z, lower, width):
+    """
+    For HyperNEAT CPPNs - see https://dx.doi.org/10.1145/2576768.2598369
+    (also available from http://eplex.cs.ucf.edu/papers/risi_gecco14.pdf).
+    """
+    #_check_value_range(lower, 0.0, 1.0, 'mexican_hat', 'lower')
+    #_check_value_range(width, 0.0, 1.0, 'mexican_hat', 'width')
+
+    if abs(z) < (0.25+(width/2.0)):
+        return 1.0
+    if abs(z) == (0.25+(width/2.0)):
+        return 0.875+(-0.125*lower)
+    if abs(z) >= ((0.5+(width/2.0))*(lower+1.0)):
+        return 0.0
+    return -0.125+(-0.125*lower)
+
+##def multiparam_hat_activation(z, lower, width, tilt):
+##    _check_value_range(lower, 0.0, 1.0, 'multiparam_hat', 'lower')
+##    _check_value_range(width, 0.0, 1.0, 'multiparam_hat', 'width')
+##    _check_value_range(tilt, -1.0, 1.0, 'multiparam_hat', 'tilt')
+
+
+##def srelu_activation(z, tilt, width):
+##    _check_value_range(tilt, -1.0, 1.0, 'srelu', 'tilt')
+##    _check_value_range(width, 0.0, 1.0, 'srelu', 'width')
+
+##    gradient = 0.00001 + (0.99998*((tilt+1.0)/2.0))
+##    threshold_low = 0.499 - (width*0.498*2.0)
+##    threshold_high = 1.0 - threshold_low
+
+##    if z <= threshold_low:
+##        return threshold_low + ((z - threshold_low)*gradient)
+##    elif z >= threshold_high:
+##        return threshold_high + ((z - threshold_high)*gradient)
+##    else:
+##        return z
 
 class ActivationFunctionSet(object):
     """Contains activation functions and methods to add and retrieve them."""
@@ -645,6 +703,9 @@ class ActivationFunctionSet(object):
         self.add('bicentral', bicentral_activation) # + tilt, lower, width
         self.add('multiparam_softplus', multiparam_softplus_activation) # + curve
         self.add('fourth_square_abs', fourth_square_abs_activation) # + width
+        self.add('rational_quadratic', rational_quadratic_activation) # + lower, width
+        self.add('mexican_hat', mexican_hat_activation) # + lower, width
+##        self.add('srelu', srelu_activation) # + tilt, width
 
 
     def add(self, name, function, **kwargs):

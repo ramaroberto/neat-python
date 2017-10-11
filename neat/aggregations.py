@@ -59,14 +59,48 @@ def multiparam_tmean_aggregation(x, a):
     return tmean(x,trim=a)
 
 def maxabs_tmean_aggregation(x, extreme):
-    _check_value_range(extreme, -1.0, 1.0, 'maxabs_tmean', 'extreme')
+    #_check_value_range(extreme, -1.0, 1.0, 'maxabs_tmean', 'extreme')
     if extreme >= 0.0:
         return maxabs_mean_aggregation(x, a=extreme)
     return multiparam_tmean_aggregation(x, a=abs(extreme/2))
 
 def sum_product_aggregation(x, add_mult):
-    _check_value_range(add_mult, 0.0, 1.0, 'sum_product', 'add_mult')
+    #_check_value_range(add_mult, 0.0, 1.0, 'sum_product', 'add_mult')
     return ((1.0-add_mult)*product_aggregation(x))+(add_mult*sum(x))
+
+def _max_median_min_inner(input_list, a):
+    if a == 0.0:
+        return median2(input_list)
+    if a >= 1.0:
+        return max(input_list)
+    if a <= -1.0:
+        return min(input_list)
+
+    if a > 0.0:
+        if len(input_list) > 3:
+            # python sort avoids doing unnecessary work for already-sorted input
+            input_list.sort()
+            if (len(input_list) % 2) == 1:
+                return _max_median_min_inner(input_list[(len(input_list)//2):],
+                                             ((a*2.0)-1.0))
+            return _max_median_min_inner(input_list[((len(input_list)//2)+1):],
+                                         ((a*2.0)-1.0))
+        else:
+            median_weight = 1.0-abs(a)
+            return (((1.0-median_weight)*max(input_list))+
+                    (median_weight*median2(input_list)))
+
+    if len(input_list) > 3:
+        input_list.sort()
+        if (len(input_list) % 2) == 1:
+            return _max_median_min_inner(input_list[0:((len(input_list)//2)+1)],
+                                         ((a*2.0)+1.0))
+        return _max_median_min_inner(input_list[0:(len(input_list)//2)],
+                                     ((a*2.0)+1.0))
+
+    median_weight = 1.0-abs(a)
+    return (((1.0-median_weight)*min(input_list))+
+            (median_weight*median2(input_list)))
 
 def max_median_min_aggregation(x, a):
     """Approximates percentiles."""
@@ -77,41 +111,10 @@ def max_median_min_aggregation(x, a):
     if len(input_list) == 1:
         return input_list[0]
 
-    if a == 0.0:
-        return median2(input_list)
-    if a == 1.0:
-        return max(input_list)
-    if a == -1.0:
-        return min(input_list)
-
-    if a > 0.0:
-        if len(input_list) > 3:
-            # python sort avoids doing unnecessary work for already-sorted input
-            input_list.sort()
-            if (len(input_list) % 2) == 1:
-                return max_median_min_aggregation(input_list[(len(input_list)//2):],
-                                                  ((a*2.0)-1.0))
-            return max_median_min_aggregation(input_list[((len(input_list)//2)+1):],
-                                              ((a*2.0)-1.0))
-        else:
-            median_weight = 1.0-abs(a)
-            return (((1.0-median_weight)*max(input_list))+
-                    (median_weight*median2(input_list)))
-
-    if len(input_list) > 3:
-        input_list.sort()
-        if (len(input_list) % 2) == 1:
-            return max_median_min_aggregation(input_list[0:((len(input_list)//2)+1)],
-                                              ((a*2.0)+1.0))
-        return max_median_min_aggregation(input_list[0:(len(input_list)//2)],
-                                          ((a*2.0)+1.0))
-
-    median_weight = 1.0-abs(a)
-    return (((1.0-median_weight)*min(input_list))+
-            (median_weight*median2(input_list)))
+    return _max_median_min_inner(input_list, a)
 
 def sum_mean_aggregation(x, average):
-    _check_value_range(average, 0.0, 1.0, 'sum_mean', 'average')
+    #_check_value_range(average, 0.0, 1.0, 'sum_mean', 'average')
 
     input_list = list(map(float,x))
 
@@ -127,8 +130,8 @@ def sum_mean_aggregation(x, average):
     return sum(input_list)*mult
 
 def sum_maxabs_tmean_aggregation(x, average, extreme):
-    _check_value_range(extreme, -1.0, 1.0, 'sum_maxabs_tmean', 'extreme')
-    _check_value_range(average, 0.0, 1.0, 'sum_maxabs_tmean', 'average')
+    #_check_value_range(extreme, -1.0, 1.0, 'sum_maxabs_tmean', 'extreme')
+    #_check_value_range(average, 0.0, 1.0, 'sum_maxabs_tmean', 'average')
 
     input_list = list(map(float,x))
 
@@ -148,7 +151,7 @@ def sum_maxabs_tmean_aggregation(x, average, extreme):
 
 def product_mean_aggregation(x, average, use_median_sign):
     """Finds a compromise between a product and a geometric mean."""
-    _check_value_range(average, 0.0, 1.0, 'product_mean', 'average')
+    #_check_value_range(average, 0.0, 1.0, 'product_mean', 'average')
     if not isinstance(use_median_sign, bool):
         raise TypeError(
             "Type of use_median_sign {0} must be bool, not {1}".format(
@@ -177,8 +180,8 @@ def product_mean_aggregation(x, average, use_median_sign):
     return math.copysign(transformed_product, tmp_product)
 
 def sum_product_mean_aggregation(x, average, add_mult, use_median_sign):
-    _check_value_range(average, 0.0, 1.0, 'sum_product_mean', 'average')
-    _check_value_range(add_mult, 0.0, 1.0, 'sum_product_mean', 'add_mult')
+    #_check_value_range(average, 0.0, 1.0, 'sum_product_mean', 'average')
+    #_check_value_range(add_mult, 0.0, 1.0, 'sum_product_mean', 'add_mult')
     return ((add_mult*sum_mean_aggregation(x, average))+
             ((1.0-add_mult)*product_mean_aggregation(x, average, use_median_sign)))
 

@@ -22,13 +22,17 @@ from neat.six_util import iterkeys
 DO_PRINT_FOR_TESTING = True
 PRINT_LONG_NUMS_FOR_TESTING = False
 PRINT_CHOOSING_AMONG = False
+CHECK_SHARED = False
 
-DO_ONLY = ("clamped_log1p_step")
+FIND_X_FOR = None
+
+DO_ONLY = ("rational_quadratic","mexican_hat")
 
 CPPN_MAYBE_GROUP = ['hat_gauss_rectangular', 'multiparam_gauss',
-                    'bicentral']
+                    'bicentral', 'rational_quadratic']
 
 CPPN_DEFINITE_GROUP = ['fourth_square_abs',
+                       'mexican_hat',
                        'multiparam_log_inv',
                        'scaled_expanded_log',
                        'wave']
@@ -373,7 +377,15 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
                 for b, color in zip(param2_value_list, colors_use):
                     other_vars.update({param_use:a, param2_use:b})
                     all_nums = [other_vars[name4] for name4 in mpf.evolved_param_names]
-                    plt.plot(x, [f(i,**other_vars) for i in x], color, label="{0}={1}".format(param2_use,b))
+                    y_nums = [f(i,**other_vars) for i in x]
+                    plt.plot(x, y_nums, color, label="{0}={1}".format(param2_use,b))
+                    if FIND_X_FOR is not None:
+                        dist_to = [abs(i-FIND_X_FOR) for i in y_nums]
+                        min_dist = min(dist_to)
+                        nums_together = zip(dist_to, x)
+                        x_for_min_dist = [i[1] for i in nums_together if (i[0] <= min_dist)]
+                        print("X with Y at minimum dist {0!r} to {1:n}: {2!r} for {3!r}".format(
+                            min_dist, FIND_X_FOR, x_for_min_dist, other_vars))
                     if (color in important_colors) and (a in important_nums):
                         for i in (-1.0,-0.5,0.0,0.5,1.0):
                             print_for_testing("{0}_activation({1!s},{2!s})".format(n,i,format_dict(mpf,other_vars)),f(i,**other_vars),[i]+all_nums)
@@ -410,6 +422,8 @@ for n in sorted(iterkeys(mps.multiparam_func_dict['activation'])):
     do_prints()
 
 def do_funcs_for_name(funcs, name, group_name):
+    if not CHECK_SHARED:
+        return
     y_size = min((5*num_subfigures),(4+math.floor(len(funcs)/3.0)))
     fig = plt.figure(figsize=((5*num_subfigures),y_size))
     plt.delaxes()
@@ -447,6 +461,8 @@ def do_funcs_for_name(funcs, name, group_name):
 skipped_names = {}
 
 for group in (CPPN_NO_GROUP, CPPN_MAYBE_GROUP, CPPN_DEFINITE_GROUP):
+    if not CHECK_SHARED:
+        break
     shared_param_dict = {}
     if group == CPPN_NO_GROUP:
         group_name = 'Non-CPPN'
