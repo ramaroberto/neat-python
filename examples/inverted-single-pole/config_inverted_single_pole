@@ -1,0 +1,94 @@
+#--- parameters for the NEAT single pole balancing experiment  ---#
+
+[NEAT]
+fitness_criterion     = max
+fitness_threshold     = 100
+pop_size              = 128
+reset_on_extinction   = False
+
+[DefaultGenome]
+# node activation options
+activation_default      = sigmoid
+activation_mutate_rate  = 0.0
+activation_options      = sigmoid
+
+# node aggregation options
+aggregation_default     = sum
+aggregation_mutate_rate = 0.0
+aggregation_options     = sum
+
+# node bias options
+bias_init_mean          = 0.0
+bias_init_stdev         = 0.0
+bias_max_value          = 30.0
+bias_min_value          = -30.0
+bias_mutate_power       = 0.0
+bias_mutate_rate        = 0.0
+bias_replace_rate       = 0.0
+
+# genome compatibility options
+compatibility_disjoint_coefficient = 1.0
+compatibility_weight_coefficient   = 0.5
+
+# node add/remove rates
+node_add_prob           = 0.015
+node_delete_prob        = 0.0
+
+# connection add/remove rates
+conn_add_prob           = 0.05
+conn_delete_prob        = 0.0
+conn_equiprobable_selection = True
+
+# connection enable options
+enabled_default         = True
+enabled_mutate_rate     = 0.0
+enabled_rate_to_true_add = 0.025
+
+single_structural_mutation = False
+check_structural_mutation_surer = True
+feed_forward            = True
+initial_connection      = full_direct
+
+# network parameters
+num_inputs              = 5
+num_hidden              = 0
+num_outputs             = 1
+
+# node response options
+response_init_mean      = 1.0
+response_init_stdev     = 0.0
+response_max_value      = 30.0
+response_min_value      = -30.0
+response_mutate_power   = 0.0
+response_mutate_rate    = 0.0
+response_replace_rate   = 0.0
+
+# connection weight options
+weight_init_mean        = 0.0
+weight_init_stdev       = 1.0
+weight_max_value        = 5.0
+weight_min_value        = -5.0
+weight_mutate_power     = 0.5
+weight_mutate_rate      = 0.4
+weight_replace_rate     = 0.1
+
+[DefaultSpeciesSet]
+compatibility_threshold = 3.0
+adaptive_threshold_enabled = True
+target_number_species = 4
+compatibility_modificator = 0.25
+compatibility_threshold_minimum = 0.5
+
+[DefaultStagnation]
+species_fitness_func = max
+max_stagnation       = 15
+species_elitism      = 0
+
+[DefaultReproduction]
+elitism            = 2
+min_for_elitism    = 5
+survival_threshold = 0.2
+selection_tournament_size = 2
+crossover_prob = 0.37
+minimum_species = 1
+square_adjusted_fitness = True
