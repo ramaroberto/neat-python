@@ -31,7 +31,9 @@ class DefaultReproduction(DefaultClassConfig):
                                   [ConfigParameter('elitism', int, 0),
                                    ConfigParameter('survival_threshold', float, 0.2),
                                    ConfigParameter('min_species_size', int, 2),
-                                   ConfigParameter('fitness_min_divisor', float, 1.0)])
+                                   ConfigParameter('fitness_min_divisor', float, 1.0),
+                                   ConfigParameter('selection_tournament_size', int, 2),
+                                   ConfigParameter('crossover_prob', float, 0.75),
 
     def __init__(self, config, reporters, stagnation):
         # pylint: disable=super-init-not-called
@@ -187,17 +189,31 @@ class DefaultReproduction(DefaultClassConfig):
             # Randomly choose parents and produce the number of offspring allotted to the species.
             while spawn > 0:
                 spawn -= 1
-
-                parent1_id, parent1 = random.choice(old_members)
-                parent2_id, parent2 = random.choice(old_members)
-
-                # Note that if the parents are not distinct, crossover will produce a
-                # genetically identical clone of the parent (but with a different ID).
                 gid = next(self.genome_indexer)
                 child = config.genome_type(gid)
+                
+                # Perform tournament selection on old members in order to choose
+                # parents.
+                # Note that if the parents are not distinct, crossover will produce a
+                # genetically identical clone of the parent (but with a different ID).
+                ip1 = min(random.sample(xrange(len(old_members)), 
+                    min(len(old_members), self.reproduction_config.selection_tournament_size)))
+                ip2 = min(random.sample(xrange(len(old_members)), 
+                    min(len(old_members), self.reproduction_config.selection_tournament_size)))
+                    
+                r = random.random()
+                if r < self.reproduction_config.crossover_prob:
+                    # print("crossover:", ip1, ip2)
+                    parent1_id, parent1 = old_members[ip1]
+                    parent2_id, parent2 = old_members[ip2]
+                else:
+                    parent1_id, parent1 = old_members[min(ip1, ip2)]
+                    parent2_id, parent2 = (parent1_id, parent1)
+                    
                 child.configure_crossover(parent1, parent2, config.genome_config)
+                self.ancestors[gid] = (parent1_id, parent2_id)
+                
                 child.mutate(config.genome_config)
                 new_population[gid] = child
-                self.ancestors[gid] = (parent1_id, parent2_id)
 
         return new_population
