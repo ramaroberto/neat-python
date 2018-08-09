@@ -35,6 +35,8 @@ class DefaultReproduction(DefaultClassConfig):
                                    ConfigParameter('fitness_min_divisor', float, 1.0),
                                    ConfigParameter('selection_tournament_size', int, 2),
                                    ConfigParameter('crossover_prob', float, 0.75),
+                                   ConfigParameter('minimum_species', int, 0),
+                                   ConfigParameter('square_adjusted_fitness', bool, False)])
 
     def __init__(self, config, reporters, stagnation):
         # pylint: disable=super-init-not-called
@@ -69,8 +71,10 @@ class DefaultReproduction(DefaultClassConfig):
         return new_genomes
 
     @staticmethod
-    def compute_spawn(adjusted_fitness, previous_sizes, pop_size, min_species_size):
+    def compute_spawn(adjusted_fitness, previous_sizes, pop_size, min_species_size, square_fitness=False):
         """Compute the proper number of offspring per species (proportional to fitness)."""
+        if square_fitness:
+            adjusted_fitness = map(lambda v: v**2, adjusted_fitness)
         af_sum = sum(adjusted_fitness)
 
         spawn_amounts = []
@@ -125,9 +129,18 @@ class DefaultReproduction(DefaultClassConfig):
         # only from members of non-stagnated species.
 
         # No species left.
+        old_species = species.species.values()
+        random.shuffle(old_species)
         if not remaining_species:
-            species.species = {}
-            return {} # was []
+            if self.reproduction_config.minimum_species <= 0:
+                species.species = {}
+                return {} # was []
+            while len(old_species) > 0 and \
+                len(remaining_species) < self.reproduction_config.minimum_species:
+                s = old_species.pop(0)
+                all_fitnesses.extend(m.fitness for m in itervalues(s.members))
+                remaining_species.append(s)
+                
 
         # Find minimum/maximum fitness across the entire population, for use in
         # species adjusted fitness computation.
@@ -153,7 +166,7 @@ class DefaultReproduction(DefaultClassConfig):
         # of population sizes and relative fitnesses... doing. TODO: document.
         min_species_size = max(min_species_size,self.reproduction_config.elitism)
         spawn_amounts = self.compute_spawn(adjusted_fitnesses, previous_sizes,
-                                           pop_size, min_species_size)
+                                           pop_size, min_species_size, square_fitness=self.reproduction_config.square_adjusted_fitness)
 
         new_population = {}
         species.species = {}
