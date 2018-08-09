@@ -29,6 +29,7 @@ class DefaultReproduction(DefaultClassConfig):
     def parse_config(cls, param_dict):
         return DefaultClassConfig(param_dict,
                                   [ConfigParameter('elitism', int, 0),
+                                   ConfigParameter('min_for_elitism', int, 0),
                                    ConfigParameter('survival_threshold', float, 0.2),
                                    ConfigParameter('min_species_size', int, 2),
                                    ConfigParameter('fitness_min_divisor', float, 1.0),
@@ -157,11 +158,6 @@ class DefaultReproduction(DefaultClassConfig):
         new_population = {}
         species.species = {}
         for spawn, s in zip(spawn_amounts, remaining_species):
-            # If elitism is enabled, each species always at least gets to retain its elites.
-            spawn = max(spawn, self.reproduction_config.elitism)
-
-            assert spawn > 0
-
             # The species has at least one member for the next generation, so retain it.
             old_members = list(iteritems(s.members))
             s.members = {}
@@ -169,6 +165,12 @@ class DefaultReproduction(DefaultClassConfig):
 
             # Sort members in order of descending fitness.
             old_members.sort(reverse=True, key=lambda x: x[1].fitness)
+            
+            # If elitism is enabled, each species always at least gets to retain its elites.
+            if self.reproduction_config.min_for_elitism <= len(old_members):
+                spawn = max(spawn, self.reproduction_config.elitism)
+
+            assert spawn > 0
 
             # Transfer elites to new generation.
             if self.reproduction_config.elitism > 0:
