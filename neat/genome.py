@@ -3,7 +3,7 @@ from __future__ import division, print_function
 
 
 from itertools import count
-from random import choice, random, shuffle
+from random import choice, random, shuffle, randint
 from copy import deepcopy
 
 import sys
@@ -37,6 +37,7 @@ class DefaultGenomeConfig(object):
                         ConfigParameter('compatibility_weight_coefficient', float),
                         ConfigParameter('conn_add_prob', float),
                         ConfigParameter('conn_delete_prob', float),
+                        ConfigParameter('conn_equiprobable_selection', bool, False),
                         ConfigParameter('node_add_prob', float),
                         ConfigParameter('node_delete_prob', float),
                         ConfigParameter('single_structural_mutation', bool, False),
@@ -338,34 +339,105 @@ class DefaultGenome(object):
         connection.enabled = enabled
         self.connections[key] = connection
 
-    def mutate_add_connection(self, config):
+    def mutate_add_connection(self, config, afo=[]):
         """
         Attempt to add a new connection, the only restriction being that the output
         node cannot be one of the network input pins.
         """
-        possible_outputs = list(iterkeys(self.nodes))
-        out_node = choice(possible_outputs)
-
-        possible_inputs = possible_outputs + config.input_keys
-        in_node = choice(possible_inputs)
+        
+        if config.conn_equiprobable_selection:
+            # Get the amount of nodes of each type
+            input_nodes = len(config.input_keys)
+            output_nodes = len(config.output_keys)
+            hidden_nodes = len(self.nodes) - output_nodes
+            
+            # Calculate the possible total amount of viable connections
+            connections = sorted(
+                map(lambda c: c[0], 
+                    filter(lambda c: c[1].enabled, self.connections.items())
+                )
+            ) # leaves out disabled connections
+            cin = output_nodes + hidden_nodes
+            chn = output_nodes + (hidden_nodes - 1)
+            total_possible_connections = input_nodes * cin + hidden_nodes * chn
+            total_remaining_connections = total_possible_connections - len(connections)
+            
+            if total_remaining_connections == 0:
+                return
+            
+            # Set probabilities for each node to receive a new connection based on
+            # the amount of remaining connections of each node. We do this in order 
+            # to ensure the new connection is being choosen equiprobably.
+            nodes_probs = []
+            all_nodes = filter(lambda n: n not in config.output_keys, 
+                sorted(config.input_keys + self.nodes.keys()))
+            for node in all_nodes:
+                node_connections = []
+                while connections and node == connections[0][0]:
+                    node_connections.append(connections.pop(0))
+                node_connections += filter(lambda cnn: cnn[0] == node, afo) # add forbidden connections
+                    
+                remaining_connections = \
+                    (cin if node in config.input_keys else chn) \
+                    - len(node_connections)
+                nodes_probs.append((
+                    node_connections, 
+                    remaining_connections/total_remaining_connections, 
+                    node
+                ))
+            
+            # Roll the dice and select the input node
+            start = 0
+            r = random()
+            in_node = None
+            for connections, end, node in nodes_probs:
+                if start <= r and r < start+end:
+                    in_node = node
+                    in_node_connections = connections
+                    break
+                start += end
+            
+            # If no possible input nodes, create a new node
+            if not in_node:
+                self.mutate_add_node(config)
+                return
+                
+            # Build the set of possible out nodes
+            forbidden_outputs = set(config.input_keys + 
+                map(lambda c: c[1], in_node_connections) + 
+                # map(lambda c: c[1], filter(lambda cnn: cnn[0] == node, afo)) +
+                [in_node]
+            )
+            possible_outputs = filter(lambda n: n not in forbidden_outputs, self.nodes.keys())
+            
+            # Select an output node
+            out_node = choice(possible_outputs)
+        else:
+            possible_outputs = list(iterkeys(self.nodes))
+            out_node = choice(possible_outputs)
+            possible_inputs = possible_outputs + config.input_keys
+            in_node = choice(possible_inputs)
 
         # Don't duplicate connections.
         key = (in_node, out_node)
         if key in self.connections:
             # TODO: Should this be using mutation to/from rates? Hairy to configure...
-            if config.check_structural_mutation_surer():
-                self.connections[key].enabled = True
+            # if config.check_structural_mutation_surer():
+            self.connections[key].enabled = True
             return
 
         # Don't allow connections between two output nodes
+        # No need to check for connections between input nodes:
+        # they cannot be the output end of a connection (see above).
         if in_node in config.output_keys and out_node in config.output_keys:
             return
 
-        # No need to check for connections between input nodes:
-        # they cannot be the output end of a connection (see above).
-
         # For feed-forward networks, avoid creating cycles.
         if config.feed_forward and creates_cycle(list(iterkeys(self.connections)), key):
+            # TODO(robertorama): This is not optimal but it works. The
+            # algorithm needs a little bit of rework to be faster.
+            if config.conn_equiprobable_selection:
+                self.mutate_add_connection(config, afo=afo+[key])
             return
 
         cg = self.create_connection(config, in_node, out_node)
