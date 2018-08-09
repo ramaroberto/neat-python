@@ -138,6 +138,19 @@ class StdOutReporter(BaseReporter):
         fit_mean = mean(fitnesses)
         fit_std = stdev(fitnesses)
         best_species_id = species.get_species_id(best_genome.key)
+        
+        pop_avg_nodes = 0
+        pop_avg_connections = 0
+        for specie in species.species.values():
+            for genome in specie.members.values():
+                nodes, connections = genome.size()
+                pop_avg_nodes += nodes
+                pop_avg_connections += connections
+        pop_avg_nodes = int(round(pop_avg_nodes/len(population)))
+        pop_avg_connections = int(round(pop_avg_connections/len(population)))
+        
+        
+        print('Population\'s average size: (%d, %d)' % (pop_avg_nodes, pop_avg_connections))
         print('Population\'s average fitness: {0:3.5f} stdev: {1:3.5f}'.format(fit_mean, fit_std))
         print(
             'Best fitness: {0:3.5f} - size: {1!r} - species {2} - id {3}'.format(best_genome.fitness,
