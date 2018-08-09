@@ -4,6 +4,7 @@ from __future__ import division, print_function
 
 from itertools import count
 from random import choice, random, shuffle
+from copy import deepcopy
 
 import sys
 
@@ -19,7 +20,7 @@ class DefaultGenomeConfig(object):
     """Sets up and holds configuration information for the DefaultGenome class."""
     allowed_connectivity = ['unconnected', 'fs_neat_nohidden', 'fs_neat', 'fs_neat_hidden',
                             'full_nodirect', 'full', 'full_direct',
-                            'partial_nodirect', 'partial', 'partial_direct']
+                            'partial_nodirect', 'partial', 'partial_direct', 'minimal']
 
     def __init__(self, params):
         # Create full set of available activation functions.
@@ -27,7 +28,7 @@ class DefaultGenomeConfig(object):
         # ditto for aggregation functions - name difference for backward compatibility
         self.aggregation_function_defs = AggregationFunctionSet()
         self.aggregation_defs = self.aggregation_function_defs
-
+        
         self._params = [ConfigParameter('num_inputs', int),
                         ConfigParameter('num_outputs', int),
                         ConfigParameter('num_hidden', int),
@@ -188,7 +189,6 @@ class DefaultGenome(object):
                 self.nodes[node_key] = node
 
         # Add connections based on initial connectivity type.
-
         if 'fs_neat' in config.initial_connection:
             if config.initial_connection == 'fs_neat_nohidden':
                 self.connect_fs_neat_nohidden(config)
@@ -230,6 +230,8 @@ class DefaultGenome(object):
                             config.connection_fraction),
                         sep='\n', file=sys.stderr);
                 self.connect_partial_nodirect(config)
+        elif 'minimal' in config.initial_connection:
+            self.connect_minimal(config)
 
     def configure_crossover(self, genome1, genome2, config):
         """ Configure a new genome by crossover from two parent genomes. """
@@ -496,6 +498,31 @@ class DefaultGenome(object):
         others = [i for i in iterkeys(self.nodes) if i not in config.input_keys]
         for output_id in others:
             connection = self.create_connection(config, input_id, output_id)
+            self.connections[connection.key] = connection
+            
+    def connect_minimal(self, config):
+        input_nodes = []
+        output_nodes = [node for i, node in iteritems(self.nodes) if i in config.output_keys]
+        while len(output_nodes) != 0:
+            if len(input_nodes) == 0:
+                input_nodes = deepcopy(config.input_keys)
+            
+            input_key = None
+            if len(input_nodes) == 1:
+                input_key = input_nodes.pop()
+            else:
+                input_key = \
+                    input_nodes.pop(randint(0, len(input_nodes)-1))
+            
+            output_node = None
+            if len(output_nodes) == 1:
+                output_node = output_nodes.pop()
+            else:
+                output_node = \
+                    output_nodes.pop(randint(0, len(output_nodes)-1))
+
+            connection = \
+                self.create_connection(config, input_key, output_node.key)
             self.connections[connection.key] = connection
 
     def compute_full_connections(self, config, direct):
