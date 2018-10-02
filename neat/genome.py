@@ -494,9 +494,9 @@ class DefaultGenome(object):
             node_distance = (node_distance +
                              (config.compatibility_disjoint_coefficient *
                               disjoint_nodes)) / max_nodes
-
         # Compute connection gene differences.
         connection_distance = 0.0
+        matching_genes = 0
         if self.connections or other.connections:
             disjoint_connections = 0
             for k2 in iterkeys(other.connections):
@@ -509,12 +509,14 @@ class DefaultGenome(object):
                     disjoint_connections += 1
                 else:
                     # Homologous genes compute their own distance value.
-                    connection_distance += c1.distance(c2, config)
-
-            max_conn = max(len(self.connections), len(other.connections))
-            connection_distance = (connection_distance +
-                                   (config.compatibility_disjoint_coefficient *
-                                    disjoint_connections)) / max_conn
+                    connection_distance = connection_distance * matching_genes + c1.distance(c2, config)
+                    matching_genes += 1
+                    connection_distance /= matching_genes
+            
+            max_conn = float(max(len(self.connections), len(other.connections)))
+            connection_distance = connection_distance * config.compatibility_weight_coefficient + \
+                                   config.compatibility_disjoint_coefficient * \
+                                    disjoint_connections / max_conn
 
         distance = node_distance + connection_distance
         return distance

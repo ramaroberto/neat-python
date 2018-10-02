@@ -114,5 +114,5 @@ class DefaultConnectionGene(BaseGene):
         d = abs(self.weight - other.weight)
         if self.enabled != other.enabled:
             d += 1.0
-        return d * config.compatibility_weight_coefficient
+        return d
 
