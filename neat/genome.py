@@ -183,6 +183,9 @@ class DefaultGenome(object):
 
         # Add hidden nodes if requested.
         if config.num_hidden > 0:
+            # Set the node indexer to none so every genome has the same 
+            # historic marker for initial nodes.
+            config.node_indexer = None
             for i in range(config.num_hidden):
                 node_key = config.get_new_node_key(self.nodes)
                 assert node_key not in self.nodes
@@ -313,6 +316,9 @@ class DefaultGenome(object):
 
         # Choose a random connection to split
         conn_to_split = choice(list(self.connections.values()))
+        self.add_node(config, conn_to_split)
+    
+    def add_node(self, config, conn_to_split):
         new_node_id = config.get_new_node_key(self.nodes)
         ng = self.create_node(config, new_node_id)
         self.nodes[new_node_id] = ng
