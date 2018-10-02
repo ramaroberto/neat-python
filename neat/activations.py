@@ -7,6 +7,8 @@ from __future__ import division
 import math
 import types
 
+def sigmoid_higher_slope(z):
+    return (2.0 / (1.0 + math.exp(-4.9*z))) - 1;
 
 def sigmoid_activation(z):
     z = max(-60.0, min(60.0, 5.0 * z))
@@ -103,6 +105,7 @@ class ActivationFunctionSet(object):
     def __init__(self):
         self.functions = {}
         self.add('sigmoid', sigmoid_activation)
+        self.add('sigmoid_higher_slope', sigmoid_higher_slope)
         self.add('tanh', tanh_activation)
         self.add('sin', sin_activation)
         self.add('gauss', gauss_activation)
