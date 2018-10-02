@@ -63,6 +63,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
         return DefaultClassConfig(param_dict,
                                   [ConfigParameter('compatibility_threshold', float),
                                    ConfigParameter('adaptive_threshold_enabled', bool),
+                                   ConfigParameter('adaptive_threshold_fast_backoff_enabled', bool, False),
                                    ConfigParameter('target_number_species', int),
                                    ConfigParameter('compatibility_modificator', float),
                                    ConfigParameter('compatibility_threshold_minimum', float)])
@@ -80,17 +81,21 @@ class DefaultSpeciesSet(DefaultClassConfig):
         assert isinstance(population, dict)
 
         adaptive_threshold_enabled = self.species_set_config.adaptive_threshold_enabled
+        adaptive_threshold_fast_backoff_enabled = self.species_set_config.adaptive_threshold_fast_backoff_enabled
         target_number_species = self.species_set_config.target_number_species
         compatibility_modificator = self.species_set_config.compatibility_modificator
         compatibility_threshold_minimum = self.species_set_config.compatibility_threshold_minimum
         
-        if adaptive_threshold_enabled:
+        if adaptive_threshold_enabled and len(self.species) > 0:
             if len(self.species) < target_number_species:
-                self.compatibility_threshold -= compatibility_modificator
+                if adaptive_threshold_fast_backoff_enabled:
+                    self.compatibility_threshold -= compatibility_modificator * (self.compatibility_threshold / 4.0)
+                else:
+                    self.compatibility_threshold -= compatibility_modificator
             else:
                 self.compatibility_threshold += compatibility_modificator
             self.compatibility_threshold = max(self.compatibility_threshold, compatibility_threshold_minimum)
-        print "ACT:", self.compatibility_threshold
+            print "ACT:", self.compatibility_threshold
 
         # Find the best representatives for each existing species.
         unspeciated = set(iterkeys(population))
