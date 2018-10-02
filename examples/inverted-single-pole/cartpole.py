@@ -13,11 +13,11 @@ import numpy as np
 class CartPoleEnv(gym.Env):
     metadata = {
         'render.modes': ['human', 'rgb_array'],
-        'video.frames_per_second' : 40
+        'video.frames_per_second' : 30
     }
 
     def __init__(self):
-        self.gravity = 9.8
+        self.gravity = 9.81
         self.masscart = 2.0
         self.masspole = 0.5
         self.total_mass = (self.masspole + self.masscart)
