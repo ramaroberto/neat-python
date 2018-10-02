@@ -71,14 +71,14 @@ class DefaultReproduction(DefaultClassConfig):
         return new_genomes
 
     @staticmethod
-    def compute_spawn(adjusted_fitness, previous_sizes, pop_size, min_species_size, square_fitness=False):
+    def compute_spawn(fitnesses, previous_sizes, pop_size, min_species_size, square_fitness=False):
         """Compute the proper number of offspring per species (proportional to fitness)."""
         if square_fitness:
-            adjusted_fitness = map(lambda v: v**2, adjusted_fitness)
-        af_sum = sum(adjusted_fitness)
+            fitnesses = map(lambda v: v**2, fitnesses)
+        af_sum = sum(fitnesses)
 
         spawn_amounts = []
-        for af, ps in zip(adjusted_fitness, previous_sizes):
+        for af, ps in zip(fitnesses, previous_sizes):
             if af_sum > 0:
                 s = max(min_species_size, af / af_sum * pop_size)
             else:
