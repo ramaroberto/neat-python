@@ -52,10 +52,8 @@ class FloatAttribute(BaseAttribute):
             return self.clamp(gauss(mean, stdev), config)
 
         if 'uniform' in init_type:
-            min_value = max(getattr(config, self.min_value_name),
-                            (mean-(2*stdev)))
-            max_value = min(getattr(config, self.max_value_name),
-                            (mean+(2*stdev)))
+            min_value = max(getattr(config, self.min_value_name), mean - stdev)
+            max_value = min(getattr(config, self.max_value_name), mean + stdev)
             return uniform(min_value, max_value)
 
         raise RuntimeError("Unknown init_type {!r} for {!s}".format(getattr(config,
@@ -73,8 +71,9 @@ class FloatAttribute(BaseAttribute):
             return self.clamp(value + gauss(0.0, mutate_power), config)
 
         replace_rate = getattr(config, self.replace_rate_name)
-
-        if r < replace_rate + mutate_rate:
+        
+        r = random()
+        if r < replace_rate:
             return self.init_value(config)
 
         return value
