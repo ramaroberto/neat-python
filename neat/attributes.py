@@ -64,20 +64,17 @@ class FloatAttribute(BaseAttribute):
                                                                     self.init_type_name))
 
     def mutate_value(self, value, config):
-        # mutate_rate is usually no lower than replace_rate, and frequently higher -
-        # so put first for efficiency
         mutate_rate = getattr(config, self.mutate_rate_name)
-
-        r = random()
-        if r < mutate_rate:
-            mutate_power = getattr(config, self.mutate_power_name)
-            return self.clamp(value + gauss(0.0, mutate_power), config)
-
-        replace_rate = getattr(config, self.replace_rate_name)
         
-        r = random()
-        if r < replace_rate:
-            return self.init_value(config)
+        if mutate_rate > 0:
+            replace_rate = getattr(config, self.replace_rate_name)
+            
+            if random() < mutate_rate:
+                if random() < replace_rate:
+                    return self.init_value(config)
+                    
+                mutate_power = getattr(config, self.mutate_power_name)
+                return self.clamp(value + gauss(0.0, mutate_power), config)
 
         return value
 
