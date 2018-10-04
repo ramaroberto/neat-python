@@ -47,7 +47,10 @@ class FloatAttribute(BaseAttribute):
         mean = getattr(config, self.init_mean_name)
         stdev = getattr(config, self.init_stdev_name)
         init_type = getattr(config, self.init_type_name).lower()
-
+        
+        if ('static' in init_type):
+            return mean
+        
         if ('gauss' in init_type) or ('normal' in init_type):
             return self.clamp(gauss(mean, stdev), config)
 
