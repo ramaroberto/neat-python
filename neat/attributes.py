@@ -113,12 +113,7 @@ class BoolAttribute(BaseAttribute):
         if mutate_rate > 0:
             r = random()
             if r < mutate_rate:
-                # NOTE: we choose a random value here so that the mutation rate has the
-                # same exact meaning as the rates given for the string and bool
-                # attributes (the mutation operation *may* change the value but is not
-                # guaranteed to do so).
-                return random() < 0.5
-
+                return not value
         return value
 
     def validate(self, config): # pragma: no cover
