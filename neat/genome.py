@@ -312,7 +312,6 @@ class DefaultGenome(object):
         if not self.connections:
             if config.check_structural_mutation_surer():
                 self.mutate_add_connection(config)
-            return
 
         # Choose a random connection to split
         conn_to_split = choice(list(self.connections.values()))
