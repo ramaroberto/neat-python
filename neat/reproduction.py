@@ -31,7 +31,7 @@ class DefaultReproduction(DefaultClassConfig):
                                   [ConfigParameter('elitism', int, 0),
                                    ConfigParameter('min_for_elitism', int, 0),
                                    ConfigParameter('survival_threshold', float, 0.2),
-                                   ConfigParameter('min_species_size', int, 2),
+                                   ConfigParameter('min_species_size', int, 0),
                                    ConfigParameter('fitness_min_divisor', float, 1.0),
                                    ConfigParameter('selection_tournament_size', int, 2),
                                    ConfigParameter('crossover_prob', float, 0.75),
@@ -171,58 +171,62 @@ class DefaultReproduction(DefaultClassConfig):
         new_population = {}
         species.species = {}
         for spawn, s in zip(spawn_amounts, remaining_species):
-            # The species has at least one member for the next generation, so retain it.
             old_members = list(iteritems(s.members))
             s.members = {}
             species.species[s.key] = s
 
             # Sort members in order of descending fitness.
             old_members.sort(reverse=True, key=lambda x: x[1].fitness)
-            
-            # If elitism is enabled, each species always at least gets to retain its elites.
-            if self.reproduction_config.min_for_elitism <= len(old_members):
-                spawn = max(spawn, self.reproduction_config.elitism)
-
-            assert spawn > 0
 
             # Transfer elites to new generation.
-            if self.reproduction_config.elitism > 0:
+            if self.reproduction_config.min_for_elitism <= len(old_members) and \
+                self.reproduction_config.elitism > 0:
                 for i, m in old_members[:self.reproduction_config.elitism]:
+                    if spawn <= 0:
+                        break
                     new_population[i] = m
                     spawn -= 1
-
             if spawn <= 0:
                 continue
 
-            # Only use the survival threshold fraction to use as parents for the next generation.
+            # Only use the survival threshold fraction to use as parents for the
+            # next generation.
             repro_cutoff = int(math.ceil(self.reproduction_config.survival_threshold *
                                          len(old_members)))
-            # Use at least two parents no matter what the threshold fraction result is.
-            repro_cutoff = max(repro_cutoff, 2)
+            # Try to use at least two parents no matter what the threshold 
+            # fraction result is.
+            repro_cutoff = max(repro_cutoff, min(2, len(old_members)))
             old_members = old_members[:repro_cutoff]
 
-            # Randomly choose parents and produce the number of offspring allotted to the species.
+            # Randomly choose parents and produce the number of offspring
+            # allotted to the species.
             while spawn > 0:
                 spawn -= 1
                 gid = next(self.genome_indexer)
                 child = config.genome_type(gid)
                 
                 # Perform tournament selection on old members in order to choose
-                # parents.
-                # Note that if the parents are not distinct, crossover will produce a
-                # genetically identical clone of the parent (but with a different ID).
-                ip1 = min(random.sample(xrange(len(old_members)), 
-                    min(len(old_members), self.reproduction_config.selection_tournament_size)))
-                ip2 = min(random.sample(xrange(len(old_members)), 
-                    min(len(old_members), self.reproduction_config.selection_tournament_size)))
-                    
-                r = random.random()
-                if r < self.reproduction_config.crossover_prob:
-                    # print("crossover:", ip1, ip2)
-                    parent1_id, parent1 = old_members[ip1]
-                    parent2_id, parent2 = old_members[ip2]
+                # parents. Note that if the parents are not distinct, crossover 
+                # will produce a genetically identical clone of the parent 
+                # (but with a different ID).
+                if len(old_members) > 1:
+                    # TODO(robertorama): ip1 and ip2 could happen to be the 
+                    # same. This can be avoided by sampling all the members at 
+                    # the same time.
+                    ip1 = min(random.sample(xrange(len(old_members)), 
+                        min(len(old_members), self.reproduction_config.selection_tournament_size)))
+                    ip2 = min(random.sample(xrange(len(old_members)), 
+                        min(len(old_members), self.reproduction_config.selection_tournament_size)))
+                        
+                    r = random.random()
+                    if r < self.reproduction_config.crossover_prob:
+                        parent1_id, parent1 = old_members[ip1]
+                        parent2_id, parent2 = old_members[ip2]
+                    else:
+                        parent1_id, parent1 = old_members[min(ip1, ip2)]
+                        parent2_id, parent2 = (parent1_id, parent1)
                 else:
-                    parent1_id, parent1 = old_members[min(ip1, ip2)]
+                    parent1_id, parent1 = old_members[0]
                     parent2_id, parent2 = (parent1_id, parent1)
                     
                 child.configure_crossover(parent1, parent2, config.genome_config)
