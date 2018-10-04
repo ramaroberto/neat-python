@@ -70,104 +70,77 @@ class DefaultReproduction(DefaultClassConfig):
 
         return new_genomes
 
-    @staticmethod
-    def compute_spawn(fitnesses, previous_sizes, pop_size, min_species_size, square_fitness=False):
-        """Compute the proper number of offspring per species (proportional to fitness)."""
-        if square_fitness:
-            fitnesses = map(lambda v: v**2, fitnesses)
-        af_sum = sum(fitnesses)
-
-        spawn_amounts = []
-        for af, ps in zip(fitnesses, previous_sizes):
-            if af_sum > 0:
-                s = max(min_species_size, af / af_sum * pop_size)
-            else:
-                s = min_species_size
-
-            d = (s - ps) * 0.5
-            c = int(round(d))
-            spawn = ps
-            if abs(c) > 0:
-                spawn += c
-            elif d > 0:
-                spawn += 1
-            elif d < 0:
-                spawn -= 1
-
-            spawn_amounts.append(spawn)
-
-        # Normalize the spawn amounts so that the next generation is roughly
-        # the population size requested by the user.
-        total_spawn = sum(spawn_amounts)
-        norm = pop_size / total_spawn
-        spawn_amounts = [max(min_species_size, int(round(n * norm))) for n in spawn_amounts]
-
-        return spawn_amounts
-
     def reproduce(self, config, species, pop_size, generation):
         """
         Handles creation of genomes, either from scratch or by sexual or
         asexual reproduction from parents.
         """
-        # TODO: I don't like this modification of the species and stagnation objects,
-        # because it requires internal knowledge of the objects.
-
-        # Filter out stagnated species, collect the set of non-stagnated
-        # species members, and compute their average adjusted fitness.
-        # The average adjusted fitness scheme (normalized to the interval
-        # [0, 1]) allows the use of negative fitness values without
-        # interfering with the shared fitness scheme.
-        all_fitnesses = []
+        
         remaining_species = []
-        for stag_sid, stag_s, stagnant in self.stagnation.update(species, generation):
-            if stagnant:
-                self.reporters.species_stagnant(stag_sid, stag_s)
-            else:
-                all_fitnesses.extend(m.fitness for m in itervalues(stag_s.members))
-                remaining_species.append(stag_s)
-        # The above comment was not quite what was happening - now getting fitnesses
-        # only from members of non-stagnated species.
+        fitness_total = 0.0
+        for sid, s, is_stagnant in self.stagnation.update(species, generation):
+            # Calculate the average fitness of the species.
+            fitsum = 0.0
+            for m in itervalues(s.members):
+                if self.reproduction_config.square_adjusted_fitness:
+                    # fitsum += (1.0 + fitness_floor + m.fitness) ** 2.0
+                    fitsum += (1.0 + m.fitness) ** 2
+                else:
+                    fitsum += m.fitness
+            
+            s.adjusted_fitness = 0.0
+            if len(s.members) > 0 and fitsum > 1e-10:
+                s.adjusted_fitness = float(fitsum) / len(s.members)
+            
+            # Only keep the non-stagnant doing-something species.
+            if not is_stagnant and s.adjusted_fitness > 0.1:
+                remaining_species.append(s)
+                fitness_total += s.adjusted_fitness
 
-        # No species left.
-        old_species = species.species.values()
-        random.shuffle(old_species)
-        if not remaining_species:
+        # No species left, if minimum is set shuffle and grab some of them.
+        if not remaining_species and \
+            self.reproduction_config.minimum_species > 0:
+            old_species = species.species.values()
+            random.shuffle(old_species)
             if self.reproduction_config.minimum_species <= 0:
                 species.species = {}
-                return {} # was []
+                return {}
             while len(old_species) > 0 and \
                 len(remaining_species) < self.reproduction_config.minimum_species:
                 s = old_species.pop(0)
-                all_fitnesses.extend(m.fitness for m in itervalues(s.members))
                 remaining_species.append(s)
-                
-
-        # Find minimum/maximum fitness across the entire population, for use in
-        # species adjusted fitness computation.
-        min_fitness = min(all_fitnesses)
-        max_fitness = max(all_fitnesses)
-        # Do not allow the fitness range to be zero, as we divide by it below.
-        fitness_range = max(self.reproduction_config.fitness_min_divisor, max_fitness - min_fitness)
-        for afs in remaining_species:
-            # Compute adjusted fitness.
-            msf = mean([m.fitness for m in itervalues(afs.members)])
-            af = (msf - min_fitness) / fitness_range
-            afs.adjusted_fitness = af
-
-        adjusted_fitnesses = [s.adjusted_fitness for s in remaining_species]
-        avg_adjusted_fitness = mean(adjusted_fitnesses) # type: float
-        self.reporters.info("Average adjusted fitness: {:.3f}".format(avg_adjusted_fitness))
+                fitness_total += s.adjusted_fitness
+        
+        # Avoid division by zero, in the case the generation is bad.
+        if fitness_total < 1e-10:
+            fitness_total = 1.0
 
         # Compute the number of new members for each species in the new generation.
-        previous_sizes = [len(s.members) for s in remaining_species]
         min_species_size = self.reproduction_config.min_species_size
-        # Isn't the effective min_species_size going to be max(min_species_size,
-        # self.reproduction_config.elitism)? That would probably produce more accurate tracking
-        # of population sizes and relative fitnesses... doing. TODO: document.
-        min_species_size = max(min_species_size,self.reproduction_config.elitism)
-        spawn_amounts = self.compute_spawn(adjusted_fitnesses, previous_sizes,
-                                           pop_size, min_species_size, square_fitness=self.reproduction_config.square_adjusted_fitness)
-
+        pop_to_accommodate = pop_size - len(remaining_species) * min_species_size
+        
+        # Calculate the adjusted fitness and keep track of the remainders of the
+        # integer division.
+        spawn_amounts = []
+        remainders = []
+        for i, s in enumerate(remaining_species):
+            s.adjusted_fitness /= fitness_total
+            earned_spawn = s.adjusted_fitness * pop_to_accommodate
+            spawn = math.floor(earned_spawn)
+            spawn_amounts.append(spawn)
+            remainders.append((i, earned_spawn - spawn))
+        
+        # Use the remainders to assign the excess spawns to the most rightful
+        # species.
+        pop_to_accommodate -= sum(spawn_amounts)
+        remainders.sort(key=lambda e: e[1], reverse=True)
+        for i, remainder in remainders:
+            if pop_to_accommodate <= 0:
+                break
+            spawn_amounts[i] += 1
+            pop_to_accommodate -= 1
+            
+        
         new_population = {}
         species.species = {}
         for spawn, s in zip(spawn_amounts, remaining_species):

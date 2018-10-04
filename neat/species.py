@@ -103,10 +103,16 @@ class DefaultSpeciesSet(DefaultClassConfig):
         new_representatives = {}
         new_members = {}
         for sid, s in iteritems(self.species):
+            representative = s.representative
+            for member in s.members:
+                if not representative or \
+                    representative.fitness < member.fitness:
+                    representative = member
+            
             candidates = []
             for gid in unspeciated:
                 g = population[gid]
-                d = distances(s.representative, g)
+                d = distances(representative, g)
                 candidates.append((d, g))
 
             # The new representative is the genome closest to the current representative.
