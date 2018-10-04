@@ -95,7 +95,7 @@ class DefaultSpeciesSet(DefaultClassConfig):
             else:
                 self.compatibility_threshold += compatibility_modificator
             self.compatibility_threshold = max(self.compatibility_threshold, compatibility_threshold_minimum)
-            print "ACT:", self.compatibility_threshold
+            self.reporters.info("Compatibility threshold: {:.3f}".format(self.compatibility_threshold))
 
         # Find the best representatives for each existing species.
         unspeciated = set(iterkeys(population))
