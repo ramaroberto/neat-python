@@ -23,10 +23,10 @@ local_neat = imp.load_module("neat", f, pathname, desc)
 
 import neat
 
+# Set the number of workers and initialize the enviroments for the simulations.
 num_workers = 6
 env = CartPoleEnv()
 envs_pool = [CartPoleEnv() for i in range(num_workers*2)]
-
 for i, lenv in enumerate(envs_pool):
     lenv.id = i
                             
@@ -37,51 +37,83 @@ def ini_pop(state, stats, config, output):
         pop.add_reporter(neat.reporting.StdOutReporter(True))
     pop.add_reporter(stats)
     return pop
+    
+def calculate_reward(state, complex=False):
+    x, x_dot, theta, theta_dot = state
+    costheta = math.cos(theta)
+    sintheta = math.sin(theta)
+    if complex:
+        target = np.matrix([0.0, 0.0, math.cos(0), math.sin(0)])
+        current = np.matrix([x, x_dot, costheta, sintheta])
+        reward = np.exp(-0.5 * (1/0.5**2) * (current-target) * (current-target).T)[0,0]
+        # return 1/(1+np.linalg.norm(target-current))
+        return reward
+    else:
+        target = np.matrix([math.cos(0), math.sin(0)])
+        current = np.matrix([costheta, sintheta])
+        diff = np.linalg.norm(target-current)
+
+        if diff < 15.0 * (math.pi/180.0):
+            return 1.0
+        return 0.0
 
 def eval_genome(genome, config, visualize=False, normalize_input=False):
     
-    # Get a cartpole's environment from the pool
+    # Get a cartpole's environment from the pool.
     local_env = envs_pool.pop(0)
     
+    # Initialization of main variables.
     rewards = []
     net = neat.nn.FeedForwardNetwork.create(genome, config)
-    for i in xrange(1):
-        obs = local_env.reset()
-        reward_streak = 0
-        for j in xrange(200): # 5 seconds of total time: 5 / 0.025 (ts) = 200
-            if visualize:
-                local_env.render()
-                if j == 0:
-                    time.sleep(1.0)
-                else:
-                    time.sleep(0.015)
-            
-            out = None
-            x, x_dot, theta, theta_dot = obs
-            if normalize_input:
-                # +/-3, +/-10, +/-2pi, +/-2pi
-                inp = [1, x/3.0, math.cos(theta), math.sin(theta), x_dot/10.0, theta_dot/2*math.pi]
-            else:
-                # out = net.activate([1, x, x_dot, math.cos(theta), math.sin(theta), theta_dot])
-                # out = net.activate([1, x, math.cos(theta), math.sin(theta), x_dot, theta_dot])
-                inp = [1, x, math.cos(theta), math.sin(theta), x_dot, theta_dot]
-            
-            inp.reverse()    
-            out = net.activate(inp)
-            force = out[0] * 10
-            
-            obs, reward, done, info = local_env.step(force)
-            reward_streak += reward
-            if done:
-                break
-            if abs(reward) < 1.0:
-                rewards.append(reward_streak)
-                reward_streak = 0
+    state = local_env.reset()
+    reward_streak = 0
     
-    # Return the environment to the pool after use
+    # Simulate!
+    for timestep in xrange(200): # 5 seconds of total time: 5 / 0.025 (ts) = 200
+        if visualize:
+            local_env.render()
+            if timestep == 0:
+                time.sleep(2.0)
+            else:
+                time.sleep(0.015)
+        
+        out = None
+        x, x_dot, theta, theta_dot = state
+        if normalize_input:
+            # +/-3, +/-10, +/-2pi, +/-2pi
+            inp = [1, x/3.0, math.cos(theta), math.sin(theta), x_dot/10.0, theta_dot/2*math.pi]
+        else:
+            inp = [1, x, math.cos(theta), math.sin(theta), x_dot, theta_dot]
+        inp.reverse()
+        
+        # Activate the NN with the input and use the output to advance the 
+        # state.
+        out = net.activate(inp)
+        force = out[0] * 10
+        state, done, info = local_env.step(force)
+        
+        # If the cart is outside boundaries, end the simulation.
+        if done:
+            break
+            
+        # Since the reward is 0 during the first 100 steps, skip the calculation
+        # of the reward.
+        if timestep < 100:
+            continue
+        
+        # Calculate the reward and save the streak if needed to.
+        reward = calculate_reward(state)
+        reward_streak += reward
+        if abs(reward) < 1.0 and reward_streak > 0:
+            rewards.append(reward_streak)
+            reward_streak = 0
+    rewards.append(reward_streak) # Add the last streak.
+    
+    # Return the environment to the pool after use.
     envs_pool.append(local_env)
     
-    rewards.append(reward_streak)
+    if not rewards:
+        return 0
     return max(rewards)
 
 def eval_genomes(genomes, config):
@@ -167,5 +199,5 @@ def load_experiment():
 
 # If run as script.
 if __name__ == '__main__':
-    run_experiment("config_inverted_single_pole_stag", repetitions=200, max_generations=500)
+    run_experiment("config_inverted_single_pole", repetitions=200, max_generations=500)
     # load_experiment()
