@@ -25,36 +25,23 @@ class CartPoleEnv(gym.Env):
         self.polemass_length = (self.masspole * self.length)
         self.force_mag = 10.0
         self.tau = 0.025  # seconds between state updates
-
-        # Angle at which to fail the episode
-        self.theta_threshold_radians = 12.0 * (math.pi/180.0)
+        
+        # Half of the length of the rail
         self.x_threshold = 3.0
 
-        # Angle limit set to 2 * theta_threshold_radians so failing observation is still within bounds
-        high = np.array([
-            self.x_threshold * 2,
-            np.finfo(np.float32).max,
-            self.theta_threshold_radians * 2,
-            np.finfo(np.float32).max])
-
-        self.action_space = spaces.Discrete(2)
-        self.observation_space = spaces.Box(-high, high)
-
-        self.seed()
+        # Initialize basic variables
         self.viewer = None
         self.state = None
-        self.timestep = 1
-
         self.steps_beyond_done = None
-        self.id = -1
+        
+        # Initialze seed
+        self.seed()
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
     def step(self, force):
-        # assert self.action_space.contains(action), "%r (%s) invalid"%(action, type(action))
-        
         state = self.state
         x, x_dot, theta, theta_dot = state
         
@@ -69,41 +56,18 @@ class CartPoleEnv(gym.Env):
         theta = theta + self.tau * theta_dot
         theta_dot = theta_dot + self.tau * thetaacc
         self.state = (x,x_dot,theta,theta_dot)
-        done =  x < -self.x_threshold \
-                or x > self.x_threshold # \
-                # or theta < -self.theta_threshold_radians \
-                # or theta > self.theta_threshold_radians
-        done = bool(done)
 
-        # print theta, theta/(math.pi/180.0), costheta, sintheta
-        if not done:
-            # target = np.matrix([0.0, 0.0, math.cos(0), math.sin(0)])
-            # current = np.matrix([x, x_dot, costheta, sintheta])
-            # reward = np.exp(-0.5 * (1/0.5**2) * (current-target) * (current-target).T)[0,0]
-            
-            target = np.matrix([math.cos(0), math.sin(0)])
-            current = np.matrix([costheta, sintheta])
-            diff = np.linalg.norm(target-current)
-            reward = 0.0
-            if self.timestep > 100 and diff < 15 * (math.pi/180):
-                reward = 1.0
-            
-            # da = np.array([math.cos(0), math.sin(0)])
-            # diff = np.linalg.norm(np.array([costheta, sintheta]) - da)
-            # reward = 0.0
-            # if diff < 30 * (math.pi/180):
-            #     reward = 1.0
-        elif self.steps_beyond_done is None:
-            # Pole just fell!
-            self.steps_beyond_done = 0
-            reward = 1.0
-        else:
-            if self.steps_beyond_done == 0:
-                logger.warn("You are calling 'step()' even though this environment has already returned done = True. You should always call 'reset()' once you receive 'done = True' -- any further steps are undefined behavior.")
-            self.steps_beyond_done += 1
-            reward = 0.0
-        self.timestep += 1
-        return np.array(self.state), reward, done, {}
+        done =  x < -self.x_threshold or x > self.x_threshold
+        if done:
+            if self.steps_beyond_done is None:
+                # Pole just fell!
+                self.steps_beyond_done = 0
+            else:
+                if self.steps_beyond_done == 0:
+                    logger.warn("You are calling 'step()' even though this environment has already returned done = True. You should always call 'reset()' once you receive 'done = True' -- any further steps are undefined behavior.")
+                self.steps_beyond_done += 1
+        
+        return self.state, done, {}
 
     def reset(self):
         # self.state = self.np_random.uniform(low=-0.05, high=0.05, size=(4,))
@@ -114,8 +78,7 @@ class CartPoleEnv(gym.Env):
         # self.state[2] = self.np_random.uniform(-0.5*self.theta_threshold_radians, 0.5*self.theta_threshold_radians, size=(1,))[0]
         # self.state[3] = self.np_random.uniform(-0.5, 0.5, size=(1,))[0]
         self.steps_beyond_done = None
-        self.timestep = 1
-        return np.array(self.state)
+        return self.state
 
     def render(self, mode='human'):
         screen_width = 600
