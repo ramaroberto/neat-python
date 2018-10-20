@@ -36,6 +36,7 @@ class DefaultReproduction(DefaultClassConfig):
                                    ConfigParameter('selection_tournament_size', int, 2),
                                    ConfigParameter('crossover_prob', float, 0.75),
                                    ConfigParameter('minimum_species', int, 0),
+                                   ConfigParameter('filter_bad_genomes', bool, False),
                                    ConfigParameter('square_adjusted_fitness', bool, False)])
 
     def __init__(self, config, reporters, stagnation):
@@ -194,8 +195,15 @@ class DefaultReproduction(DefaultClassConfig):
             repro_cutoff = int(math.ceil(self.reproduction_config.survival_threshold *
                                          len(old_members)))
             # Try to use at least two parents no matter what the threshold 
-            # fraction result is.
+            # fraction result is. If the bad genomes' filter is enabled, 
+            # additionaly delete all the genomes matching the minimum fitness.
             repro_cutoff = max(repro_cutoff, min(2, len(old_members)))
+            if self.reproduction_config.filter_bad_genomes and \
+                old_members[0][1].fitness > min_fitness and repro_cutoff > 1:
+                while abs(old_members[repro_cutoff-1][1].fitness - min_fitness) < 1e-10:
+                    repro_cutoff -= 1
+            
+            # Trim the population with the cutoff value.
             old_members = old_members[:repro_cutoff]
 
             # Randomly choose parents and produce the number of offspring
