@@ -116,10 +116,6 @@ def eval_genome(genome, config, visualize=False, normalize_input=False):
         return 0
     return max(rewards)
 
-def eval_genomes(genomes, config):
-    for genome_id, genome in genomes:
-        genome.fitness = eval_genome(genome, config, normalize_input=True)
-
 def run_neat(gens, env, config, output=True):
     pop = neat.Population(config)
     stats = neat.StatisticsReporter()
@@ -145,8 +141,9 @@ def run_experiment(config_name, repetitions=1, max_generations=200):
     
     # Save results to file
     if repetitions > 1:
+        prefix = "max_"
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        f = open(timestamp+"_"+config_name+".log", "wa", 0) # buffer size = 0
+        f = open(timestamp + "_" + prefix + config_name + ".log", "wa", 0) # buffer size = 0
 
         # Run!
         results = []
@@ -173,7 +170,7 @@ def run_experiment(config_name, repetitions=1, max_generations=200):
         
         f.close()
         
-        f = open(timestamp+"_"+config_name+".data", "wb")
+        f = open(timestamp + "_" + prefix + config_name + ".data", "wb")
         pickle.dump(results, f)
         return [np.percentile(experiments_generations, 10),\
             np.percentile(experiments_generations, 25),\
