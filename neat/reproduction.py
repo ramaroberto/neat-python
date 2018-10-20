@@ -218,9 +218,6 @@ class DefaultReproduction(DefaultClassConfig):
                 # will produce a genetically identical clone of the parent 
                 # (but with a different ID).
                 if len(old_members) > 1:
-                    # TODO(robertorama): ip1 and ip2 could happen to be the 
-                    # same. This can be avoided by sampling all the members at 
-                    # the same time.
                     ip1 = min(random.sample(xrange(len(old_members)), 
                         min(len(old_members), self.reproduction_config.selection_tournament_size)))
                     ip2 = min(random.sample(xrange(len(old_members)), 
