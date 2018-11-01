@@ -121,17 +121,6 @@ class Population(object):
                     self.best_genome = best
                     
             self.reporters.post_evaluate(self.config, self.population, self.species, best)
-
-            if not self.config.no_fitness_termination:
-                # End if the fitness threshold is reached.
-                real_fitnesses = []
-                for genome in self.population.values():
-                    if genome.real_fitness:
-                        real_fitnesses.append(genome.real_fitness)
-                if real_fitnesses and \
-                    self.fitness_criterion(real_fitnesses) >= self.config.fitness_threshold:
-                    self.reporters.found_solution(self.config, self.generation, best)
-                    break
             
             # If surrogate is enabled and conditions matched, train the model.
             if self.surrogate.surrogate_config.enabled:
@@ -167,6 +156,17 @@ class Population(object):
             if self.surrogate.surrogate_config.enabled and self.surrogate.model \
                 and self.resolve_count >= self.surrogate.surrogate_config.resolve_threshold:
                 self.surrogate.reset()
+                
+            if not self.config.no_fitness_termination:
+                # End if the fitness threshold is reached.
+                real_fitnesses = []
+                for genome in self.population.values():
+                    if genome.real_fitness:
+                        real_fitnesses.append(genome.real_fitness)
+                if real_fitnesses and \
+                    self.fitness_criterion(real_fitnesses) >= self.config.fitness_threshold:
+                    self.reporters.found_solution(self.config, self.generation, best)
+                    break
             
             # Create the next generation from the current generation.
             self.population = self.reproduction.reproduce(self.config, self.species,
