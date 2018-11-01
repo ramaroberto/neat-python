@@ -86,7 +86,7 @@ compatibility_threshold_minimum = 1.0
 
 [DefaultStagnation]
 species_fitness_func = max
-max_stagnation       = 50
+max_stagnation       = 20
 species_elitism      = 1
 
 [DefaultReproduction]
@@ -101,7 +101,9 @@ square_adjusted_fitness = True
 [DefaultSurrogateModel]
 enabled                   = True
 number_initial_samples    = 32
-gens_per_infill           = 8
+gens_per_infill           = 4
 number_infill_individuals = 4
-resolve_threshold         = 128
+resolve_threshold         = 64
 max_training_set_size     = 128
+distance_function         = neat
+surrogate_model           = gp
