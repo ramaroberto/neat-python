@@ -15,6 +15,7 @@ from neat.genes import DefaultConnectionGene, DefaultNodeGene
 from neat.graphs import creates_cycle
 from neat.six_util import iteritems, iterkeys
 
+import numpy as np
 
 class DefaultGenomeConfig(object):
     """Sets up and holds configuration information for the DefaultGenome class."""
@@ -173,6 +174,17 @@ class DefaultGenome(object):
 
         # Fitness results.
         self.fitness = None
+        self.real_fitness = None
+    
+    def get_real_fitness(self):
+        if self.real_fitness:
+            return self.real_fitness
+        return 0.0
+    
+    def get_fitness(self):
+        if self.real_fitness:
+            return self.real_fitness
+        return self.fitness
 
     def configure_new(self, config):
         """Configure a new genome based on the given configuration."""
@@ -239,6 +251,10 @@ class DefaultGenome(object):
 
     def configure_crossover(self, genome1, genome2, config):
         """ Configure a new genome by crossover from two parent genomes. """
+        if type(genome1.fitness) not in (int, float, np.float64) or type(genome2.fitness) not in (int, float, np.float64):
+            print("[ERR] Complex fitness found: ", map(lambda g: (g.key, g.fitness), [genome1, genome2]))
+            exit()
+        
         assert isinstance(genome1.fitness, (int, float))
         assert isinstance(genome2.fitness, (int, float))
         if genome1.fitness > genome2.fitness:

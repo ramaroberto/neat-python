@@ -27,4 +27,5 @@ class ParallelEvaluator(object):
 
         # assign the fitness back to each genome
         for job, (ignored_genome_id, genome) in zip(jobs, genomes):
-            genome.fitness = job.get(timeout=self.timeout)
+            genome.real_fitness = job.get(timeout=self.timeout)
+            genome.fitness = genome.real_fitness

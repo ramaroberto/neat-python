@@ -14,6 +14,7 @@ class Species(object):
         self.members = {}
         self.fitness = None
         self.adjusted_fitness = None
+        self.best_genome = None
         self.fitness_history = []
 
     def update(self, representative, members):
@@ -98,7 +99,8 @@ class DefaultSpeciesSet(DefaultClassConfig):
             self.reporters.info("Compatibility threshold: {:.3f}".format(self.compatibility_threshold))
 
         # Find the best representatives for each existing species.
-        unspeciated = set(iterkeys(population))
+        self.pop_gids = set(iterkeys(population))
+        unspeciated = self.pop_gids
         distances = GenomeDistanceCache(config.genome_config)
         new_representatives = {}
         new_members = {}
@@ -158,6 +160,32 @@ class DefaultSpeciesSet(DefaultClassConfig):
         gdstdev = stdev(itervalues(distances.distances))
         self.reporters.info(
             'Mean genetic distance {0:.3f}, standard deviation {1:.3f}'.format(gdmean, gdstdev))
+    
+    def add(self, config, generation, genomes):
+        distances = GenomeDistanceCache(config.genome_config)
+        
+        for genome in genomes:
+            # If the genome it's already in the active population, skip.
+            gid = genome.key
+            if gid in self.pop_gids:
+                continue
+            
+            # Find the species with the most similar representative.
+            best_match = None
+            candidates = []
+            for s in self.species.values():
+                d = distances(s.representative, genome)
+                if d < self.compatibility_threshold:
+                    best_match = s
+            
+            if not best_match:
+                # If no species similar enough, create a new one.
+                sid = next(self.indexer)
+                s = Species(sid, generation)
+                s.update(genome, {genome.key: genome})
+            else:
+                # Otherwise, add the genome to the best matching species.
+                best_match.members[genome.key] = genome
 
     def get_species_id(self, individual_id):
         return self.genome_to_species[individual_id]

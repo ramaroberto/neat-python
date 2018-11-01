@@ -137,17 +137,19 @@ class Config(object):
                 ConfigParameter('reset_on_extinction', bool),
                 ConfigParameter('no_fitness_termination', bool, False)]
 
-    def __init__(self, genome_type, reproduction_type, species_set_type, stagnation_type, filename):
+    def __init__(self, genome_type, reproduction_type, species_set_type, stagnation_type, surrogate_type, filename):
         # Check that the provided types have the required methods.
         assert hasattr(genome_type, 'parse_config')
         assert hasattr(reproduction_type, 'parse_config')
         assert hasattr(species_set_type, 'parse_config')
         assert hasattr(stagnation_type, 'parse_config')
+        assert hasattr(surrogate_type, 'parse_config')
 
         self.genome_type = genome_type
         self.reproduction_type = reproduction_type
         self.species_set_type = species_set_type
         self.stagnation_type = stagnation_type
+        self.surrogate_type = surrogate_type
 
         if not os.path.isfile(filename):
             raise Exception('No such config file: ' + os.path.abspath(filename))
@@ -196,6 +198,9 @@ class Config(object):
 
         reproduction_dict = dict(parameters.items(reproduction_type.__name__))
         self.reproduction_config = reproduction_type.parse_config(reproduction_dict)
+        
+        surrogate_dict = dict(parameters.items(surrogate_type.__name__))
+        self.surrogate_config = surrogate_type.parse_config(surrogate_dict)
 
     def save(self, filename):
         with open(filename, 'w') as f:
@@ -215,3 +220,6 @@ class Config(object):
 
             f.write('\n[{0}]\n'.format(self.reproduction_type.__name__))
             self.reproduction_type.write_config(f, self.reproduction_config)
+            
+            f.write('\n[{0}]\n'.format(self.surrogate_type.__name__))
+            self.surrogate_type.write_config(f, self.surrogate_config)

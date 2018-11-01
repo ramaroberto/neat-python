@@ -27,6 +27,9 @@ class Population(object):
         self.reproduction = config.reproduction_type(config.reproduction_config,
                                                      self.reporters,
                                                      stagnation)
+        self.surrogate = config.surrogate_type(config.surrogate_config,
+                                                     self.reporters)
+        
         if config.fitness_criterion == 'max':
             self.fitness_criterion = max
         elif config.fitness_criterion == 'min':
@@ -36,12 +39,17 @@ class Population(object):
         elif not config.no_fitness_termination:
             raise RuntimeError(
                 "Unexpected fitness_criterion: {0!r}".format(config.fitness_criterion))
-
+                
         if initial_state is None:
             # Create a population from scratch, then partition into species.
-            self.population = self.reproduction.create_new(config.genome_type,
-                                                           config.genome_config,
-                                                           config.pop_size)
+            if self.surrogate.surrogate_config.enabled:
+                self.population = self.reproduction.create_new(config.genome_type,
+                                                               config.genome_config,
+                                                               self.surrogate.surrogate_config.number_initial_samples)
+            else:
+                self.population = self.reproduction.create_new(config.genome_type,
+                                                               config.genome_config,
+                                                               config.pop_size)
             self.species = config.species_set_type(config.species_set_config, self.reporters)
             self.generation = 0
             self.species.speciate(config, self.population, self.generation)
@@ -49,6 +57,7 @@ class Population(object):
             self.population, self.species, self.generation = initial_state
 
         self.best_genome = None
+        self.evaluations = 0
 
     def add_reporter(self, reporter):
         self.reporters.add(reporter)
@@ -75,7 +84,9 @@ class Population(object):
         the genomes themselves (apart from updating the fitness member),
         or the configuration object.
         """
-
+        
+        self.resolve_count = 0
+        
         if self.config.no_fitness_termination and (n is None):
             raise RuntimeError("Cannot have no generational limit with no fitness termination")
 
@@ -85,27 +96,79 @@ class Population(object):
 
             self.reporters.start_generation(self.generation)
 
-            # Evaluate all genomes using the user-provided function.
-            fitness_function(list(iteritems(self.population)), self.config)
-
+            if self.surrogate.surrogate_config.enabled and self.surrogate.model:
+                # If surrogate assistance is enabled, use it instead of evaluation.
+                self.surrogate.evaluate(self.population, k, fitness_function, self.config)
+            else:
+                # Evaluate all genomes using the user-provided function.
+                self.evaluations += len(self.population)
+                fitness_function(list(iteritems(self.population)), self.config)
+                if self.surrogate.surrogate_config.enabled:
+                    self.surrogate.add_to_training(self.population.values())
+                    if k == 1:
+                        self.surrogate.train(k, self.config)
+            print("Total Evaluations: " + str(self.evaluations))
+            print("GP Size: " + str(self.surrogate.samples_length()))
+                    
             # Gather and report statistics.
             best = None
             for g in itervalues(self.population):
                 if best is None or g.fitness > best.fitness:
                     best = g
-            self.reporters.post_evaluate(self.config, self.population, self.species, best)
-
-            # Track the best genome ever seen.
-            if self.best_genome is None or best.fitness > self.best_genome.fitness:
+            if self.best_genome is None:
                 self.best_genome = best
+            if not self.surrogate.surrogate_config.enabled:
+                if best.get_fitness() > self.best_genome.get_fitness():
+                    self.best_genome = best
+                    
+            self.reporters.post_evaluate(self.config, self.population, self.species, best)
 
             if not self.config.no_fitness_termination:
                 # End if the fitness threshold is reached.
-                fv = self.fitness_criterion(g.fitness for g in itervalues(self.population))
-                if fv >= self.config.fitness_threshold:
+                real_fitnesses = []
+                for genome in self.population.values():
+                    if genome.real_fitness:
+                        real_fitnesses.append(genome.real_fitness)
+                if real_fitnesses and \
+                    self.fitness_criterion(real_fitnesses) >= self.config.fitness_threshold:
                     self.reporters.found_solution(self.config, self.generation, best)
                     break
-
+            
+            # If surrogate is enabled and conditions matched, train the model.
+            if self.surrogate.surrogate_config.enabled:
+                if self.surrogate.model:
+                    # If gens_per_infill has been reached, updated model and
+                    # add the same number training genomes as population to
+                    # stabilize the new model.
+                    if k % self.surrogate.surrogate_config.gens_per_infill == 0:
+                        best_genomes = self.surrogate.update_training(self.species.species, fitness_function, self.config)
+                        self.surrogate.train(k, self.config)
+                        training_genomes = self.surrogate.get_from_training(len(self.population))
+                        self.species.add(self.config, self.generation, training_genomes)
+                        
+                        # Compute number of evaluations used.
+                        self.evaluations += len(best_genomes)
+                        
+                        # Track the best genome ever seen.
+                        for genome in best_genomes:
+                            if self.best_genome is None or genome.get_real_fitness() > self.best_genome.get_real_fitness():
+                                self.best_genome = genome
+                                self.resolve_count = 0
+                                break
+                            else:
+                                self.resolve_count += 1
+                else:
+                    if self.resolve_count == 0 or \
+                        self.surrogate.is_training_set_new():
+                        self.resolve_count = 0 # is_training_set_new
+                        self.surrogate.train(k, self.config)
+            print("Resolve Count: ", self.resolve_count, "("+str(self.best_genome.get_real_fitness())+")")
+            
+            # If the model is stalled, reset it to produce a resolve.
+            if self.surrogate.surrogate_config.enabled and self.surrogate.model \
+                and self.resolve_count >= self.surrogate.surrogate_config.resolve_threshold:
+                self.surrogate.reset()
+            
             # Create the next generation from the current generation.
             self.population = self.reproduction.reproduce(self.config, self.species,
                                                           self.config.pop_size, self.generation)
@@ -117,6 +180,7 @@ class Population(object):
                 # If requested by the user, create a completely new population,
                 # otherwise raise an exception.
                 if self.config.reset_on_extinction:
+                    # TODO: Should add SA-NEAT initialization here too, modularize.
                     self.population = self.reproduction.create_new(self.config.genome_type,
                                                                    self.config.genome_config,
                                                                    self.config.pop_size)

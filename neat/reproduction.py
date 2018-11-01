@@ -124,7 +124,7 @@ class DefaultReproduction(DefaultClassConfig):
             if stagnant:
                 self.reporters.species_stagnant(stag_sid, stag_s)
             else:
-                all_fitnesses.extend(m.fitness for m in itervalues(stag_s.members))
+                all_fitnesses.extend(m.get_fitness() for m in itervalues(stag_s.members))
                 remaining_species.append(stag_s)
         # The above comment was not quite what was happening - now getting fitnesses
         # only from members of non-stagnated species.
@@ -139,7 +139,7 @@ class DefaultReproduction(DefaultClassConfig):
             while len(old_species) > 0 and \
                 len(remaining_species) < self.reproduction_config.minimum_species:
                 s = old_species.pop(0)
-                all_fitnesses.extend(m.fitness for m in itervalues(s.members))
+                all_fitnesses.extend(m.get_fitness() for m in itervalues(s.members))
                 remaining_species.append(s)
                 
 
@@ -151,7 +151,7 @@ class DefaultReproduction(DefaultClassConfig):
         fitness_range = max(self.reproduction_config.fitness_min_divisor, max_fitness - min_fitness)
         for afs in remaining_species:
             # Compute adjusted fitness.
-            msf = mean([m.fitness for m in itervalues(afs.members)])
+            msf = mean([m.get_fitness() for m in itervalues(afs.members)])
             af = (msf - min_fitness) / fitness_range
             afs.adjusted_fitness = af
 
@@ -177,7 +177,7 @@ class DefaultReproduction(DefaultClassConfig):
             species.species[s.key] = s
 
             # Sort members in order of descending fitness.
-            old_members.sort(reverse=True, key=lambda x: x[1].fitness)
+            old_members.sort(reverse=True, key=lambda m: m[1].get_fitness())
 
             # Transfer elites to new generation.
             if self.reproduction_config.min_for_elitism <= len(old_members) and \
@@ -199,8 +199,8 @@ class DefaultReproduction(DefaultClassConfig):
             # additionaly delete all the genomes matching the minimum fitness.
             repro_cutoff = max(repro_cutoff, min(2, len(old_members)))
             if self.reproduction_config.filter_bad_genomes and \
-                old_members[0][1].fitness > min_fitness and repro_cutoff > 1:
-                while abs(old_members[repro_cutoff-1][1].fitness - min_fitness) < 1e-10:
+                old_members[0][1].get_fitness() > min_fitness and repro_cutoff > 1:
+                while abs(old_members[repro_cutoff-1][1].get_fitness() - min_fitness) < 1e-10:
                     repro_cutoff -= 1
             
             # Trim the population with the cutoff value.
