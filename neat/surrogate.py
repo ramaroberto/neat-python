@@ -34,6 +34,9 @@ class DefaultSurrogateModel(object):
         
         # UCB
         self.acquisition = lambda mu, std: mu + std
+        
+        self.distance_similarity_check = True
+        self.distance_similarity_threshold = 0.1
     
     def samples_length(self):
         return len(self.old_training_set) + len(self.training_set)
@@ -104,10 +107,11 @@ class DefaultSurrogateModel(object):
             if genome.key in self.training_set_ids:
                 continue
             
-            # Avoid having too similar genomes in the training samples.
-            # NOTE: Otherwise, this could cause numerical problems.
-            if self._is_similar(genome, config, additional_genomes=best_genomes):
-                continue
+            if self.distance_similarity_check:
+                # Avoid having too similar genomes in the training samples.
+                # NOTE: Otherwise, this could cause numerical problems.
+                if self._is_similar(genome, config, additional_genomes=best_genomes):
+                    continue
             
             best_genomes.append(genome)
             to_infill -= 1
@@ -120,10 +124,10 @@ class DefaultSurrogateModel(object):
         self.add_to_training(best_genomes)
         return best_genomes
     
-    def _is_similar(self, genome, config, additional_genomes=[], similarity_threshold=0.1):
+    def _is_similar(self, genome, config, additional_genomes=[]):
         df = lambda g1, g2: g1.distance(g2, config.genome_config)
         for bg in additional_genomes+self.old_training_set+self.training_set:
-            if df(bg, genome) < similarity_threshold:
+            if df(bg, genome) < self.distance_similarity_threshold:
                 return True
         return False
     
