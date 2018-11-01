@@ -8,6 +8,7 @@ from neat.models.gp import RBF, GaussianProcessModel
 
 import dill
 import pickle
+import abc
 
 class DefaultSurrogateModel(object):
     
@@ -19,11 +20,13 @@ class DefaultSurrogateModel(object):
                                   ConfigParameter('gens_per_infill', int, 4),
                                   ConfigParameter('number_infill_individuals', int, 4),
                                   ConfigParameter('resolve_threshold', int, 128),
-                                  ConfigParameter('max_training_set_size', int, 128)])
+                                  ConfigParameter('max_training_set_size', int, 128),
+                                  ConfigParameter('distance_function', str, 'neat'),
+                                  ConfigParameter('surrogate_model', str, 'gp')])
     
     def __init__(self, config, reporters):
         # pylint: disable=super-init-not-called
-        self.surrogate_config = config
+        self.surrogate_config = config.surrogate_config
         self.reporters = reporters
         
         self.model = None
@@ -32,11 +35,26 @@ class DefaultSurrogateModel(object):
         self.training_set_ids = set([])
         self.max_training_set_size = self.surrogate_config.max_training_set_size
         
-        # UCB
-        self.acquisition = lambda mu, std: mu + std
-        
-        self.distance_similarity_check = True
+        self.distance_similarity_check = False
         self.distance_similarity_threshold = 0.1
+        
+        self.distance_functions_map = {
+            'neat': lambda g1, g2: g1.distance(g2, config.genome_config)
+        }
+        self.distance_function = self.distance_functions_map[self.surrogate_config.distance_function]
+        
+        self.surrogate_models_map = {
+            'gp': GaussianProcessSurrogateModel,
+            'fake': None
+        }
+        self.surrogate_model_params_map = {
+            'gp': {
+                'distance_function': self.distance_function
+            },
+            'fake': None
+        }
+        self.surrogate_model_class = self.surrogate_models_map[self.surrogate_config.surrogate_model]
+        self.surrogate_model_params = self.surrogate_model_params_map[self.surrogate_config.surrogate_model]
     
     def samples_length(self):
         return len(self.old_training_set) + len(self.training_set)
@@ -77,7 +95,7 @@ class DefaultSurrogateModel(object):
         
     def update_training(self, species, fitness_function, config):
         """Takes the genomes in the species and updates the training set."""
-        # Precondition: Species should have the fitness set.
+        # Precondition: Species should have the real fitness set.
     
         # Order the species by descending fitness.
         ranked_species = sorted(map(lambda s: (s.fitness if s.fitness else 0.0, s), species.values()), key=lambda s: -s[0])
@@ -98,7 +116,6 @@ class DefaultSurrogateModel(object):
             to_infill -= 1
             if to_infill <= 0: # More species than genomes needed to infill
                 break
-        
         
         # Then we fill the remaining spots.
         all_genomes.sort(key=lambda g: -g.fitness)
@@ -135,37 +152,66 @@ class DefaultSurrogateModel(object):
         return len(self.old_training_set) == 0
         
     def evaluate(self, population, generation, fitness_function, config, testing=False): # NOTE: Generation and fitness_function only required for testing
-        evaluated_genomes = []
-        for genome in population.values():
-            if not genome.real_fitness:
-                if testing:
-                    fitness_function(map(lambda g: (g.key, g), [genome]), config)
-                    evaluated_genomes.append(genome)
-                    with open("data/"+str(generation)+"_test_genomes.pkl", "wb") as output:
-                        pickle.dump(self.training_set, output, pickle.HIGHEST_PROTOCOL)
-                
-                mu, std = self.model.predict(genome)
-                genome.fitness = self.acquisition(mu, std)
-        
-        if testing:
-            for genome in evaluated_genomes:
-                genome.real_fitness = None
-        
+        genomes = population.values()
+        predictions = self.model.predict(genomes)
+        for i, genome in enumerate(genomes):
+            genome.fitness = predictions[i]
+    
     def train(self, generation, config): # NOTE: Generation only required for testing
         self.training_set = self.old_training_set + self.training_set
         self.old_training_set = []
-        
-        df = lambda g1, g2: g1.distance(g2, config.genome_config)
-        kernel = RBF(length=1, sigma=1, noise=1, df=df)
-        self.model = GaussianProcessModel(kernel, 1, 1, optimize_noise=True)
+        self.model = self.surrogate_model_class.initialize(self.surrogate_model_params)
+        self.model.train(self.training_set, map(lambda g: g.real_fitness, self.training_set))
         
         # NOTE: For testing only
         # with open("data/"+str(generation)+"_train_genomes.pkl", "wb") as output:
         #     pickle.dump(self.training_set, output, pickle.HIGHEST_PROTOCOL)
-        self.model.compute(self.training_set, map(lambda g: g.real_fitness, self.training_set), compute_kernel=False)
-        with open("data/"+str(generation)+"_model.pkl", "wb") as output:
-            pickle.dump(self.model, output, pickle.HIGHEST_PROTOCOL)
+        # self.model.compute(self.training_set, map(lambda g: g.real_fitness, self.training_set), compute_kernel=False)
+        # with open("data/"+str(generation)+"_model.pkl", "wb") as output:
+        #     pickle.dump(self.model, output, pickle.HIGHEST_PROTOCOL)
         # print(self.model.kernel[0])
+
+# initialize(df), train(samples, observations), predict(samples)
+
+class SurrogateModel(object):
+    __metaclass__ = abc.ABCMeta
+    
+    @classmethod
+    @abc.abstractmethod
+    def initialize(self, params):
+        """Initialize the surrogate model."""
+        return
+    
+    @abc.abstractmethod
+    def train(self, samples, observations):
+        """Train the model with the collected samples and observations."""
+        return
+    
+    @abc.abstractmethod
+    def predict(self, samples):
+        """Predict samples fitness using the trained model."""
+        return
         
-        self.model.compute(self.training_set, map(lambda g: g.real_fitness, self.training_set))
+class GaussianProcessSurrogateModel(object):
+    @classmethod
+    def initialize(self, params):
+        # TODO: Error if no distance function defined in params dict.
+        return self(params['distance_function'])
+    
+    def __init__(self, distance_function):
+        self.acquisition = lambda mu, std: mu + std
+        self.kernel = RBF(length=1, sigma=1, noise=1, df=distance_function)
+        self.model = GaussianProcessModel(self.kernel, 1, 1, optimize_noise=True)
+
+    def train(self, samples, observations):
+        self.model.compute(samples, observations)
         self.model.optimize(quiet=True, bounded=True, fevals=200)
+
+    def predict(self, samples):
+        """Predict samples fitness using the trained model."""
+        predictions = []
+        for sample in samples:
+            mu, std = self.model.predict(sample)
+            predictions.append(self.acquisition(mu, std))
+        return predictions
+            

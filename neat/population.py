@@ -27,8 +27,7 @@ class Population(object):
         self.reproduction = config.reproduction_type(config.reproduction_config,
                                                      self.reporters,
                                                      stagnation)
-        self.surrogate = config.surrogate_type(config.surrogate_config,
-                                                     self.reporters)
+        self.surrogate = config.surrogate_type(config, self.reporters)
         
         if config.fitness_criterion == 'max':
             self.fitness_criterion = max
