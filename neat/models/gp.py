@@ -138,8 +138,12 @@ class GaussianProcessModel():
         # Wrap the likelihood function to optimize, take into account it could
         # be run in parallel.
         self.count = 0
+        self.min_args = None
+        self.min_score = None
+        self.min_gpm = None
         if quiet:
             print "[GP] Optimizing...",
+            
         def likelihood(gpm, args, n):
             self.count += 1
             if quiet:
@@ -156,7 +160,14 @@ class GaussianProcessModel():
                 gpm.recompute()
             except linalg.linalg.LinAlgError:
                 return inf
-            return float(-gpm.get_log_likelihood())
+            
+            score = -gpm.get_log_likelihood()
+            if not self.min_score or score < self.min_score:
+                self.min_score = score
+                self.min_args = args
+                self.min_gpm = gpm
+            
+            return float(score)
         
         # Define the starting point for the arguments
         init_args = [1, 1] # length, sigma
@@ -205,8 +216,10 @@ class GaussianProcessModel():
         # Recover the solution, set the hparams of the model and recompute.
         bcand = cmasols.best_candidate()
         bx = lcmaes.get_candidate_x(bcand)
-        hparams = exp(bx)        
-        self.kf.set_hps(*hparams)
+        hparams = exp(bx)
+        if self.min_args is None:
+            self.min_args = hparams
+        self.kf.set_hps(*self.min_args)
         if compute_gram:
             self.gram = self.kf.get_gram(self.samples)
         self.recompute()
