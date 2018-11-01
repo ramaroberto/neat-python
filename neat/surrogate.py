@@ -6,6 +6,8 @@ from math import sqrt
 from neat.config import ConfigParameter, DefaultClassConfig
 from neat.models.gp import RBF, GaussianProcessModel
 
+import time
+import numpy as np
 import dill
 import pickle
 import abc
@@ -30,12 +32,13 @@ class DefaultSurrogateModel(object):
         self.reporters = reporters
         
         self.model = None
+        self.fitness_function = None
         self.old_training_set = []
         self.training_set = []
         self.training_set_ids = set([])
         self.max_training_set_size = self.surrogate_config.max_training_set_size
         
-        self.distance_similarity_check = False
+        self.distance_similarity_check = True
         self.distance_similarity_threshold = 0.1
         
         self.distance_functions_map = {
@@ -45,7 +48,7 @@ class DefaultSurrogateModel(object):
         
         self.surrogate_models_map = {
             'gp': GaussianProcessSurrogateModel,
-            'fake': None
+            'fake': FakeSurrogateModel
         }
         self.surrogate_model_params_map = {
             'gp': {
@@ -152,12 +155,17 @@ class DefaultSurrogateModel(object):
         return len(self.old_training_set) == 0
         
     def evaluate(self, population, generation, fitness_function, config, testing=False): # NOTE: Generation and fitness_function only required for testing
-        genomes = population.values()
-        predictions = self.model.predict(genomes)
+        genomes = filter(lambda g: not g.real_fitness, population.values())
+        predictions = self.model.predict(genomes, fitness_function)
         for i, genome in enumerate(genomes):
             genome.fitness = predictions[i]
     
     def train(self, generation, config): # NOTE: Generation only required for testing
+        if self.surrogate_config.surrogate_model == 'fake' \
+            and not self.surrogate_model_params:
+            self.surrogate_model_params = {
+                'config': config,
+            }
         self.training_set = self.old_training_set + self.training_set
         self.old_training_set = []
         self.model = self.surrogate_model_class.initialize(self.surrogate_model_params)
@@ -188,7 +196,7 @@ class SurrogateModel(object):
         return
     
     @abc.abstractmethod
-    def predict(self, samples):
+    def predict(self, samples, fitness_function):
         """Predict samples fitness using the trained model."""
         return
         
@@ -207,7 +215,7 @@ class GaussianProcessSurrogateModel(object):
         self.model.compute(samples, observations)
         self.model.optimize(quiet=True, bounded=True, fevals=200)
 
-    def predict(self, samples):
+    def predict(self, samples, fitness_function):
         """Predict samples fitness using the trained model."""
         predictions = []
         for sample in samples:
@@ -215,3 +223,30 @@ class GaussianProcessSurrogateModel(object):
             predictions.append(self.acquisition(mu, std))
         return predictions
             
+class FakeSurrogateModel(object):
+    @classmethod
+    def initialize(self, params):
+        # TODO: Error if no distance function defined in params dict.
+        return self(params['config'])
+    
+    def __init__(self, config):
+        # self.fitness_function = config.fitness_function
+        self.config = config
+
+    def train(self, samples, observations):
+        print("Fake Training... (just sleeping actually... LOL, YOLO)")
+        time.sleep(3)
+        pass
+
+    def predict(self, samples, fitness_function):
+        """Predict samples fitness using the trained model."""
+        predictions = []
+        for sample in samples:
+            fitness_function([(1, sample)], self.config)
+            fitness = sample.fitness
+            sample.real_fitness = None
+            noisy_fitness = sample.fitness + \
+                abs(np.random.normal(0., fitness/4.))
+            # normal noise with 1/4 variance of fitness and UCB emulation.
+            predictions.append(noisy_fitness)
+        return predictions
