@@ -133,7 +133,7 @@ def run_experiment(config_name, repetitions=1, max_generations=200):
     # Config for FeedForwardNetwork.
     config = neat.config.Config(neat.genome.DefaultGenome, neat.reproduction.DefaultReproduction,
                                 neat.species.DefaultSpeciesSet, neat.stagnation.DefaultStagnation,
-                                neat.surrogate.DefaultSurrogateModel, config_name)
+                                config_name, neat.surrogate.DefaultSurrogateModel)
                                 
     # Setup logger and environment.
     logger = logging.getLogger()
@@ -196,5 +196,6 @@ def load_experiment():
 
 # If run as script.
 if __name__ == '__main__':
-    run_experiment("config_inverted_single_pole", repetitions=1, max_generations=5000)
+    run_experiment("config_inverted_single_pole_sa", repetitions=1, max_generations=5000)
+    # run_experiment("config_inverted_single_pole", repetitions=30, max_generations=5000)
     # load_experiment()
