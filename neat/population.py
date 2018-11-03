@@ -27,7 +27,12 @@ class Population(object):
         self.reproduction = config.reproduction_type(config.reproduction_config,
                                                      self.reporters,
                                                      stagnation)
-        self.surrogate = config.surrogate_type(config, self.reporters)
+        
+        self.surrogate = None
+        if config.surrogate_type:
+            self.surrogate = config.surrogate_type(config, self.reporters)
+            if not self.surrogate.surrogate_config.enabled:
+                self.surrogate = None
         
         if config.fitness_criterion == 'max':
             self.fitness_criterion = max
@@ -41,7 +46,7 @@ class Population(object):
                 
         if initial_state is None:
             # Create a population from scratch, then partition into species.
-            if self.surrogate.surrogate_config.enabled:
+            if self.surrogate:
                 self.population = self.reproduction.create_new(config.genome_type,
                                                                config.genome_config,
                                                                self.surrogate.surrogate_config.number_initial_samples)
@@ -95,19 +100,20 @@ class Population(object):
 
             self.reporters.start_generation(self.generation)
 
-            if self.surrogate.surrogate_config.enabled and self.surrogate.model:
+            if self.surrogate and self.surrogate.model:
                 # If surrogate assistance is enabled, use it instead of evaluation.
                 self.surrogate.evaluate(self.population, k, fitness_function, self.config)
             else:
                 # Evaluate all genomes using the user-provided function.
                 self.evaluations += len(self.population)
                 fitness_function(list(iteritems(self.population)), self.config)
-                if self.surrogate.surrogate_config.enabled:
+                if self.surrogate:
                     self.surrogate.add_to_training(self.population.values())
                     if k == 1:
                         self.surrogate.train(k, self.config)
             print("Total Evaluations: " + str(self.evaluations))
-            print("GP Size: " + str(self.surrogate.samples_length()))
+            if self.surrogate:
+                print("GP Size: " + str(self.surrogate.samples_length()))
                     
             # Gather and report statistics.
             best = None
@@ -116,14 +122,14 @@ class Population(object):
                     best = g
             if self.best_genome is None:
                 self.best_genome = best
-            if not self.surrogate.surrogate_config.enabled:
+            if not self.surrogate:
                 if best.get_fitness() > self.best_genome.get_fitness():
                     self.best_genome = best
                     
             self.reporters.post_evaluate(self.config, self.population, self.species, best)
             
             # If surrogate is enabled and conditions matched, train the model.
-            if self.surrogate.surrogate_config.enabled:
+            if self.surrogate:
                 if self.surrogate.model:
                     # If gens_per_infill has been reached, updated model and
                     # add the same number training genomes as population to
@@ -153,10 +159,10 @@ class Population(object):
                         self.surrogate.train(k, self.config)
                 print("Resolve Count: ", self.resolve_count, "("+str(self.best_genome.real_fitness)+")")
             
-            # If the model is stalled, reset it to produce a resolve.
-            if self.surrogate.surrogate_config.enabled and self.surrogate.model \
-                and self.resolve_count >= self.surrogate.surrogate_config.resolve_threshold:
-                self.surrogate.reset()
+                # If the model is stalled, reset it to produce a resolve.
+                if self.surrogate.model \
+                    and self.resolve_count >= self.surrogate.surrogate_config.resolve_threshold:
+                    self.surrogate.reset()
                 
             if not self.config.no_fitness_termination:
                 # End if the fitness threshold is reached.

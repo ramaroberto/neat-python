@@ -6,9 +6,10 @@ import os
 import warnings
 
 try:
-    from configparser import ConfigParser
+    from configparser import ConfigParser, NoSectionError
 except ImportError:
     from ConfigParser import SafeConfigParser as ConfigParser
+    from ConfigParser import NoSectionError
 
 from neat.six_util import iterkeys
 
@@ -137,7 +138,7 @@ class Config(object):
                 ConfigParameter('reset_on_extinction', bool),
                 ConfigParameter('no_fitness_termination', bool, False)]
 
-    def __init__(self, genome_type, reproduction_type, species_set_type, stagnation_type, surrogate_type, filename):
+    def __init__(self, genome_type, reproduction_type, species_set_type, stagnation_type, filename, surrogate_type=None):
         # Check that the provided types have the required methods.
         assert hasattr(genome_type, 'parse_config')
         assert hasattr(reproduction_type, 'parse_config')
@@ -199,8 +200,14 @@ class Config(object):
         reproduction_dict = dict(parameters.items(reproduction_type.__name__))
         self.reproduction_config = reproduction_type.parse_config(reproduction_dict)
         
-        surrogate_dict = dict(parameters.items(surrogate_type.__name__))
-        self.surrogate_config = surrogate_type.parse_config(surrogate_dict)
+        self.surrogate_config = None
+        if surrogate_type:
+            try:
+                surrogate_dict = dict(parameters.items(surrogate_type.__name__))
+                self.surrogate_config = surrogate_type.parse_config(surrogate_dict)
+            except NoSectionError:
+                self.surrogate_type = None
+                
 
     def save(self, filename):
         with open(filename, 'w') as f:
