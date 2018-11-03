@@ -176,11 +176,6 @@ class DefaultGenome(object):
         self.fitness = None
         self.real_fitness = None
     
-    def get_real_fitness(self):
-        if self.real_fitness:
-            return self.real_fitness
-        return 0.0
-    
     def get_fitness(self):
         if self.real_fitness:
             return self.real_fitness

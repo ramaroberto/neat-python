@@ -139,7 +139,8 @@ class Population(object):
                         
                         # Track the best genome ever seen.
                         for genome in best_genomes:
-                            if self.best_genome is None or genome.get_real_fitness() > self.best_genome.get_real_fitness():
+                            if self.best_genome is None or \
+                                (genome.real_fitness is not None and genome.real_fitness > self.best_genome.real_fitness):
                                 self.best_genome = genome
                                 self.resolve_count = 0
                                 break
@@ -150,7 +151,7 @@ class Population(object):
                         self.surrogate.is_training_set_new():
                         self.resolve_count = 0 # is_training_set_new
                         self.surrogate.train(k, self.config)
-            print("Resolve Count: ", self.resolve_count, "("+str(self.best_genome.get_real_fitness())+")")
+                print("Resolve Count: ", self.resolve_count, "("+str(self.best_genome.real_fitness)+")")
             
             # If the model is stalled, reset it to produce a resolve.
             if self.surrogate.surrogate_config.enabled and self.surrogate.model \
