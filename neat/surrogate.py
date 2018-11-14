@@ -250,7 +250,7 @@ class FakeSurrogateModel(object):
         # self.fitness_function = config.fitness_function
         self.config = config
 
-    def train(self, samples, observations):
+    def train(self, samples, observations, optimize=False):
         print("Fake Training... (just sleeping actually... LOL, YOLO)")
         time.sleep(3)
         pass
@@ -259,11 +259,17 @@ class FakeSurrogateModel(object):
         """Predict samples fitness using the trained model."""
         predictions = []
         for sample in samples:
+            old_fitness = sample.fitness
             fitness_function([(1, sample)], self.config)
             fitness = sample.fitness
+            sample.fitness = old_fitness
             sample.real_fitness = None
-            noisy_fitness = sample.fitness + \
-                abs(np.random.normal(0., fitness/4.))
             # normal noise with 1/4 variance of fitness and UCB emulation.
+            # mean_fitness = max(0., \
+            #     np.random.normal(fitness, min(10., fitness/2.)))
+            # var_fitness = np.random.normal(0., fitness/2.)
+            # noisy_fitness = mean_fitness + abs(var_fitness)
+            noisy_fitness = max(0., np.random.normal(fitness, 25.))
+            
             predictions.append(noisy_fitness)
         return predictions
