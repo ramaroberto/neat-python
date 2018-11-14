@@ -79,14 +79,14 @@ weight_replace_rate     = 0.1
 [DefaultSpeciesSet]
 compatibility_threshold = 3.0
 adaptive_threshold_enabled = True
-adaptive_threshold_fast_backoff_enabled = False
+adaptive_threshold_fast_backoff_enabled = True
 target_number_species = 4
 compatibility_modificator = 0.5
 compatibility_threshold_minimum = 1.0
 
 [DefaultStagnation]
 species_fitness_func = max
-max_stagnation       = 20
+max_stagnation       = 30
 species_elitism      = 1
 
 [DefaultReproduction]
@@ -106,4 +106,4 @@ number_infill_individuals = 4
 resolve_threshold         = 64
 max_training_set_size     = 128
 distance_function         = neat
-surrogate_model           = fake
+surrogate_model           = gp
