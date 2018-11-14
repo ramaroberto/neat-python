@@ -227,7 +227,6 @@ class GaussianProcessSurrogateModel(object):
             self.model.optimize(quiet=True, bounded=True, fevals=200)
 
     def predict(self, samples, fitness_function):
-        """Predict samples fitness using the trained model."""
         predictions = []
         for sample in samples:
             mu, std = self.model.predict(sample)
