@@ -125,8 +125,6 @@ class Population(object):
             if not self.surrogate or not self.surrogate.model:
                 if best.get_fitness() > self.best_genome.get_fitness():
                     self.best_genome = best
-                    
-            self.reporters.post_evaluate(self.config, self.population, self.species, best)
             
             # If surrogate is enabled and conditions matched, train the model.
             if self.surrogate:
@@ -163,6 +161,8 @@ class Population(object):
                 if self.surrogate.model \
                     and self.resolve_count >= self.surrogate.surrogate_config.resolve_threshold:
                     self.surrogate.reset()
+            
+            self.reporters.post_evaluate(self.config, self.population, self.species, best, self.evaluations)
                 
             if not self.config.no_fitness_termination:
                 # End if the fitness threshold is reached.
