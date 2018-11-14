@@ -210,9 +210,14 @@ class GaussianProcessSurrogateModel(object):
         return self(params['distance_function'])
     
     def __init__(self, distance_function):
-        self.acquisition = lambda mu, std: mu + std
-        self.kernel = RBF(length=1, sigma=1, noise=1, df=distance_function)
-        self.model = GaussianProcessModel(self.kernel, 1, 1, optimize_noise=True)
+        # self.acquisition = lambda mu, std: mu + std
+        ucb_coef = 1e-3
+        self.acquisition = lambda mu, std: mu + ucb_coef * std
+        # self.acquisition = lambda mu, std: mu
+        self.kernel = RBF(sigma=0.001, length=5, noise=1e-3, df=distance_function)
+        self.model = GaussianProcessModel(self.kernel, 1, 1, \
+            optimize_noise=True, normalize_gram=False)
+        self.filter_nearby = True
 
     def train(self, samples, observations, optimize=False):
         self.model.compute(samples, observations)
