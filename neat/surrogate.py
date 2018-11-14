@@ -160,7 +160,7 @@ class DefaultSurrogateModel(object):
         for i, genome in enumerate(genomes):
             genome.fitness = predictions[i]
     
-    def train(self, generation, config): # NOTE: Generation only required for testing
+    def train(self, generation, config, optimize=False): # NOTE: Generation only required for testing
         if self.surrogate_config.surrogate_model == 'fake' \
             and not self.surrogate_model_params:
             self.surrogate_model_params = {
@@ -168,8 +168,11 @@ class DefaultSurrogateModel(object):
             }
         self.training_set = self.old_training_set + self.training_set
         self.old_training_set = []
-        self.model = self.surrogate_model_class.initialize(self.surrogate_model_params)
-        self.model.train(self.training_set, map(lambda g: g.real_fitness, self.training_set))
+        
+        if self.model is None:
+            self.model = self.surrogate_model_class.initialize(self.surrogate_model_params)
+            optimize = True
+        self.model.train(self.training_set, map(lambda g: g.real_fitness, self.training_set), optimize=optimize)
         
         # NOTE: For testing only
         # with open("data/"+str(generation)+"_train_genomes.pkl", "wb") as output:
@@ -191,7 +194,7 @@ class SurrogateModel(object):
         return
     
     @abc.abstractmethod
-    def train(self, samples, observations):
+    def train(self, samples, observations, optimize=False):
         """Train the model with the collected samples and observations."""
         return
     
@@ -211,9 +214,10 @@ class GaussianProcessSurrogateModel(object):
         self.kernel = RBF(length=1, sigma=1, noise=1, df=distance_function)
         self.model = GaussianProcessModel(self.kernel, 1, 1, optimize_noise=True)
 
-    def train(self, samples, observations):
+    def train(self, samples, observations, optimize=False):
         self.model.compute(samples, observations)
-        self.model.optimize(quiet=True, bounded=True, fevals=200)
+        if optimize:
+            self.model.optimize(quiet=True, bounded=True, fevals=200)
 
     def predict(self, samples, fitness_function):
         """Predict samples fitness using the trained model."""

@@ -110,7 +110,7 @@ class Population(object):
                 if self.surrogate:
                     self.surrogate.add_to_training(self.population.values())
                     if k == 1:
-                        self.surrogate.train(k, self.config)
+                        self.surrogate.train(k, self.config, optimize=True)
             print("Total Evaluations: " + str(self.evaluations))
             if self.surrogate:
                 print("GP Size: " + str(self.surrogate.samples_length()))
@@ -146,6 +146,12 @@ class Population(object):
                         if not found_better:
                             self.resolve_count += len(best_genomes)
                         
+                        # Train the model with the new genomes.
+                        if k % (gpi*10) == 0:
+                            self.surrogate.train(k, self.config, optimize=True)
+                        else:
+                            self.surrogate.train(k, self.config)
+                        
                         # Add the same number training genomes as population to
                         # stabilize the new model.
                         training_genomes = self.surrogate.get_from_training(len(self.population))
@@ -160,7 +166,7 @@ class Population(object):
                     if self.resolve_count == 0 or \
                         self.surrogate.is_training_set_new():
                         self.resolve_count = 0 # is_training_set_new
-                        self.surrogate.train(k, self.config)
+                        self.surrogate.train(k, self.config, optimize=True)
                 print("Resolve Count: ", self.resolve_count, "("+str(self.best_genome.real_fitness)+")")
             
                 # If the model is stalled, reset it to produce a resolve.
