@@ -47,10 +47,14 @@ class DefaultSurrogateModel(object):
         
         self.surrogate_models_map = {
             'gp': GaussianProcessSurrogateModel,
+            'svm': SVMSurrogateModel,
             'fake': FakeSurrogateModel
         }
         self.surrogate_model_params_map = {
             'gp': {
+                'distance_function': self.distance_function
+            },
+            'svm': {
                 'distance_function': self.distance_function
             },
             'fake': None
@@ -239,6 +243,41 @@ class GaussianProcessSurrogateModel(object):
             mu, std = self.model.predict(sample)
             predictions.append(self.acquisition(mu, std))
         return predictions
+
+from sklearn import svm
+from grakel import GraphKernel
+
+class SVMSurrogateModel(object):
+    @classmethod
+    def initialize(self, params):
+        # TODO: Error if no distance function defined in params dict.
+        return self(params['distance_function'])
+    
+    def __init__(self, distance_function):
+        kernels = [
+            [{"name": "shortest_path"}],
+            [{"name": "random_walk"}],
+            [{"name": "graphlet_sampling", "sampling": {"n_samples": 150}}],
+            [{"name": "weisfeiler_lehman", "niter": 5}, {"name": "subtree_wl"}],
+            [{"name": "weisfeiler_lehman", "niter": 5}, {"name": "shortest_path"}]
+        ]
+        
+        self.kernel_normalized = True
+        self.kernel_name = "random_walk"
+        self.gk = GraphKernel(kernel=kernels[1], normalize=self.kernel_normalized)
+        
+        self.k_train = None
+        self.model = None
+    
+    def train(self, samples, observations, optimize=False):
+        k_samples = map(lambda g: [set(map(lambda v: (6+v[0], 6+v[1]), g.connections.keys()))], samples)
+        self.k_train = self.gk.fit_transform(k_samples)
+        self.model = svm.SVC(kernel='precomputed')
+        self.model.fit(self.k_train, observations)
+    
+    def predict(self, samples, fitness_function):
+        k_samples = map(lambda g: [set(map(lambda v: (6+v[0], 6+v[1]), g.connections.keys()))], samples)
+        return self.model.predict(self.gk.transform(k_samples))
             
 class FakeSurrogateModel(object):
     @classmethod
