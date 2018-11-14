@@ -174,11 +174,12 @@ class Population(object):
                 # End if the fitness threshold is reached.
                 real_fitnesses = []
                 for genome in self.population.values():
-                    if genome.real_fitness:
+                    if genome.real_fitness is not None:
                         real_fitnesses.append(genome.real_fitness)
+                        
                 if real_fitnesses and \
                     self.fitness_criterion(real_fitnesses) >= self.config.fitness_threshold:
-                    self.reporters.found_solution(self.config, self.generation, best)
+                    self.reporters.found_solution(self.config, self.generation, self.best_genome)
                     break
             
             # Create the next generation from the current generation.
