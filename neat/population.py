@@ -129,27 +129,33 @@ class Population(object):
             # If surrogate is enabled and conditions matched, train the model.
             if self.surrogate:
                 if self.surrogate.model:
-                    # If gens_per_infill has been reached, updated model and
-                    # add the same number training genomes as population to
-                    # stabilize the new model.
-                    if k % self.surrogate.surrogate_config.gens_per_infill == 0:
+                    # If gens_per_infill has been reached, update model.
+                    gpi = self.surrogate.surrogate_config.gens_per_infill
+                    if k % gpi == 0:
+                        # Select the best genomes and update the training set.
                         best_genomes = self.surrogate.update_training(self.species.species, fitness_function, self.config)
-                        self.surrogate.train(k, self.config)
-                        training_genomes = self.surrogate.get_from_training(len(self.population))
-                        self.species.add(self.config, self.generation, training_genomes)
-                        
-                        # Compute number of evaluations used.
-                        self.evaluations += len(best_genomes)
                         
                         # Track the best genome ever seen.
+                        found_better = False
                         for genome in best_genomes:
                             if self.best_genome is None or \
                                 (genome.real_fitness is not None and genome.real_fitness > self.best_genome.real_fitness):
                                 self.best_genome = genome
                                 self.resolve_count = 0
-                                break
-                            else:
-                                self.resolve_count += 1
+                                found_better = True
+                        if not found_better:
+                            self.resolve_count += len(best_genomes)
+                        
+                        # Add the same number training genomes as population to
+                        # stabilize the new model.
+                        training_genomes = self.surrogate.get_from_training(len(self.population))
+                        self.species.add(self.config, self.generation, training_genomes)
+                        
+                        # Update the surrogate evaluations with the new model.
+                        self.surrogate.evaluate(self.population, k, fitness_function, self.config)
+                        
+                        # Compute number of evaluations used.
+                        self.evaluations += len(best_genomes)
                 else:
                     if self.resolve_count == 0 or \
                         self.surrogate.is_training_set_new():
