@@ -101,22 +101,21 @@ class DefaultSurrogateModel(object):
         # Precondition: Species should have the real fitness set.
     
         # Order the species by descending fitness.
-        ranked_species = sorted(map(lambda s: (s.fitness if s.fitness else 0.0, s), species.values()), key=lambda s: -s[0])
+        ranked_species = sorted(species.values(), key=lambda s: s.fitness, reverse=True)
         
         to_infill = self.surrogate_config.number_infill_individuals
         all_genomes = []
         best_genomes = []
         
         # First we add the best genome of each species.
-        for f, s in ranked_species:
+        for s in ranked_species:
             ranked_genomes = sorted(s.members.values(), key=lambda g: -g.fitness)
-            limit = min(len(ranked_genomes), to_infill)
-            all_genomes += ranked_genomes[1:] # TODO: could be improved with merge
-            if ranked_genomes[0].key in self.training_set_ids:
-                continue
-            best_genomes.append(ranked_genomes[0])
-            
-            to_infill -= 1
+            for i, g in enumerate(ranked_genomes):
+                if g.key not in self.training_set_ids:
+                    best_genomes.append(g)
+                    all_genomes += ranked_genomes[i+1:] # TODO: could be improved with merge
+                    to_infill -= 1
+                    break
             if to_infill <= 0: # More species than genomes needed to infill
                 break
         
@@ -137,6 +136,7 @@ class DefaultSurrogateModel(object):
             to_infill -= 1
         
         # Evaluate with the real fitness function and add to training.
+        best_genomes.sort(key=lambda g: g.fitness, reverse=True)
         print("[SURR]", len(best_genomes), map(lambda g: (g.key, g.fitness), best_genomes))
         fitness_function(map(lambda g: (g.key, g), best_genomes), config)
         print("[SURR]", len(best_genomes), map(lambda g: (g.key, g.fitness), best_genomes))
