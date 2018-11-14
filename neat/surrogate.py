@@ -38,7 +38,6 @@ class DefaultSurrogateModel(object):
         self.training_set_ids = set([])
         self.max_training_set_size = self.surrogate_config.max_training_set_size
         
-        self.distance_similarity_check = True
         self.distance_similarity_threshold = 0.1
         
         self.distance_functions_map = {
@@ -125,13 +124,6 @@ class DefaultSurrogateModel(object):
             genome = all_genomes.pop(0)
             if genome.key in self.training_set_ids:
                 continue
-            
-            if self.distance_similarity_check:
-                # Avoid having too similar genomes in the training samples.
-                # NOTE: Otherwise, this could cause numerical problems.
-                if self._is_similar(genome, config, additional_genomes=best_genomes):
-                    continue
-            
             best_genomes.append(genome)
             to_infill -= 1
         
@@ -143,13 +135,6 @@ class DefaultSurrogateModel(object):
 
         self.add_to_training(best_genomes)
         return best_genomes
-    
-    def _is_similar(self, genome, config, additional_genomes=[]):
-        df = lambda g1, g2: g1.distance(g2, config.genome_config)
-        for bg in additional_genomes+self.old_training_set+self.training_set:
-            if df(bg, genome) < self.distance_similarity_threshold:
-                return True
-        return False
     
     def is_training_set_new(self):
         return len(self.old_training_set) == 0
@@ -220,6 +205,23 @@ class GaussianProcessSurrogateModel(object):
         self.filter_nearby = True
 
     def train(self, samples, observations, optimize=False):
+        if self.filter_nearby:
+            filtered_samples = []
+            filtered_observations = []
+            for g, obs in zip(samples, observations):
+                too_close = False
+                for i in range(len(filtered_samples)):
+                    if self.model.kf.df(g, filtered_samples[i]) < 1e-1:
+                        too_close = True
+                        if g.real_fitness < filtered_samples[i].real_fitness:
+                            filtered_samples[i] = g
+                            filtered_observations[i] = g.real_fitness
+                        break
+                if not too_close:
+                    filtered_samples.append(g)
+                    filtered_observations.append(obs)
+            samples = filtered_samples
+            observations = filtered_observations
         self.model.compute(samples, observations)
         if optimize:
             self.model.optimize(quiet=True, bounded=True, fevals=200)
