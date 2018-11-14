@@ -24,7 +24,7 @@ local_neat = imp.load_module("neat", f, pathname, desc)
 import neat
 
 # Set the number of workers and initialize the enviroments for the simulations.
-num_workers = 6
+num_workers = 1
 env = CartPoleEnv()
 envs_pool = [CartPoleEnv() for i in range(num_workers*2)]
 for i, lenv in enumerate(envs_pool):
@@ -116,20 +116,21 @@ def eval_genome(genome, config, visualize=False, normalize_input=False):
         return 0
     return max(rewards)
 
-def run_neat(gens, env, config, output=True):
+def run_neat(gens, env, config, output=True, record_data=False):
     pop = neat.Population(config)
     stats = neat.StatisticsReporter()
     pop.add_reporter(stats)
     pop.add_reporter(neat.StdOutReporter(output))
 
     pe = neat.ParallelEvaluator(num_workers, eval_genome)
-    winner = pop.run(pe.evaluate, gens)
+    winner = pop.run(pe.evaluate, gens, record_data=record_data)
     
     ran_generations = len(stats.generation_statistics) - 1
+    evaluations = stats.generation_evaluations[-1]
     
-    return winner, stats, ran_generations
+    return winner, stats, ran_generations, evaluations
     
-def run_experiment(config_name, repetitions=1, max_generations=200):
+def run_experiment(config_name, repetitions=1, max_generations=200, record_data=False):
     # Config for FeedForwardNetwork.
     config = neat.config.Config(neat.genome.DefaultGenome, neat.reproduction.DefaultReproduction,
                                 neat.species.DefaultSpeciesSet, neat.stagnation.DefaultStagnation,
@@ -148,10 +149,12 @@ def run_experiment(config_name, repetitions=1, max_generations=200):
         # Run!
         results = []
         experiments_generations = []
+        experiments_evaluations = []
         for i in xrange(repetitions):
-            winner, stats, generations = run_neat(max_generations, env, config)
-            results.append((winner, stats, generations))
+            winner, stats, generations, evaluations = run_neat(max_generations, env, config, record_data=record_data)
+            results.append((winner, stats, generations, evaluations))
             experiments_generations.append(generations)
+            experiments_evaluations.append(evaluations)
             msg = "Experiment " + (str(i+1)) + "/" + str(repetitions) + " finished.\n"
             msg += "Generations: " + str(generations) + "\n"
             msg += "Generations percentiles: " + \
@@ -162,11 +165,21 @@ def run_experiment(config_name, repetitions=1, max_generations=200):
                 str(np.percentile(experiments_generations, 90)) + "\n"
             msg += "Generations average/std: " + \
                 str(np.mean(experiments_generations)) + " " + \
-                str(np.std(experiments_generations)) + "\n\n"
+                str(np.std(experiments_generations)) + "\n"
+            msg += "Evaluations: " + str(evaluations) + "\n"
+            msg += "Evaluations percentiles: " + \
+                str(np.percentile(experiments_evaluations, 10)) + " " + \
+                str(np.percentile(experiments_evaluations, 25)) + " " + \
+                str(np.percentile(experiments_evaluations, 50)) + " " + \
+                str(np.percentile(experiments_evaluations, 75)) + " " + \
+                str(np.percentile(experiments_evaluations, 90)) + "\n"
+            msg += "Evaluations average/std: " + \
+                str(np.mean(experiments_evaluations)) + " " + \
+                str(np.std(experiments_evaluations)) + "\n\n"
 
             f.write(msg)
             f.flush()
-            print msg
+            print(msg)
         
         f.close()
         
@@ -178,9 +191,9 @@ def run_experiment(config_name, repetitions=1, max_generations=200):
             np.percentile(experiments_generations, 75),\
             np.percentile(experiments_generations, 90)]
     else:
-        winner, stats, generations = run_neat(max_generations, env, config)
+        winner, stats, generations, evaluations = run_neat(max_generations, env, config, record_data=record_data)
         reward = eval_genome(winner, config, visualize=True)
-        print "Total reward is:", reward, eval_genome(winner, config)
+        print("Total reward is:", reward, eval_genome(winner, config))
 
 def load_experiment():
     # Load results from file
@@ -192,10 +205,10 @@ def load_experiment():
     
     # Visualize
     reward = eval_genome(winner, config, visualize=False)
-    print "Total reward is:", reward, eval_genome(winner, config)
+    print("Total reward is:", reward, eval_genome(winner, config))
 
 # If run as script.
 if __name__ == '__main__':
-    run_experiment("config_inverted_single_pole_sa", repetitions=1, max_generations=5000)
+    run_experiment("config_inverted_single_pole_sa", repetitions=1, max_generations=10000, record_data=False)
     # run_experiment("config_inverted_single_pole", repetitions=30, max_generations=5000)
     # load_experiment()
