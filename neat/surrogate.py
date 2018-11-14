@@ -200,7 +200,7 @@ class SurrogateModel(object):
     
     @abc.abstractmethod
     def predict(self, samples, fitness_function):
-        """Predict samples fitness using the trained model."""
+        """Predict samples' fitness using the trained model."""
         return
         
 class GaussianProcessSurrogateModel(object):
