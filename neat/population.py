@@ -122,7 +122,7 @@ class Population(object):
                     best = g
             if self.best_genome is None:
                 self.best_genome = best
-            if not self.surrogate:
+            if not self.surrogate or not self.surrogate.model:
                 if best.get_fitness() > self.best_genome.get_fitness():
                     self.best_genome = best
                     
