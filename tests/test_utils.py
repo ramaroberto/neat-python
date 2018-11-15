@@ -2,6 +2,7 @@ from __future__ import print_function
 #import os
 
 import neat
+import numpy as np
 
 # TODO: These tests are just smoke tests to make sure nothing has become badly broken.  Expand
 # to include more detailed tests of actual functionality.
@@ -33,7 +34,46 @@ def test_softmax():
 
     #softmax_result = list(neat.math_util.softmax([1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 3.0]))
     #print("Softmax for [1, 2, 3, 4, 1, 2, 3] is {!r}".format(softmax_result))
+    
+def build_tcs(headers, cases):
+    class ObjectDict:
+        def __init__(self, **entries):
+            self.__dict__.update(entries)
+        def __repr__(self): 
+            return '<%s>' % str('\n '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict.iteritems()))
+        
+    tcds = []
+    for case in cases:
+        tcd = {}
+        for i, header in enumerate(headers):
+            tcd[header] = case[i]
+        tcds.append(ObjectDict(**tcd))
+    return tcds
 
+def generate_random_sample(quantity, in_dims, func=None, bounds=[-3., 3.]):
+    samples = np.random.uniform(bounds[0], bounds[1], (quantity, in_dims))
+    if func:
+        cols = []
+        for i in range(samples.shape[1]):
+            cols.append(samples[:, i])
+        observations = np.matrix(func(*cols), dtype=np.float64)
+        return samples, observations
+    return samples
+
+def assertEqualMatrix(tc, m1, m2, precision=1e-20):
+    if m1.shape != m2.shape:
+        print("Matrices shape do not match:", m1.shape, m2.shape)
+    tc.assertTrue(m1.shape == m2.shape)
+    result = np.allclose(m1, m2, atol=precision)
+    if not result:
+        print("Difference found between matrices")
+        diff = np.abs(m1 - m2)
+        print(diff)
+        print("Average diff:", diff.sum()/(diff.shape[0]*diff.shape[1]))
+    tc.assertTrue(result)
+    
+def to_array(m):
+    return np.asarray(m).reshape(-1)
 
 if __name__ == '__main__':
     test_softmax()
