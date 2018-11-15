@@ -42,7 +42,9 @@ class DefaultStagnation(DefaultClassConfig):
                 prev_fitness = max(s.fitness_history)
             else:
                 prev_fitness = -sys.float_info.max
-
+            
+            real_fitnesses = filter(lambda f: f is not None, s.get_real_fitnesses())
+            s.real_fitness = None if real_fitnesses is [] else real_fitnesses
             s.fitness = self.species_fitness_func(s.get_fitnesses())
             s.fitness_history.append(s.fitness)
             s.adjusted_fitness = None
@@ -68,6 +70,10 @@ class DefaultStagnation(DefaultClassConfig):
                 is_stagnant = stagnant_time >= self.stagnation_config.max_stagnation
 
             if (len(species_data) - idx) <= self.stagnation_config.species_elitism:
+                is_stagnant = False
+                
+            # Wait until it has a real fitness to mark it as stagnant.
+            if s.real_fitness is None:
                 is_stagnant = False
 
             if is_stagnant:

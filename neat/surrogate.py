@@ -38,7 +38,6 @@ class DefaultSurrogateModel(object):
         self.training_set_ids = set([])
         self.max_training_set_size = self.surrogate_config.max_training_set_size
         
-        self.distance_similarity_check = True
         self.distance_similarity_threshold = 0.1
         
         self.distance_functions_map = {
@@ -48,10 +47,14 @@ class DefaultSurrogateModel(object):
         
         self.surrogate_models_map = {
             'gp': GaussianProcessSurrogateModel,
+            'svm': SVMSurrogateModel,
             'fake': FakeSurrogateModel
         }
         self.surrogate_model_params_map = {
             'gp': {
+                'distance_function': self.distance_function
+            },
+            'svm': {
                 'distance_function': self.distance_function
             },
             'fake': None
@@ -101,22 +104,21 @@ class DefaultSurrogateModel(object):
         # Precondition: Species should have the real fitness set.
     
         # Order the species by descending fitness.
-        ranked_species = sorted(map(lambda s: (s.fitness if s.fitness else 0.0, s), species.values()), key=lambda s: -s[0])
+        ranked_species = sorted(species.values(), key=lambda s: s.fitness, reverse=True)
         
         to_infill = self.surrogate_config.number_infill_individuals
         all_genomes = []
         best_genomes = []
         
         # First we add the best genome of each species.
-        for f, s in ranked_species:
+        for s in ranked_species:
             ranked_genomes = sorted(s.members.values(), key=lambda g: -g.fitness)
-            limit = min(len(ranked_genomes), to_infill)
-            all_genomes += ranked_genomes[1:] # TODO: could be improved with merge
-            if ranked_genomes[0].key in self.training_set_ids:
-                continue
-            best_genomes.append(ranked_genomes[0])
-            
-            to_infill -= 1
+            for i, g in enumerate(ranked_genomes):
+                if g.key not in self.training_set_ids:
+                    best_genomes.append(g)
+                    all_genomes += ranked_genomes[i+1:] # TODO: could be improved with merge
+                    to_infill -= 1
+                    break
             if to_infill <= 0: # More species than genomes needed to infill
                 break
         
@@ -126,30 +128,17 @@ class DefaultSurrogateModel(object):
             genome = all_genomes.pop(0)
             if genome.key in self.training_set_ids:
                 continue
-            
-            if self.distance_similarity_check:
-                # Avoid having too similar genomes in the training samples.
-                # NOTE: Otherwise, this could cause numerical problems.
-                if self._is_similar(genome, config, additional_genomes=best_genomes):
-                    continue
-            
             best_genomes.append(genome)
             to_infill -= 1
         
         # Evaluate with the real fitness function and add to training.
+        best_genomes.sort(key=lambda g: g.fitness, reverse=True)
         print("[SURR]", len(best_genomes), map(lambda g: (g.key, g.fitness), best_genomes))
         fitness_function(map(lambda g: (g.key, g), best_genomes), config)
         print("[SURR]", len(best_genomes), map(lambda g: (g.key, g.fitness), best_genomes))
 
         self.add_to_training(best_genomes)
         return best_genomes
-    
-    def _is_similar(self, genome, config, additional_genomes=[]):
-        df = lambda g1, g2: g1.distance(g2, config.genome_config)
-        for bg in additional_genomes+self.old_training_set+self.training_set:
-            if df(bg, genome) < self.distance_similarity_threshold:
-                return True
-        return False
     
     def is_training_set_new(self):
         return len(self.old_training_set) == 0
@@ -160,7 +149,7 @@ class DefaultSurrogateModel(object):
         for i, genome in enumerate(genomes):
             genome.fitness = predictions[i]
     
-    def train(self, generation, config): # NOTE: Generation only required for testing
+    def train(self, generation, config, optimize=False): # NOTE: Generation only required for testing
         if self.surrogate_config.surrogate_model == 'fake' \
             and not self.surrogate_model_params:
             self.surrogate_model_params = {
@@ -168,8 +157,11 @@ class DefaultSurrogateModel(object):
             }
         self.training_set = self.old_training_set + self.training_set
         self.old_training_set = []
-        self.model = self.surrogate_model_class.initialize(self.surrogate_model_params)
-        self.model.train(self.training_set, map(lambda g: g.real_fitness, self.training_set))
+        
+        if self.model is None:
+            self.model = self.surrogate_model_class.initialize(self.surrogate_model_params)
+            optimize = True
+        self.model.train(self.training_set, map(lambda g: g.real_fitness, self.training_set), optimize=optimize)
         
         # NOTE: For testing only
         # with open("data/"+str(generation)+"_train_genomes.pkl", "wb") as output:
@@ -191,13 +183,13 @@ class SurrogateModel(object):
         return
     
     @abc.abstractmethod
-    def train(self, samples, observations):
+    def train(self, samples, observations, optimize=False):
         """Train the model with the collected samples and observations."""
         return
     
     @abc.abstractmethod
     def predict(self, samples, fitness_function):
-        """Predict samples fitness using the trained model."""
+        """Predict samples' fitness using the trained model."""
         return
         
 class GaussianProcessSurrogateModel(object):
@@ -207,21 +199,85 @@ class GaussianProcessSurrogateModel(object):
         return self(params['distance_function'])
     
     def __init__(self, distance_function):
-        self.acquisition = lambda mu, std: mu + std
-        self.kernel = RBF(length=1, sigma=1, noise=1, df=distance_function)
-        self.model = GaussianProcessModel(self.kernel, 1, 1, optimize_noise=True)
+        # self.acquisition = lambda mu, std: mu + std
+        ucb_coef = 1e-3
+        self.acquisition = lambda mu, std: mu + ucb_coef * std
+        # self.acquisition = lambda mu, std: mu
+        self.kernel = RBF(sigma=0.001, length=5, noise=1e-3, df=distance_function)
+        self.model = GaussianProcessModel(self.kernel, 1, 1, \
+            optimize_noise=True, normalize_gram=False)
+        self.filter_nearby = True
 
-    def train(self, samples, observations):
+    def train(self, samples, observations, optimize=False):
+        if self.filter_nearby:
+            filtered_samples = []
+            filtered_observations = []
+            for g, obs in zip(samples, observations):
+                too_close = False
+                for i in range(len(filtered_samples)):
+                    if self.model.kf.df(g, filtered_samples[i]) < 1e-1:
+                        too_close = True
+                        if g.real_fitness < filtered_samples[i].real_fitness:
+                            filtered_samples[i] = g
+                            filtered_observations[i] = g.real_fitness
+                        break
+                if not too_close:
+                    filtered_samples.append(g)
+                    filtered_observations.append(obs)
+            samples = filtered_samples
+            observations = filtered_observations
+        try:
+            # old_samples = deepcopy(self.model.samples)
+            # gp = deepcopy(self.model)
+            self.model.compute(samples, observations, compute_kernel=True)
+        except np.linalg.linalg.LinAlgError, e:
+            print("Problem encountered while computing GP:", e)
+            optimize = True
         self.model.compute(samples, observations)
-        self.model.optimize(quiet=True, bounded=True, fevals=200)
+        if optimize:
+            self.model.optimize(quiet=True, bounded=True, fevals=200)
 
     def predict(self, samples, fitness_function):
-        """Predict samples fitness using the trained model."""
         predictions = []
         for sample in samples:
             mu, std = self.model.predict(sample)
             predictions.append(self.acquisition(mu, std))
         return predictions
+
+from sklearn import svm
+from grakel import GraphKernel
+
+class SVMSurrogateModel(object):
+    @classmethod
+    def initialize(self, params):
+        # TODO: Error if no distance function defined in params dict.
+        return self(params['distance_function'])
+    
+    def __init__(self, distance_function):
+        kernels = [
+            [{"name": "shortest_path"}],
+            [{"name": "random_walk"}],
+            [{"name": "graphlet_sampling", "sampling": {"n_samples": 150}}],
+            [{"name": "weisfeiler_lehman", "niter": 5}, {"name": "subtree_wl"}],
+            [{"name": "weisfeiler_lehman", "niter": 5}, {"name": "shortest_path"}]
+        ]
+        
+        self.kernel_normalized = True
+        self.kernel_name = "random_walk"
+        self.gk = GraphKernel(kernel=kernels[1], normalize=self.kernel_normalized)
+        
+        self.k_train = None
+        self.model = None
+    
+    def train(self, samples, observations, optimize=False):
+        k_samples = map(lambda g: [set(map(lambda v: (6+v[0], 6+v[1]), g.connections.keys()))], samples)
+        self.k_train = self.gk.fit_transform(k_samples)
+        self.model = svm.SVC(kernel='precomputed')
+        self.model.fit(self.k_train, observations)
+    
+    def predict(self, samples, fitness_function):
+        k_samples = map(lambda g: [set(map(lambda v: (6+v[0], 6+v[1]), g.connections.keys()))], samples)
+        return self.model.predict(self.gk.transform(k_samples))
             
 class FakeSurrogateModel(object):
     @classmethod
@@ -233,7 +289,7 @@ class FakeSurrogateModel(object):
         # self.fitness_function = config.fitness_function
         self.config = config
 
-    def train(self, samples, observations):
+    def train(self, samples, observations, optimize=False):
         print("Fake Training... (just sleeping actually... LOL, YOLO)")
         time.sleep(3)
         pass
@@ -242,11 +298,17 @@ class FakeSurrogateModel(object):
         """Predict samples fitness using the trained model."""
         predictions = []
         for sample in samples:
+            old_fitness = sample.fitness
             fitness_function([(1, sample)], self.config)
             fitness = sample.fitness
+            sample.fitness = old_fitness
             sample.real_fitness = None
-            noisy_fitness = sample.fitness + \
-                abs(np.random.normal(0., fitness/4.))
             # normal noise with 1/4 variance of fitness and UCB emulation.
+            # mean_fitness = max(0., \
+            #     np.random.normal(fitness, min(10., fitness/2.)))
+            # var_fitness = np.random.normal(0., fitness/2.)
+            # noisy_fitness = mean_fitness + abs(var_fitness)
+            noisy_fitness = max(0., np.random.normal(fitness, 25.))
+            
             predictions.append(noisy_fitness)
         return predictions

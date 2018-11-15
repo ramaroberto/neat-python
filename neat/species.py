@@ -13,6 +13,7 @@ class Species(object):
         self.representative = None
         self.members = {}
         self.fitness = None
+        self.real_fitness = None
         self.adjusted_fitness = None
         self.best_genome = None
         self.fitness_history = []
@@ -23,6 +24,9 @@ class Species(object):
 
     def get_fitnesses(self):
         return [m.fitness for m in itervalues(self.members)]
+    
+    def get_real_fitnesses(self):
+        return [m.real_fitness for m in itervalues(self.members)]
 
 
 class GenomeDistanceCache(object):

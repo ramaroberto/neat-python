@@ -22,9 +22,10 @@ class StatisticsReporter(BaseReporter):
         BaseReporter.__init__(self)
         self.most_fit_genomes = []
         self.generation_statistics = []
+        self.generation_evaluations = []
         #self.generation_cross_validation_statistics = []
 
-    def post_evaluate(self, config, population, species, best_genome):
+    def post_evaluate(self, config, population, species, best_genome, evaluations):
         self.most_fit_genomes.append(copy.deepcopy(best_genome))
 
         # Store the fitnesses of the members of each currently active species.
@@ -35,6 +36,7 @@ class StatisticsReporter(BaseReporter):
             ##species_cross_validation_stats[sid] = dict((k, v.cross_fitness) for
 ##                                                       k, v in iteritems(s.members))
         self.generation_statistics.append(species_stats)
+        self.generation_evaluations.append(evaluations)
         #self.generation_cross_validation_statistics.append(species_cross_validation_stats)
 
     def get_fitness_stat(self, f):

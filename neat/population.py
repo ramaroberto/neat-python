@@ -27,7 +27,12 @@ class Population(object):
         self.reproduction = config.reproduction_type(config.reproduction_config,
                                                      self.reporters,
                                                      stagnation)
-        self.surrogate = config.surrogate_type(config, self.reporters)
+        
+        self.surrogate = None
+        if config.surrogate_type:
+            self.surrogate = config.surrogate_type(config, self.reporters)
+            if not self.surrogate.surrogate_config.enabled:
+                self.surrogate = None
         
         if config.fitness_criterion == 'max':
             self.fitness_criterion = max
@@ -41,7 +46,7 @@ class Population(object):
                 
         if initial_state is None:
             # Create a population from scratch, then partition into species.
-            if self.surrogate.surrogate_config.enabled:
+            if self.surrogate:
                 self.population = self.reproduction.create_new(config.genome_type,
                                                                config.genome_config,
                                                                self.surrogate.surrogate_config.number_initial_samples)
@@ -95,19 +100,20 @@ class Population(object):
 
             self.reporters.start_generation(self.generation)
 
-            if self.surrogate.surrogate_config.enabled and self.surrogate.model:
+            if self.surrogate and self.surrogate.model:
                 # If surrogate assistance is enabled, use it instead of evaluation.
                 self.surrogate.evaluate(self.population, k, fitness_function, self.config)
             else:
                 # Evaluate all genomes using the user-provided function.
                 self.evaluations += len(self.population)
                 fitness_function(list(iteritems(self.population)), self.config)
-                if self.surrogate.surrogate_config.enabled:
+                if self.surrogate:
                     self.surrogate.add_to_training(self.population.values())
                     if k == 1:
-                        self.surrogate.train(k, self.config)
+                        self.surrogate.train(k, self.config, optimize=True)
             print("Total Evaluations: " + str(self.evaluations))
-            print("GP Size: " + str(self.surrogate.samples_length()))
+            if self.surrogate:
+                print("GP Size: " + str(self.surrogate.samples_length()))
                     
             # Gather and report statistics.
             best = None
@@ -116,56 +122,70 @@ class Population(object):
                     best = g
             if self.best_genome is None:
                 self.best_genome = best
-            if not self.surrogate.surrogate_config.enabled:
+            if not self.surrogate or not self.surrogate.model:
                 if best.get_fitness() > self.best_genome.get_fitness():
                     self.best_genome = best
-                    
-            self.reporters.post_evaluate(self.config, self.population, self.species, best)
             
             # If surrogate is enabled and conditions matched, train the model.
-            if self.surrogate.surrogate_config.enabled:
+            if self.surrogate:
                 if self.surrogate.model:
-                    # If gens_per_infill has been reached, updated model and
-                    # add the same number training genomes as population to
-                    # stabilize the new model.
-                    if k % self.surrogate.surrogate_config.gens_per_infill == 0:
+                    # If gens_per_infill has been reached, update model.
+                    gpi = self.surrogate.surrogate_config.gens_per_infill
+                    if k % gpi == 0:
+                        # Select the best genomes and update the training set.
                         best_genomes = self.surrogate.update_training(self.species.species, fitness_function, self.config)
-                        self.surrogate.train(k, self.config)
+                        
+                        # Track the best genome ever seen.
+                        found_better = False
+                        for genome in best_genomes:
+                            if self.best_genome is None or \
+                                (genome.real_fitness is not None and genome.real_fitness > self.best_genome.real_fitness):
+                                self.best_genome = genome
+                                self.resolve_count = 0
+                                found_better = True
+                        if not found_better:
+                            self.resolve_count += len(best_genomes)
+                        
+                        # Train the model with the new genomes.
+                        if k % (gpi*10) == 0:
+                            self.surrogate.train(k, self.config, optimize=True)
+                        else:
+                            self.surrogate.train(k, self.config)
+                        
+                        # Add the same number training genomes as population to
+                        # stabilize the new model.
                         training_genomes = self.surrogate.get_from_training(len(self.population))
                         self.species.add(self.config, self.generation, training_genomes)
                         
+                        # Update the surrogate evaluations with the new model.
+                        self.surrogate.evaluate(self.population, k, fitness_function, self.config)
+                        
                         # Compute number of evaluations used.
                         self.evaluations += len(best_genomes)
-                        
-                        # Track the best genome ever seen.
-                        for genome in best_genomes:
-                            if self.best_genome is None or genome.get_real_fitness() > self.best_genome.get_real_fitness():
-                                self.best_genome = genome
-                                self.resolve_count = 0
-                                break
-                            else:
-                                self.resolve_count += 1
                 else:
                     if self.resolve_count == 0 or \
                         self.surrogate.is_training_set_new():
                         self.resolve_count = 0 # is_training_set_new
-                        self.surrogate.train(k, self.config)
-            print("Resolve Count: ", self.resolve_count, "("+str(self.best_genome.get_real_fitness())+")")
+                        self.surrogate.train(k, self.config, optimize=True)
+                print("Resolve Count: ", self.resolve_count, "("+str(self.best_genome.real_fitness)+")")
             
-            # If the model is stalled, reset it to produce a resolve.
-            if self.surrogate.surrogate_config.enabled and self.surrogate.model \
-                and self.resolve_count >= self.surrogate.surrogate_config.resolve_threshold:
-                self.surrogate.reset()
+                # If the model is stalled, reset it to produce a resolve.
+                if self.surrogate.model \
+                    and self.resolve_count >= self.surrogate.surrogate_config.resolve_threshold:
+                    self.surrogate.reset()
+            
+            self.reporters.post_evaluate(self.config, self.population, self.species, best, self.evaluations)
                 
             if not self.config.no_fitness_termination:
                 # End if the fitness threshold is reached.
                 real_fitnesses = []
                 for genome in self.population.values():
-                    if genome.real_fitness:
+                    if genome.real_fitness is not None:
                         real_fitnesses.append(genome.real_fitness)
+                        
                 if real_fitnesses and \
                     self.fitness_criterion(real_fitnesses) >= self.config.fitness_threshold:
-                    self.reporters.found_solution(self.config, self.generation, best)
+                    self.reporters.found_solution(self.config, self.generation, self.best_genome)
                     break
             
             # Create the next generation from the current generation.
