@@ -227,8 +227,8 @@ class GaussianProcessSurrogateModel(object):
             samples = filtered_samples
             observations = filtered_observations
         try:
-            old_samples = deepcopy(self.model.samples)
-            gp = deepcopy(self.model)
+            # old_samples = deepcopy(self.model.samples)
+            # gp = deepcopy(self.model)
             self.model.compute(samples, observations, compute_kernel=True)
         except np.linalg.linalg.LinAlgError, e:
             print("Problem encountered while computing GP:", e)
